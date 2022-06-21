@@ -1,0 +1,317 @@
+---
+title: One Way Anova with a random effect
+author: "[Julian Faraway](https://julianfaraway.github.io/)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: github_document
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(comment=NA, 
+                      echo = TRUE,
+                      fig.path="figs/",
+                      dev = 'svglite',  
+                      fig.ext = ".svg",
+                      warning=FALSE, 
+                      message=FALSE)
+ggplot2::theme_set(ggplot2::theme_bw())
+par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
+```
+
+See the [introduction](index.md) for an overview. 
+
+This example is discussed in more detail in my book
+[Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
+
+Required libraries:
+
+```{r}
+library(faraway)
+library(ggplot2)
+library(lme4)
+library(INLA)
+```
+
+# Data
+
+Load up and look at the data, which concerns the brightness of paper
+which may vary between operators of the production machinery.
+
+```{r pulpdat}
+data(pulp, package="faraway")
+summary(pulp)
+ggplot(pulp, aes(x=operator, y=bright))+geom_point(position = position_jitter(width=0.1, height=0.0))
+```
+
+You can read more about the data by typing `help(pulp)` at the R prompt.
+
+In this example, there are only five replicates per level. There is
+no strong reason to reject the normality assumption. We don't care
+about the specific operators, who are named a, b, c and d, but we do
+want to know how they vary.
+
+# Likelihood inference
+
+We use a model of the form:
+$$y_{ij} = \mu + \alpha_i + \epsilon_{ij} \qquad i=1,\dots ,a
+  \qquad j=1,\dots ,n_i,$$ where the $\alpha_i$ and $\epsilon_{ij}$s are normal
+with mean zero, but variances $\sigma_\alpha^2$ and $\sigma^2_\epsilon$,
+respectively. 
+
+The default fit uses the REML estimation method:
+
+```{r}
+mmod <- lmer(bright ~ 1+(1|operator), pulp)
+faraway::sumary(mmod)
+```
+
+We see slightly less variation within operators (SD=0.261) than between
+operators (SD=0.326). 
+
+## Hypothesis testing
+
+We can also use the ML method:
+
+```{r}
+smod <- lmer(bright ~ 1+(1|operator), pulp, REML = FALSE)
+faraway::sumary(smod)
+```
+
+The REML method is preferred for estimation but we must use the ML method if we wish
+to make hypothesis tests comparing models.
+
+If we want to test for variation between operators, we fit a null model
+containing no operator, compute the likelihood ratio statistic and corresponding
+p-value:
+
+```{r}
+nullmod <- lm(bright ~ 1, pulp)
+lrtstat <- as.numeric(2*(logLik(smod)-logLik(nullmod)))
+pvalue <- pchisq(lrtstat,1,lower=FALSE)
+data.frame(lrtstat, pvalue)
+```
+
+Superficially, the p-value greater than 0.05 suggests no strong evidence
+against that hypothesis that there is no variation among the operators. But
+there is good reason to doubt the chi-squared null distribution when
+testing parameter on the boundary of the space (as we do here at zero). A
+parametric bootstrap can be used where we generate samples from the null
+and compute the test statistic repeatedly:
+
+```{r pulpparaboot, cache=TRUE}
+lrstat <- numeric(1000)
+set.seed(123)
+for(i in 1:1000){
+   y <- unlist(simulate(nullmod))
+   bnull <- lm(y ~ 1)
+   balt <- lmer(y ~ 1 + (1|operator), pulp, REML=FALSE)
+   lrstat[i] <- as.numeric(2*(logLik(balt)-logLik(bnull)))
+  }
+```
+
+Check the proportion of simulated test statistics that are close to zero:
+
+```{r}
+mean(lrstat < 0.00001)
+```
+
+Clearly, the test statistic does not have a chi-squared distribution under
+the null. We can compute the proportion that exceed the observed test
+statistic of 2.5684:
+
+```{r}
+mean(lrstat > 2.5684)
+```
+
+This is a more reliable p-value for our hypothesis test which suggest there
+is good reason to reject the null hypothesis of no variation between operators.
+
+More sophisticated methods of inference are discussed in 
+[Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
+
+## Confidence intervals
+
+We can use bootstrap again to compute confidence intervals for
+the parameters of interest:
+
+```{r}
+confint(mmod, method="boot")
+```
+
+We see that the lower end of the confidence interval for the operator SD
+extends to zero.
+
+## Random effects
+
+Even though we are most interested in the variation between operators,
+we can still estimate their individual effects:
+
+```{r}
+ranef(mmod)$operator
+```
+
+Approximate 95% confidence intervals can be displayed with:
+
+```{r}
+dd = as.data.frame(ranef(mmod))
+ggplot(dd, aes(y=grp,x=condval)) +
+        geom_point() + facet_wrap(~term,scales="free_x") +
+        geom_errorbarh(aes(xmin=condval -2*condsd,
+                           xmax=condval +2*condsd), height=0)
+```
+
+# INLA
+
+Integrated nested Laplace approximation is a method of Bayesian computation
+which uses approximation rather than simulation. More can be found
+on this topic in [Bayesian Regression Modeling with INLA](http://julianfaraway.github.io/brinla/) and the 
+[chapter on GLMMs](https://julianfaraway.github.io/brinlabook/chaglmm.html)
+
+Run the default INLA model:
+
+```{r pulpinladefault, cache=TRUE}
+formula <- bright ~ f(operator, model="iid")
+result <- inla(formula, family="gaussian", data=pulp)
+#result <- inla.hyperpar(result)
+INLA::inla.setOption("short.summary",TRUE)
+summary(result)
+```
+
+Precision for the operator term is unreasonably high. This is due to the default diffuse gamma prior on the precisions. We can improve the calculation but result would remain implausible so it is better we change the prior.
+
+## Informative but weak prior on the SDs
+
+Try a truncated normal prior with low precision instead. A precision of 0.01 corresponds to an SD of 10. This
+is substantially larger than the SD of the response so the information supplied is very weak.
+
+```{r pulpinlatn, cache=TRUE}
+tnprior <- list(prec = list(prior="logtnormal", param = c(0,0.01)))
+formula <- bright ~ f(operator, model="iid", hyper = tnprior)
+result <- inla(formula, family="gaussian", data=pulp)
+#result <- inla.hyperpar(result)
+summary(result)
+```
+
+The results appear more plausible. Transform to the SD scale. Make a table of summary statistics for the posteriors:
+
+```{r sumstats}
+sigmaalpha <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[2]])
+sigmaepsilon <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[1]])
+restab <- sapply(result$marginals.fixed, function(x) inla.zmarginal(x,silent=TRUE))
+restab <- cbind(restab, inla.zmarginal(sigmaalpha,silent=TRUE))
+restab <- cbind(restab, inla.zmarginal(sigmaepsilon,silent = TRUE))
+restab <- cbind(restab, sapply(result$marginals.random$operator,function(x) inla.zmarginal(x, silent = TRUE)))
+colnames(restab)  <-  c("mu","alpha","epsilon",levels(pulp$operator))
+data.frame(restab) |> knitr::kable()
+```
+
+The results are now comparable to previous fits to this data. Plot the posterior densities for the two SD terms:
+
+```{r plotsdspulp}
+ddf <- data.frame(rbind(sigmaalpha,sigmaepsilon),errterm=gl(2,dim(sigmaalpha)[1],labels = c("alpha","epsilon")))
+ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("bright")+ylab("density")+xlim(0,2)
+```
+
+We see that the operator SD less precisely known than the error SD.
+
+We can compute the probability that the operator SD is smaller than 0.1:
+
+```{r}
+inla.pmarginal(0.1, sigmaalpha)
+```
+
+The probability is small but not negligible.
+
+
+# Informative gamma priors on the precisions
+
+Now try more informative gamma priors for the precisions. Define it so the mean value of gamma prior is set to the inverse of the
+variance of the response. We expect the two error variances to be lower than the response variance so this is an overestimate.
+The variance of the gamma prior (for the precision) is controlled by the `apar` shape parameter in the code. `apar=1` is the
+exponential distribution. Shape values less than one result in densities that have a mode at zero and decrease monotonely. These
+have greater variance and hence less informative.
+
+```{r pulpinlaig, cache=TRUE}
+apar <- 0.5
+bpar <- var(pulp$bright)*apar
+lgprior <- list(prec = list(prior="loggamma", param = c(apar,bpar)))
+formula <- bright ~ f(operator, model="iid", hyper = lgprior)
+result <- inla(formula, family="gaussian", data=pulp)
+#result <- inla.hyperpar(result)
+summary(result)
+```
+
+Compute the summaries as before:
+
+```{r ref.label="sumstats"}
+```
+
+Make the plots:
+
+```{r pulpgamma, ref.label="plotsdspulp"}
+```
+
+The posterior for the error SD is quite similar to that seen previously but the operator SD is larger and
+bounded away from zero.
+
+We can compute the probability that the operator SD is smaller than 0.1:
+
+```{r}
+inla.pmarginal(0.1, sigmaalpha)
+```
+
+The probability is very small. The choice of prior may be unsuitable in that no density is placed on
+an SD=0 (or infinite precision). We also have very little prior weight on low SD/high precision values. This
+leads to a posterior for the operator with very little density assigned to small values of the SD. But we
+can see from looking at the data or from prior analyses of the data that there is some possibility that the
+operator SD is negligibly small.
+
+# Penalized Complexity Prior
+
+In [Simpson et al (2015)](http://arxiv.org/abs/1403.4630v3), penalized complexity priors are proposed. This
+requires that we specify a scaling for the SDs of the random effects. We use the SD of the residuals
+of the fixed effects only model (what might be called the base model in the paper) to provide this scaling.
+
+```{r pulpinlapc, cache=TRUE}
+sdres <- sd(pulp$bright)
+pcprior <- list(prec = list(prior="pc.prec", param = c(3*sdres,0.01)))
+formula <- bright ~ f(operator, model="iid", hyper = pcprior)
+result <- inla(formula, family="gaussian", data=pulp)
+#result <- inla.hyperpar(result)
+summary(result)
+```
+
+Compute the summaries as before:
+
+```{r ref.label="sumstats"}
+```
+
+Make the plots:
+
+```{r pulppc, ref.label="plotsdspulp"}
+```
+
+We get a similar result to the truncated normal prior used earlier although the operator SD is generally smaller.
+
+We can compute the probability that the operator SD is smaller than 0.1:
+
+```{r}
+inla.pmarginal(0.1, sigmaalpha)
+```
+
+The probability is small but not insubstantial.
+
+We can plot the posterior density of $\mu$ along with a 95% credibility interval:
+
+```{r}
+mu <- data.frame(result$marginals.fixed[[1]])
+ggplot(mu, aes(x,y)) + geom_line() + 
+  geom_vline(xintercept = c(restab[,"mu"]$quant0.025, restab[,"mu"]$quant0.975)) +
+  xlab("brightness")+ylab("density")
+```
+
+
+# Package version info
+
+```{r}
+sessionInfo()
+```
