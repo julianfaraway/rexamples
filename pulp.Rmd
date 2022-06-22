@@ -2,7 +2,9 @@
 title: One Way Anova with a random effect
 author: "[Julian Faraway](https://julianfaraway.github.io/)"
 date: "`r format(Sys.time(), '%d %B %Y')`"
-output: github_document
+output: 
+  github_document:
+    toc: true
 ---
 
 ```{r global_options, include=FALSE}
@@ -29,6 +31,7 @@ library(faraway)
 library(ggplot2)
 library(lme4)
 library(INLA)
+library(knitr)
 ```
 
 # Data
@@ -151,10 +154,10 @@ ranef(mmod)$operator
 
 Approximate 95% confidence intervals can be displayed with:
 
-```{r}
+```{r pulpebar}
 dd = as.data.frame(ranef(mmod))
 ggplot(dd, aes(y=grp,x=condval)) +
-        geom_point() + facet_wrap(~term,scales="free_x") +
+        geom_point() +
         geom_errorbarh(aes(xmin=condval -2*condsd,
                            xmax=condval +2*condsd), height=0)
 ```
@@ -166,52 +169,106 @@ which uses approximation rather than simulation. More can be found
 on this topic in [Bayesian Regression Modeling with INLA](http://julianfaraway.github.io/brinla/) and the 
 [chapter on GLMMs](https://julianfaraway.github.io/brinlabook/chaglmm.html)
 
-Run the default INLA model:
+Use the most recent computational methodology:
 
-```{r pulpinladefault, cache=TRUE}
-formula <- bright ~ f(operator, model="iid")
-result <- inla(formula, family="gaussian", data=pulp)
-#result <- inla.hyperpar(result)
-INLA::inla.setOption("short.summary",TRUE)
-summary(result)
+
+```{r}
+inla.setOption(inla.mode="experimental")
+inla.setOption("short.summary",TRUE)
 ```
 
-Precision for the operator term is unreasonably high. This is due to the default diffuse gamma prior on the precisions. We can improve the calculation but result would remain implausible so it is better we change the prior.
+Run the INLA model with default priors:
 
-## Informative but weak prior on the SDs
+```{r pulpinladefault, cache=TRUE}
+imod <- inla(bright ~ f(operator, model="iid"),
+             family="gaussian",
+             data=pulp)
+```
 
-Try a truncated normal prior with low precision instead. A precision of 0.01 corresponds to an SD of 10. This
-is substantially larger than the SD of the response so the information supplied is very weak.
+The summary of the posterior distribution for the fixed effects (which is only the intercept in this example):
+
+```{r}
+imod$summary.fixed |> kable()
+```
+
+The posterior mean is the same as the (RE)ML estimate. The posterior distribution
+of the hyperparameters (precision of the error and operator terms)
+
+
+```{r}
+imod$summary.hyperpar |> kable()
+```
+Precision for the operator term is unreasonably high. This implies
+a strong belief that there is no variation between the operators which we would find hard to believe. This is due to the default diffuse gamma prior on the precisions
+which put almost all the weight on the error variation and not nearly enough on
+the operator variation. We need to change the prior.
+
+## Halfnormal prior on the SDs
+
+We try a halfnormal prior with low precision instead. A precision of 0.01 corresponds to an SD of 10. (It is possible to vary the mean but we have set this to 
+zero to achieve a halfnormal distribution). 
+This is substantially larger than the SD of the response so the information supplied is very weak.
 
 ```{r pulpinlatn, cache=TRUE}
 tnprior <- list(prec = list(prior="logtnormal", param = c(0,0.01)))
-formula <- bright ~ f(operator, model="iid", hyper = tnprior)
-result <- inla(formula, family="gaussian", data=pulp)
-#result <- inla.hyperpar(result)
-summary(result)
+imod <- inla(bright ~ f(operator, model="iid", hyper = tnprior),
+               family="gaussian", 
+               data=pulp)
+summary(imod)
 ```
 
-The results appear more plausible. Transform to the SD scale. Make a table of summary statistics for the posteriors:
+The results appear more plausible. Transform to the SD scale 
 
-```{r sumstats}
-sigmaalpha <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[2]])
-sigmaepsilon <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[1]])
-restab <- sapply(result$marginals.fixed, function(x) inla.zmarginal(x,silent=TRUE))
-restab <- cbind(restab, inla.zmarginal(sigmaalpha,silent=TRUE))
-restab <- cbind(restab, inla.zmarginal(sigmaepsilon,silent = TRUE))
-restab <- cbind(restab, sapply(result$marginals.random$operator,function(x) inla.zmarginal(x, silent = TRUE)))
-colnames(restab)  <-  c("mu","alpha","epsilon",levels(pulp$operator))
-data.frame(restab) |> knitr::kable()
+
+```{r}
+sigmaalpha <- inla.tmarginal(function(x)1/sqrt(exp(x)),
+                             imod$internal.marginals.hyperpar[[2]])
+sigmaepsilon <- inla.tmarginal(function(x)1/sqrt(exp(x)),
+                                imod$internal.marginals.hyperpar[[1]])
 ```
 
-The results are now comparable to previous fits to this data. Plot the posterior densities for the two SD terms:
+and output the summary statistics (note that transforming the summary
+statistics on the precision scale only works for the quantiles)
+
+
+```{r}
+sigalpha = c(inla.zmarginal(sigmaalpha, silent = TRUE),
+            mode=inla.mmarginal(sigmaalpha))
+sigepsilon = c(inla.zmarginal(sigmaepsilon, silent = TRUE),
+              mode=inla.mmarginal(sigmaepsilon))
+rbind(sigalpha, sigepsilon) 
+```
+
+The posterior mode is most comparable with the (RE)ML estimates computed
+above. In this respect, the results are similar.
+
+We can also get summary statistics on the random effects:
+
+```{r}
+imod$summary.random$operator |> kable()
+```
+
+Plot the posterior densities for the two SD terms:
 
 ```{r plotsdspulp}
-ddf <- data.frame(rbind(sigmaalpha,sigmaepsilon),errterm=gl(2,dim(sigmaalpha)[1],labels = c("alpha","epsilon")))
-ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("bright")+ylab("density")+xlim(0,2)
+ddf <- data.frame(rbind(sigmaalpha,sigmaepsilon),
+                  errterm=gl(2,dim(sigmaalpha)[1],labels = c("alpha","epsilon")))
+ggplot(ddf, aes(x,y, linetype=errterm))+
+  geom_line()+xlab("bright")+ylab("density")+xlim(0,2)
 ```
 
-We see that the operator SD less precisely known than the error SD.
+We see that the operator SD less precisely known than the error SD. Although
+the mode for the operator is smaller, there is a substantial chance it could
+be much higher than the error SD.
+
+Is there any variation between operators? We framed this question as an
+hypothesis test previously but that is not sensible in this framework. We might
+ask the probability that the operator SD is zero. Since we have posited a
+continuous prior that places no discrete mass on zero, the posterior probability
+will be zero, regardless of the data. Instead we might ask the probability 
+that the operator SD is small. Given the response is measured to one decimal
+place, 0.1 is a reasonable representation of *small* if we take this to mean
+the smallest amount we care about.
 
 We can compute the probability that the operator SD is smaller than 0.1:
 
@@ -219,7 +276,7 @@ We can compute the probability that the operator SD is smaller than 0.1:
 inla.pmarginal(0.1, sigmaalpha)
 ```
 
-The probability is small but not negligible.
+The probability is small but not entirely negligible.
 
 
 # Informative gamma priors on the precisions
@@ -234,24 +291,40 @@ have greater variance and hence less informative.
 apar <- 0.5
 bpar <- var(pulp$bright)*apar
 lgprior <- list(prec = list(prior="loggamma", param = c(apar,bpar)))
-formula <- bright ~ f(operator, model="iid", hyper = lgprior)
-result <- inla(formula, family="gaussian", data=pulp)
-#result <- inla.hyperpar(result)
-summary(result)
+imod <- inla(bright ~ f(operator, model="iid", hyper = lgprior),
+               family="gaussian", 
+               data=pulp)
+summary(imod)
 ```
 
 Compute the summaries as before:
 
-```{r ref.label="sumstats"}
+```{r}
+sigmaalpha <- inla.tmarginal(function(x)1/sqrt(exp(x)),
+                             imod$internal.marginals.hyperpar[[2]])
+sigmaepsilon <- inla.tmarginal(function(x)1/sqrt(exp(x)),
+                            imod$internal.marginals.hyperpar[[1]])
+sigalpha = c(inla.zmarginal(sigmaalpha, silent = TRUE),
+            mode=inla.mmarginal(sigmaalpha))
+sigepsilon = c(inla.zmarginal(sigmaepsilon, silent = TRUE),
+              mode=inla.mmarginal(sigmaepsilon))
+rbind(sigalpha, sigepsilon) 
 ```
+
+Slightly different outcome.
+
 
 Make the plots:
-
-```{r pulpgamma, ref.label="plotsdspulp"}
+```{r plotsdspulpig}
+ddf <- data.frame(rbind(sigmaalpha,sigmaepsilon),
+                  errterm=gl(2,dim(sigmaalpha)[1],labels = c("alpha","epsilon")))
+ggplot(ddf, aes(x,y, linetype=errterm))+
+  geom_line()+xlab("bright")+ylab("density")+xlim(0,2)
 ```
 
+
 The posterior for the error SD is quite similar to that seen previously but the operator SD is larger and
-bounded away from zero.
+bounded away from zero and less dispersed.
 
 We can compute the probability that the operator SD is smaller than 0.1:
 
@@ -263,34 +336,46 @@ The probability is very small. The choice of prior may be unsuitable in that no 
 an SD=0 (or infinite precision). We also have very little prior weight on low SD/high precision values. This
 leads to a posterior for the operator with very little density assigned to small values of the SD. But we
 can see from looking at the data or from prior analyses of the data that there is some possibility that the
-operator SD is negligibly small.
+operator SD is very small.
 
 # Penalized Complexity Prior
 
-In [Simpson et al (2015)](http://arxiv.org/abs/1403.4630v3), penalized complexity priors are proposed. This
+In [Simpson (2017)](https://doi.org/10.1214/16-STS576), penalized complexity priors are proposed. This
 requires that we specify a scaling for the SDs of the random effects. We use the SD of the residuals
 of the fixed effects only model (what might be called the base model in the paper) to provide this scaling.
 
 ```{r pulpinlapc, cache=TRUE}
 sdres <- sd(pulp$bright)
 pcprior <- list(prec = list(prior="pc.prec", param = c(3*sdres,0.01)))
-formula <- bright ~ f(operator, model="iid", hyper = pcprior)
-result <- inla(formula, family="gaussian", data=pulp)
-#result <- inla.hyperpar(result)
-summary(result)
+imod <- inla(bright ~ f(operator, model="iid", hyper = pcprior),
+               family="gaussian", 
+               data=pulp)
+summary(imod)
 ```
 
 Compute the summaries as before:
 
-```{r ref.label="sumstats"}
-```
-
-Make the plots:
-
-```{r pulppc, ref.label="plotsdspulp"}
+```{r}
+sigmaalpha <- inla.tmarginal(function(x)1/sqrt(exp(x)),
+                             imod$internal.marginals.hyperpar[[2]])
+sigmaepsilon <- inla.tmarginal(function(x)1/sqrt(exp(x)),
+                            imod$internal.marginals.hyperpar[[1]])
+sigalpha = c(inla.zmarginal(sigmaalpha, silent = TRUE),
+            mode=inla.mmarginal(sigmaalpha))
+sigepsilon = c(inla.zmarginal(sigmaepsilon, silent = TRUE),
+              mode=inla.mmarginal(sigmaepsilon))
+rbind(sigalpha, sigepsilon) 
 ```
 
 We get a similar result to the truncated normal prior used earlier although the operator SD is generally smaller.
+
+Make the plots:
+```{r plotsdspulppc}
+ddf <- data.frame(rbind(sigmaalpha,sigmaepsilon),
+                  errterm=gl(2,dim(sigmaalpha)[1],labels = c("alpha","epsilon")))
+ggplot(ddf, aes(x,y, linetype=errterm))+
+  geom_line()+xlab("bright")+ylab("density")+xlim(0,2)
+```
 
 We can compute the probability that the operator SD is smaller than 0.1:
 
@@ -302,12 +387,29 @@ The probability is small but not insubstantial.
 
 We can plot the posterior density of $\mu$ along with a 95% credibility interval:
 
-```{r}
-mu <- data.frame(result$marginals.fixed[[1]])
+```{r pulpmargfix}
+mu <- data.frame(imod$marginals.fixed[[1]])
+cbound = inla.qmarginal(c(0.025,0.975),mu)
 ggplot(mu, aes(x,y)) + geom_line() + 
-  geom_vline(xintercept = c(restab[,"mu"]$quant0.025, restab[,"mu"]$quant0.975)) +
+  geom_vline(xintercept = cbound) +
   xlab("brightness")+ylab("density")
 ```
+
+We can plot the posterior marginals of the random effects:
+
+```{r pulprandeffpden}
+nlevels = length(unique(pulp$operator))
+rdf = data.frame(do.call(rbind,imod$marginals.random$operator))
+rdf$operator = gl(nlevels,nrow(rdf)/nlevels,labels=1:nlevels)
+ggplot(rdf,aes(x=x,y=y,group=operator, color=operator)) + 
+  geom_line() +
+  xlab("") + ylab("Density")
+```
+
+We see that operators 1 and 2 tend to be lower than 3 and 4. There
+is substantial overlap so we would hesitate to declare any difference
+between a pair of operators.
+
 
 
 # Package version info
