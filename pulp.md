@@ -3,6 +3,31 @@ One Way Anova with a random effect
 [Julian Faraway](https://julianfaraway.github.io/)
 22 June 2022
 
+-   <a href="#data" id="toc-data">Data</a>
+-   <a href="#likelihood-inference" id="toc-likelihood-inference">Likelihood
+    inference</a>
+    -   <a href="#hypothesis-testing" id="toc-hypothesis-testing">Hypothesis
+        testing</a>
+    -   <a href="#confidence-intervals" id="toc-confidence-intervals">Confidence
+        intervals</a>
+    -   <a href="#random-effects" id="toc-random-effects">Random effects</a>
+-   <a href="#inla" id="toc-inla">INLA</a>
+    -   <a href="#halfnormal-prior-on-the-sds"
+        id="toc-halfnormal-prior-on-the-sds">Halfnormal prior on the SDs</a>
+-   <a href="#informative-gamma-priors-on-the-precisions"
+    id="toc-informative-gamma-priors-on-the-precisions">Informative gamma
+    priors on the precisions</a>
+-   <a href="#penalized-complexity-prior"
+    id="toc-penalized-complexity-prior">Penalized Complexity Prior</a>
+-   <a href="#stan" id="toc-stan">STAN</a>
+-   <a href="#diagnostics" id="toc-diagnostics">Diagnostics</a>
+-   <a href="#output-summaries" id="toc-output-summaries">Output
+    summaries</a>
+-   <a href="#posterior-distributions"
+    id="toc-posterior-distributions">Posterior Distributions</a>
+-   <a href="#package-version-info" id="toc-package-version-info">Package
+    version info</a>
+
 See the [introduction](index.md) for an overview.
 
 This example is discussed in more detail in my book [Extending the
@@ -16,6 +41,7 @@ library(ggplot2)
 library(lme4)
 library(INLA)
 library(knitr)
+library(rstan, quietly=TRUE)
 ```
 
 # Data
@@ -557,6 +583,258 @@ We see that operators 1 and 2 tend to be lower than 3 and 4. There is
 substantial overlap so we would hesitate to declare any difference
 between a pair of operators.
 
+# STAN
+
+[STAN](https://mc-stan.org/) performs Bayesian inference using MCMC.
+
+Set up STAN to use multiple cores. Set the random number seed for
+reproducibility.
+
+``` r
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+set.seed(123)
+```
+
+We need the STAN command file `pulp.stan`:
+
+``` r
+writeLines(readLines("stancode/pulp.stan"))
+```
+
+    data {
+      int<lower=0> N;
+      int<lower=0> J;
+      int<lower=1,upper=J> predictor[N];
+      vector[N] response;
+    }
+    parameters {
+      vector[J] eta;
+      real mu;
+      real<lower=0> sigmaalpha;
+      real<lower=0> sigmaepsilon;
+    }
+    transformed parameters {
+      vector[J] a;
+      vector[N] yhat;
+
+      a = mu + sigmaalpha * eta;
+
+      for (i in 1:N)
+        yhat[i] = a[predictor[i]];
+    }
+    model {
+      eta ~ normal(0, 1);
+
+      response ~ normal(yhat, sigmaepsilon);
+    }
+
+We have used uninformative priors for the overall mean and the two
+variances. Prepare data in a format consistent with the command file.
+Needs to be a list. Can’t use the word `operator` since this is reserved
+for system use in STAN.
+
+``` r
+pulpdat <- list(N=nrow(pulp),
+                J=length(unique(pulp$operator)),
+                response=pulp$bright,
+                predictor=as.numeric(pulp$operator))
+```
+
+Break the fitting process into three steps:
+
+``` r
+rt <- stanc(file="stancode/pulp.stan")
+sm <- stan_model(stanc_ret = rt, verbose=FALSE)
+```
+
+    Running /Library/Frameworks/R.framework/Resources/bin/R CMD SHLIB foo.c
+    clang -mmacosx-version-min=10.13 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG   -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/Rcpp/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/unsupported"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/BH/include" -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/src/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppParallel/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/rstan/include" -DEIGEN_NO_DEBUG  -DBOOST_DISABLE_ASSERTS  -DBOOST_PENDING_INTEGER_LOG2_HPP  -DSTAN_THREADS  -DBOOST_NO_AUTO_PTR  -include '/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/mat/fun/Eigen.hpp'  -D_REENTRANT -DRCPP_PARALLEL_USE_TBB=1   -I/usr/local/include   -fPIC  -Wall -g -O2  -c foo.c -o foo.o
+    In file included from <built-in>:1:
+    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/mat/fun/Eigen.hpp:13:
+    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
+    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:88:
+    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:1: error: unknown type name 'namespace'
+    namespace Eigen {
+    ^
+    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:16: error: expected ';' after top level declarator
+    namespace Eigen {
+                   ^
+                   ;
+    In file included from <built-in>:1:
+    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/mat/fun/Eigen.hpp:13:
+    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
+    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:96:10: fatal error: 'complex' file not found
+    #include <complex>
+             ^~~~~~~~~
+    3 errors generated.
+    make: *** [foo.o] Error 1
+
+``` r
+system.time(fit <- sampling(sm, data=pulpdat))
+```
+
+       user  system elapsed 
+      5.853   0.209   2.169 
+
+By default, we use 2000 iterations but repeated with independent starts
+4 times giving 4 chains. We can thin but do not by default. The warmup
+period is half the number of observations (which is very conservative in
+this instance).
+
+We get warning messages about the fit. Since the default number of 2000
+iterations runs in seconds, we can simply run a lot more iterations.
+
+``` r
+system.time(fit <- sampling(sm, data=pulpdat, iter=100000))
+```
+
+       user  system elapsed 
+     37.028   2.701  17.938 
+
+The same underlying problems remain but the inference will now be more
+reliable.
+
+# Diagnostics
+
+Diagnostics to check the convergence are worthwhile. We plot the sampled
+![\mu](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Cmu "\mu")
+in the four chains, choosing only every 100th observation (the plot
+becomes very dense if we show everything). The warm-up period is
+excluded.
+
+``` r
+pname <- "mu"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+mdf |> dplyr::filter(iterations %% 100 == 0) |> 
+ggplot(aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+![](figs/pulpmudiag-1..svg)<!-- -->
+
+We see the traces of the four chains overlaid in different colors. The
+chains appear roughly stationary although there are some occasional
+larger excursions (which is why we needed more iterations).
+
+The similar plots can be produced for the two variance terms although
+note that STAN uses the standard deviations (which we also prefer). Here
+is the group (operator) SD:
+
+``` r
+pname <- "sigmaalpha"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+mdf |> dplyr::filter(iterations %% 100 == 0) |> 
+  ggplot(aes(x=iterations,y=value,color=chains)) + 
+  geom_line() + ylab(mdf$parameters[1])
+```
+
+![](figs/pulpalphadiag-1..svg)<!-- -->
+
+This looks acceptable. We expect that the distribution will be
+asymmetric so this is no concern. The chains stay away from zero (or
+close to it). Here’s the same plot for the error SD.
+
+``` r
+pname <- "sigmaepsilon"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+mdf |> dplyr::filter(iterations %% 100 == 0) |> 
+  ggplot(aes(x=iterations,y=value,color=chains)) + 
+  geom_line() + ylab(mdf$parameters[1])
+```
+
+![](figs/pulpepsdiag-1..svg)<!-- -->
+
+Again this looks satisfactory.
+
+# Output summaries
+
+We consider only the parameters of immediate interest:
+
+``` r
+print(fit, pars=c("mu","sigmaalpha","sigmaepsilon","a"))
+```
+
+    Inference for Stan model: pulp.
+    4 chains, each with iter=1e+05; warmup=50000; thin=1; 
+    post-warmup draws per chain=50000, total post-warmup draws=2e+05.
+
+                  mean se_mean   sd  2.5%   25%   50%   75% 97.5% n_eff Rhat
+    mu           60.40    0.02 0.31 59.72 60.26 60.40 60.54 61.11   386 1.01
+    sigmaalpha    0.55    0.05 0.58  0.06  0.24  0.38  0.62  2.72   125 1.04
+    sigmaepsilon  0.36    0.00 0.07  0.25  0.31  0.35  0.40  0.53  3077 1.00
+    a[1]         60.28    0.00 0.15 59.98 60.18 60.28 60.37 60.57 88168 1.00
+    a[2]         60.13    0.00 0.16 59.82 60.03 60.13 60.24 60.47 19180 1.00
+    a[3]         60.57    0.00 0.15 60.27 60.47 60.57 60.67 60.87 33139 1.00
+    a[4]         60.62    0.00 0.16 60.30 60.51 60.62 60.72 60.93 35456 1.00
+
+    Samples were drawn using NUTS(diag_e) at Wed Jun 22 14:56:36 2022.
+    For each parameter, n_eff is a crude measure of effective sample size,
+    and Rhat is the potential scale reduction factor on split chains (at 
+    convergence, Rhat=1).
+
+We see the posterior mean, SE and SD of the samples. We see some
+quantiles from which we could construct a 95% credible interval (for
+example). The `n_eff` is a rough measure of the sample size taking into
+account the correlation in the samples. The effective sample sizes for
+the mean and operator SD primary parameters is not large (considering
+the number of iterations) although adequate enough for most purposes.
+The Rhat statistic is known as the potential scale reduction factor.
+Values much greater than one indicate that additional samples would
+significantly improve the inference. In this case, the factors are all
+one so we feel no inclination to draw more samples.
+
+We can also get the posterior means alone.
+
+``` r
+(get_posterior_mean(fit, pars=c("mu","sigmaalpha","sigmaepsilon","a")))
+```
+
+                 mean-chain:1 mean-chain:2 mean-chain:3 mean-chain:4 mean-all chains
+    mu               60.41164     60.38271     60.43582     60.37487        60.40126
+    sigmaalpha        0.46788      0.48728      0.73191      0.50779         0.54871
+    sigmaepsilon      0.35796      0.35961      0.35384      0.35913         0.35764
+    a[1]             60.27782     60.27635     60.27308     60.27618        60.27586
+    a[2]             60.13891     60.13841     60.12765     60.13439        60.13484
+    a[3]             60.57060     60.56850     60.57553     60.56798        60.57065
+    a[4]             60.61542     60.61287     60.62376     60.61686        60.61723
+
+We see that we get this information for each chain as well as overall.
+This gives a sense of why running more than one chain might be helpful
+in assessing the uncertainty in the posterior inference.
+
+# Posterior Distributions
+
+We can use `extract` to get at various components of the STAN fit. We
+plot the posterior densities for the SDs:
+
+``` r
+postsig <- rstan::extract(fit, pars=c("sigmaalpha","sigmaepsilon"))
+ref <- reshape2::melt(postsig,value.name="bright")
+ggplot(ref,aes(x=bright, color=L1))+
+  geom_density()+
+  xlim(0,2) +
+  guides(color=guide_legend(title="SD"))
+```
+
+![](figs/pulppdae-1..svg)<!-- -->
+
+We see that the error SD can be localized much more than the operator
+SD. We can also look at the operator random effects:
+
+``` r
+opre <- rstan::extract(fit, pars="a")
+ref <- reshape2::melt(opre, value.name="bright")
+ref[,2] <- (LETTERS[1:4])[ref[,2]]
+ggplot(data=ref,aes(x=bright, color=Var2))+geom_density()+guides(color=guide_legend(title="operator"))
+```
+
+![](figs/pulpstanre-1..svg)<!-- -->
+
+We see that the four operator distributions overlap.
+
 # Package version info
 
 ``` r
@@ -578,17 +856,19 @@ sessionInfo()
     [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-    [1] knitr_1.39      INLA_22.06.20-2 sp_1.4-7        foreach_1.5.2   lme4_1.1-29     Matrix_1.4-1    ggplot2_3.3.6  
-    [8] faraway_1.0.8  
+     [1] rstan_2.21.5         StanHeaders_2.21.0-7 knitr_1.39           INLA_22.06.20-2      sp_1.4-7            
+     [6] foreach_1.5.2        lme4_1.1-29          Matrix_1.4-1         ggplot2_3.3.6        faraway_1.0.8       
 
     loaded via a namespace (and not attached):
-     [1] tidyselect_1.1.2   xfun_0.31          purrr_0.3.4        splines_4.2.0      lattice_0.20-45    colorspace_2.0-3  
-     [7] vctrs_0.4.1        generics_0.1.2     htmltools_0.5.2    yaml_2.3.5         utf8_1.2.2         rlang_1.0.2       
-    [13] pillar_1.7.0       nloptr_2.0.3       glue_1.6.2         withr_2.5.0        DBI_1.1.2          lifecycle_1.0.1   
-    [19] stringr_1.4.0      MatrixModels_0.5-0 munsell_0.5.0      gtable_0.3.0       codetools_0.2-18   evaluate_0.15     
-    [25] labeling_0.4.2     fastmap_1.1.0      fansi_1.0.3        highr_0.9          Rcpp_1.0.8.3       scales_1.2.0      
-    [31] systemfonts_1.0.4  farver_2.1.0       Deriv_4.1.3        digest_0.6.29      stringi_1.7.6      dplyr_1.0.9       
-    [37] grid_4.2.0         cli_3.3.0          tools_4.2.0        magrittr_2.0.3     tibble_3.1.7       crayon_1.5.1      
-    [43] pkgconfig_2.0.3    ellipsis_0.3.2     MASS_7.3-57        svglite_2.1.0      assertthat_0.2.1   minqa_1.2.4       
-    [49] rmarkdown_2.14     rstudioapi_0.13    iterators_1.0.14   R6_2.5.1           boot_1.3-28        nlme_3.1-157      
-    [55] compiler_4.2.0    
+     [1] Rcpp_1.0.8.3       svglite_2.1.0      lattice_0.20-45    prettyunits_1.1.1  ps_1.7.0           assertthat_0.2.1  
+     [7] digest_0.6.29      utf8_1.2.2         plyr_1.8.7         R6_2.5.1           stats4_4.2.0       evaluate_0.15     
+    [13] highr_0.9          pillar_1.7.0       rlang_1.0.2        rstudioapi_0.13    minqa_1.2.4        callr_3.7.0       
+    [19] nloptr_2.0.3       rmarkdown_2.14     labeling_0.4.2     splines_4.2.0      stringr_1.4.0      loo_2.5.1         
+    [25] munsell_0.5.0      Deriv_4.1.3        compiler_4.2.0     xfun_0.31          systemfonts_1.0.4  pkgconfig_2.0.3   
+    [31] pkgbuild_1.3.1     htmltools_0.5.2    tidyselect_1.1.2   tibble_3.1.7       gridExtra_2.3      codetools_0.2-18  
+    [37] matrixStats_0.62.0 fansi_1.0.3        crayon_1.5.1       dplyr_1.0.9        withr_2.5.0        MASS_7.3-57       
+    [43] grid_4.2.0         nlme_3.1-157       gtable_0.3.0       lifecycle_1.0.1    DBI_1.1.2          magrittr_2.0.3    
+    [49] scales_1.2.0       RcppParallel_5.1.5 cli_3.3.0          stringi_1.7.6      reshape2_1.4.4     farver_2.1.0      
+    [55] ellipsis_0.3.2     generics_0.1.2     vctrs_0.4.1        boot_1.3-28        iterators_1.0.14   tools_4.2.0       
+    [61] glue_1.6.2         purrr_0.3.4        processx_3.5.3     fastmap_1.1.0      yaml_2.3.5         inline_0.3.19     
+    [67] colorspace_2.0-3  
