@@ -33,6 +33,7 @@ library(lme4)
 library(INLA)
 library(knitr)
 library(rstan, quietly=TRUE)
+library(brms)
 ```
 
 # Data
@@ -137,7 +138,7 @@ More sophisticated methods of inference are discussed in
 We can use bootstrap again to compute confidence intervals for
 the parameters of interest:
 
-```{r}
+```{r pulpboot, cache=TRUE}
 confint(mmod, method="boot")
 ```
 
@@ -280,7 +281,7 @@ inla.pmarginal(0.1, sigmaalpha)
 The probability is small but not entirely negligible.
 
 
-# Informative gamma priors on the precisions
+## Informative gamma priors on the precisions
 
 Now try more informative gamma priors for the precisions. Define it so the mean value of gamma prior is set to the inverse of the
 variance of the response. We expect the two error variances to be lower than the response variance so this is an overestimate.
@@ -339,7 +340,7 @@ leads to a posterior for the operator with very little density assigned to small
 can see from looking at the data or from prior analyses of the data that there is some possibility that the
 operator SD is very small.
 
-# Penalized Complexity Prior
+## Penalized Complexity Prior
 
 In [Simpson (2017)](https://doi.org/10.1214/16-STS576), penalized complexity priors are proposed. This
 requires that we specify a scaling for the SDs of the random effects. We use the SD of the residuals
@@ -424,7 +425,7 @@ options(mc.cores = parallel::detectCores())
 set.seed(123)
 ```
 
-We need the STAN command file `pulp.stan`:
+We need the STAN command file `pulp.stan` which we view here:
 
 ```{r}
 writeLines(readLines("stancode/pulp.stan"))
@@ -447,7 +448,7 @@ Break the fitting process into three steps:
 
 ```{r pulpstancomp, cache=TRUE}
 rt <- stanc(file="stancode/pulp.stan")
-sm <- stan_model(stanc_ret = rt, verbose=FALSE)
+suppressMessages(sm <- stan_model(stanc_ret = rt, verbose=FALSE))
 system.time(fit <- sampling(sm, data=pulpdat))
 ```
 
@@ -458,7 +459,9 @@ conservative in this instance).
 
 We get warning messages about the fit. Since the default number
 of 2000 iterations runs in seconds, we can simply run a lot
-more iterations.
+more iterations. This is rather lazy and would not be viable
+for more expensive computations, but sometimes CPU effort is
+preferred to mental effort.
 
 ```{r pulpstanbigiter, cache=TRUE}
 system.time(fit <- sampling(sm, data=pulpdat, iter=100000))
@@ -467,7 +470,7 @@ system.time(fit <- sampling(sm, data=pulpdat, iter=100000))
 The same underlying problems remain but the inference will now
 be more reliable.
 
-# Diagnostics
+## Diagnostics
 
 Diagnostics to check the convergence are worthwhile. We plot
 the sampled $\mu$ in the four chains, choosing only every 100th
@@ -509,7 +512,7 @@ mdf |> dplyr::filter(iterations %% 100 == 0) |>
 
 Again this looks satisfactory.
 
-# Output summaries
+## Output summaries
 
 We consider only the parameters of immediate interest:
 
@@ -537,7 +540,7 @@ than one chain might be helpful in assessing the uncertainty in the posterior in
 
 
 
-# Posterior Distributions
+## Posterior Distributions
 
 We can use `extract` to get at various components of the STAN fit. We plot the posterior densities for the SDs:
 
@@ -562,6 +565,91 @@ ggplot(data=ref,aes(x=bright, color=Var2))+geom_density()+guides(color=guide_leg
 
 We see that the four operator distributions overlap.
 
+## Tail probability
+
+Previously, we took an interest in whether there is any variation
+between operators and answered this question with a computation
+of the probability that the operator SD is less than 0.1. We
+computed the proportion of sampled values less than 0.1.
+
+```{r}
+muc <- rstan::extract(fit, pars="sigmaalpha",  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+mean(mdf$value < 0.1)
+```
+
+This is a somewhat larger probability than seen previously. The
+value obtained is sensitive to the choice of prior on the error SD.
+This can be changed within STAN but it is easier to experiment
+with this using BRMS.
+
+# BRMS
+
+BRMS stands for Bayesian Regression Models with STAN. It provides
+a convenient wrapper to STAN functionality.
+
+Fitting the model is very similar to `lmer` as seen above:
+
+```{r brmfit, cache=TRUE}
+suppressMessages(bmod <- brm(bright ~ 1+(1|operator), pulp))
+```
+
+We get some warnings but not as severe as seen with our STAN fit
+above. We can obtain some posterior densities and diagnostics with:
+
+```{r pulpbrmsdiag}
+plot(bmod)
+```
+
+We can look at the STAN code that `brms` used with:
+
+```{r}
+stancode(bmod)
+```
+
+We see that `brms` is using student t distributions with 3 degrees of
+freedom for the priors. For the two error SDs, this will be truncated at
+zero to form half-t distributions. You can get a more explicit description
+of the priors with `prior_summary(bmod)`. These are qualitatively similar to the
+half-normal and the PC prior used in the INLA fit. This explains why
+we encountered fewer problems in the fit because we are supplying
+more informative priors. Nevertheless, we do need to increase the
+number of iterations for more accurate estimation of tail probabilities.
+
+```{r pulpbrmsmore, cache=TRUE}
+bmod <- brm(bright ~ 1+(1|operator), pulp, iter=10000, cores = 4)
+```
+
+Because the STAN programme was compiled earlier, this takes much less time
+overall even though we are doing 5 times as many iterations as the default
+number of 2000. We examine the fit:
+
+```{r}
+summary(bmod)
+```
+
+We now have better effective sample sizes. We can estimate
+the tail probability as before
+
+```{r}
+bps = posterior_samples(bmod)
+mean(bps$sd_operator__Intercept < 0.1)
+```
+
+A somewhat higher value than seen previously. The priors used here put
+greater weight on smaller values of the SD.
+
+# MGCV
+
+[blog](https://fromthebottomoftheheap.net/2021/02/02/random-effects-in-gams/)
+
+```{r}
+gmod = gam(bright ~ 1 + s(operator, bs = 're'), data=pulp)
+```
+
+```{r}
+gam.vcomp(gmod)
+```
 
 
 

@@ -1,7 +1,7 @@
 One Way Anova with a random effect
 ================
 [Julian Faraway](https://julianfaraway.github.io/)
-22 June 2022
+23 June 2022
 
 -   <a href="#data" id="toc-data">Data</a>
 -   <a href="#likelihood-inference" id="toc-likelihood-inference">Likelihood
@@ -14,17 +14,20 @@ One Way Anova with a random effect
 -   <a href="#inla" id="toc-inla">INLA</a>
     -   <a href="#halfnormal-prior-on-the-sds"
         id="toc-halfnormal-prior-on-the-sds">Halfnormal prior on the SDs</a>
--   <a href="#informative-gamma-priors-on-the-precisions"
-    id="toc-informative-gamma-priors-on-the-precisions">Informative gamma
-    priors on the precisions</a>
--   <a href="#penalized-complexity-prior"
-    id="toc-penalized-complexity-prior">Penalized Complexity Prior</a>
+    -   <a href="#informative-gamma-priors-on-the-precisions"
+        id="toc-informative-gamma-priors-on-the-precisions">Informative gamma
+        priors on the precisions</a>
+    -   <a href="#penalized-complexity-prior"
+        id="toc-penalized-complexity-prior">Penalized Complexity Prior</a>
 -   <a href="#stan" id="toc-stan">STAN</a>
--   <a href="#diagnostics" id="toc-diagnostics">Diagnostics</a>
--   <a href="#output-summaries" id="toc-output-summaries">Output
-    summaries</a>
--   <a href="#posterior-distributions"
-    id="toc-posterior-distributions">Posterior Distributions</a>
+    -   <a href="#diagnostics" id="toc-diagnostics">Diagnostics</a>
+    -   <a href="#output-summaries" id="toc-output-summaries">Output
+        summaries</a>
+    -   <a href="#posterior-distributions"
+        id="toc-posterior-distributions">Posterior Distributions</a>
+    -   <a href="#tail-probability" id="toc-tail-probability">Tail
+        probability</a>
+-   <a href="#brms" id="toc-brms">BRMS</a>
 -   <a href="#package-version-info" id="toc-package-version-info">Package
     version info</a>
 
@@ -42,6 +45,7 @@ library(lme4)
 library(INLA)
 library(knitr)
 library(rstan, quietly=TRUE)
+library(brms)
 ```
 
 # Data
@@ -315,12 +319,12 @@ summary(imod)
 
     Fixed effects:
                 mean    sd 0.025quant 0.5quant 0.975quant mode   kld
-    (Intercept) 60.4 0.305     59.778     60.4     61.022 60.4 0.062
+    (Intercept) 60.4 0.311     59.763     60.4     61.037 60.4 0.053
 
     Model hyperparameters:
                                              mean    sd 0.025quant 0.5quant 0.975quant mode
-    Precision for the Gaussian observations 10.65  3.53      5.118    10.19      18.85 9.32
-    Precision for operator                  12.84 20.70      0.465     6.56      63.85 1.09
+    Precision for the Gaussian observations 10.59  3.54       5.13    10.10      18.91 9.19
+    Precision for operator                  12.80 21.07       0.51     6.51      63.96 1.24
 
      is computed 
 
@@ -345,8 +349,8 @@ rbind(sigalpha, sigepsilon)
 ```
 
                mean    sd       quant0.025 quant0.25 quant0.5 quant0.75 quant0.975 mode   
-    sigalpha   0.49005 0.3552   0.12534    0.25858   0.38851  0.60367   1.4492     0.26233
-    sigepsilon 0.31914 0.053532 0.23092    0.28083   0.31294  0.35112   0.44045    0.29986
+    sigalpha   0.48357 0.33612  0.12525    0.26083   0.39051  0.59873   1.3857     0.26776
+    sigepsilon 0.32005 0.053498 0.23058    0.28183   0.31437  0.35236   0.44011    0.30262
 
 The posterior mode is most comparable with the (RE)ML estimates computed
 above. In this respect, the results are similar.
@@ -359,10 +363,10 @@ imod$summary.random$operator |> kable()
 
 | ID  |     mean |      sd | 0.025quant | 0.5quant | 0.975quant |     mode |     kld |
 |:----|---------:|--------:|-----------:|---------:|-----------:|---------:|--------:|
-| a   | -0.13022 | 0.31878 |   -0.79588 | -0.11920 |    0.49159 | -0.08787 | 0.05259 |
-| b   | -0.27660 | 0.32374 |   -0.96829 | -0.26034 |    0.32192 | -0.23315 | 0.04973 |
-| c   |  0.17903 | 0.32011 |   -0.43505 |  0.16571 |    0.85337 |  0.13410 | 0.05175 |
-| d   |  0.22776 | 0.32164 |   -0.37825 |  0.21259 |    0.91058 |  0.18533 | 0.05098 |
+| a   | -0.13092 | 0.32473 |   -0.81152 | -0.11969 |    0.50673 | -0.08667 | 0.04493 |
+| b   | -0.27809 | 0.32965 |   -0.98417 | -0.26147 |    0.33663 | -0.23234 | 0.04245 |
+| c   |  0.17998 | 0.32605 |   -0.45006 |  0.16640 |    0.86908 |  0.13349 | 0.04420 |
+| d   |  0.22897 | 0.32755 |   -0.39310 |  0.21347 |    0.92635 |  0.18491 | 0.04356 |
 
 Plot the posterior densities for the two SD terms:
 
@@ -395,11 +399,11 @@ We can compute the probability that the operator SD is smaller than 0.1:
 inla.pmarginal(0.1, sigmaalpha)
 ```
 
-    [1] 0.0086522
+    [1] 0.0088764
 
 The probability is small but not entirely negligible.
 
-# Informative gamma priors on the precisions
+## Informative gamma priors on the precisions
 
 Now try more informative gamma priors for the precisions. Define it so
 the mean value of gamma prior is set to the inverse of the variance of
@@ -422,12 +426,12 @@ summary(imod)
 
     Fixed effects:
                 mean    sd 0.025quant 0.5quant 0.975quant mode   kld
-    (Intercept) 60.4 0.209      59.98     60.4      60.82 60.4 0.002
+    (Intercept) 60.4 0.209     59.981     60.4     60.819 60.4 0.002
 
     Model hyperparameters:
                                              mean   sd 0.025quant 0.5quant 0.975quant mode
-    Precision for the Gaussian observations 10.62 3.52       5.10    10.18      18.80 9.31
-    Precision for operator                  11.08 9.23       1.58     8.57      35.42 4.38
+    Precision for the Gaussian observations 10.61 3.52       5.11    10.15      18.82 9.27
+    Precision for operator                  10.87 9.06       1.53     8.41      34.78 4.27
 
      is computed 
 
@@ -446,8 +450,8 @@ rbind(sigalpha, sigepsilon)
 ```
 
                mean    sd       quant0.025 quant0.25 quant0.5 quant0.75 quant0.975 mode   
-    sigalpha   0.37698 0.16127  0.16873    0.26375   0.34048  0.45065   0.78993    0.28118
-    sigepsilon 0.31947 0.053663 0.23124    0.28105   0.31317  0.35147   0.44126    0.29983
+    sigalpha   0.38096 0.16371  0.17032    0.2661    0.34368  0.45541   0.8007     0.28317
+    sigepsilon 0.31968 0.053599 0.23109    0.28133   0.31357  0.35177   0.44092    0.30077
 
 Slightly different outcome.
 
@@ -472,7 +476,7 @@ We can compute the probability that the operator SD is smaller than 0.1:
 inla.pmarginal(0.1, sigmaalpha)
 ```
 
-    [1] 3.2377e-05
+    [1] 3.2687e-05
 
 The probability is very small. The choice of prior may be unsuitable in
 that no density is placed on an SD=0 (or infinite precision). We also
@@ -482,7 +486,7 @@ to small values of the SD. But we can see from looking at the data or
 from prior analyses of the data that there is some possibility that the
 operator SD is very small.
 
-# Penalized Complexity Prior
+## Penalized Complexity Prior
 
 In [Simpson (2017)](https://doi.org/10.1214/16-STS576), penalized
 complexity priors are proposed. This requires that we specify a scaling
@@ -501,12 +505,12 @@ summary(imod)
 
     Fixed effects:
                 mean    sd 0.025quant 0.5quant 0.975quant mode kld
-    (Intercept) 60.4 0.172     60.051     60.4     60.749 60.4   0
+    (Intercept) 60.4 0.171     60.054     60.4     60.746 60.4   0
 
     Model hyperparameters:
                                              mean    sd 0.025quant 0.5quant 0.975quant mode
-    Precision for the Gaussian observations 10.59  3.52       5.05    10.14      18.76 9.28
-    Precision for operator                  24.46 32.63       2.28    14.72     106.69 5.85
+    Precision for the Gaussian observations 10.56  3.52       5.05    10.11      18.75 9.23
+    Precision for operator                  24.48 32.14       2.25    14.87     105.92 5.84
 
      is computed 
 
@@ -525,8 +529,8 @@ rbind(sigalpha, sigepsilon)
 ```
 
                mean    sd       quant0.025 quant0.25 quant0.5 quant0.75 quant0.975 mode   
-    sigalpha   0.29046 0.14571  0.097268   0.18631   0.26054  0.36042   0.65745    0.20635
-    sigepsilon 0.32014 0.054103 0.23149    0.28139   0.31367  0.35231   0.4432     0.29985
+    sigalpha   0.28994 0.14656  0.097606   0.18561   0.25914  0.35918   0.66087    0.20456
+    sigepsilon 0.32052 0.054081 0.23151    0.28181   0.31421  0.35279   0.44317    0.30091
 
 We get a similar result to the truncated normal prior used earlier
 although the operator SD is generally smaller.
@@ -548,7 +552,7 @@ We can compute the probability that the operator SD is smaller than 0.1:
 inla.pmarginal(0.1, sigmaalpha)
 ```
 
-    [1] 0.02839
+    [1] 0.027986
 
 The probability is small but not insubstantial.
 
@@ -596,7 +600,7 @@ options(mc.cores = parallel::detectCores())
 set.seed(123)
 ```
 
-We need the STAN command file `pulp.stan`:
+We need the STAN command file `pulp.stan` which we view here:
 
 ``` r
 writeLines(readLines("stancode/pulp.stan"))
@@ -645,37 +649,12 @@ Break the fitting process into three steps:
 
 ``` r
 rt <- stanc(file="stancode/pulp.stan")
-sm <- stan_model(stanc_ret = rt, verbose=FALSE)
-```
-
-    Running /Library/Frameworks/R.framework/Resources/bin/R CMD SHLIB foo.c
-    clang -mmacosx-version-min=10.13 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG   -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/Rcpp/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/unsupported"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/BH/include" -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/src/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppParallel/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/rstan/include" -DEIGEN_NO_DEBUG  -DBOOST_DISABLE_ASSERTS  -DBOOST_PENDING_INTEGER_LOG2_HPP  -DSTAN_THREADS  -DBOOST_NO_AUTO_PTR  -include '/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/mat/fun/Eigen.hpp'  -D_REENTRANT -DRCPP_PARALLEL_USE_TBB=1   -I/usr/local/include   -fPIC  -Wall -g -O2  -c foo.c -o foo.o
-    In file included from <built-in>:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/mat/fun/Eigen.hpp:13:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:88:
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:1: error: unknown type name 'namespace'
-    namespace Eigen {
-    ^
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:16: error: expected ';' after top level declarator
-    namespace Eigen {
-                   ^
-                   ;
-    In file included from <built-in>:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/mat/fun/Eigen.hpp:13:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:96:10: fatal error: 'complex' file not found
-    #include <complex>
-             ^~~~~~~~~
-    3 errors generated.
-    make: *** [foo.o] Error 1
-
-``` r
+suppressMessages(sm <- stan_model(stanc_ret = rt, verbose=FALSE))
 system.time(fit <- sampling(sm, data=pulpdat))
 ```
 
        user  system elapsed 
-      5.853   0.209   2.169 
+      3.864   0.220   1.459 
 
 By default, we use 2000 iterations but repeated with independent starts
 4 times giving 4 chains. We can thin but do not by default. The warmup
@@ -684,18 +663,20 @@ this instance).
 
 We get warning messages about the fit. Since the default number of 2000
 iterations runs in seconds, we can simply run a lot more iterations.
+This is rather lazy and would not be viable for more expensive
+computations, but sometimes CPU effort is preferred to mental effort.
 
 ``` r
 system.time(fit <- sampling(sm, data=pulpdat, iter=100000))
 ```
 
        user  system elapsed 
-     37.028   2.701  17.938 
+     40.275   3.052  18.812 
 
 The same underlying problems remain but the inference will now be more
 reliable.
 
-# Diagnostics
+## Diagnostics
 
 Diagnostics to check the convergence are worthwhile. We plot the sampled
 ![\mu](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Cmu "\mu")
@@ -749,7 +730,7 @@ mdf |> dplyr::filter(iterations %% 100 == 0) |>
 
 Again this looks satisfactory.
 
-# Output summaries
+## Output summaries
 
 We consider only the parameters of immediate interest:
 
@@ -761,16 +742,16 @@ print(fit, pars=c("mu","sigmaalpha","sigmaepsilon","a"))
     4 chains, each with iter=1e+05; warmup=50000; thin=1; 
     post-warmup draws per chain=50000, total post-warmup draws=2e+05.
 
-                  mean se_mean   sd  2.5%   25%   50%   75% 97.5% n_eff Rhat
-    mu           60.40    0.02 0.31 59.72 60.26 60.40 60.54 61.11   386 1.01
-    sigmaalpha    0.55    0.05 0.58  0.06  0.24  0.38  0.62  2.72   125 1.04
-    sigmaepsilon  0.36    0.00 0.07  0.25  0.31  0.35  0.40  0.53  3077 1.00
-    a[1]         60.28    0.00 0.15 59.98 60.18 60.28 60.37 60.57 88168 1.00
-    a[2]         60.13    0.00 0.16 59.82 60.03 60.13 60.24 60.47 19180 1.00
-    a[3]         60.57    0.00 0.15 60.27 60.47 60.57 60.67 60.87 33139 1.00
-    a[4]         60.62    0.00 0.16 60.30 60.51 60.62 60.72 60.93 35456 1.00
+                  mean se_mean   sd  2.5%   25%   50%   75% 97.5%  n_eff Rhat
+    mu           60.40    0.01 0.30 59.76 60.26 60.40 60.54 61.04   3206    1
+    sigmaalpha    0.49    0.01 0.41  0.06  0.23  0.37  0.60  1.63   4405    1
+    sigmaepsilon  0.36    0.00 0.07  0.25  0.31  0.35  0.40  0.53  50920    1
+    a[1]         60.28    0.00 0.15 59.97 60.18 60.28 60.38 60.57 145412    1
+    a[2]         60.14    0.00 0.17 59.82 60.03 60.14 60.25 60.47  82199    1
+    a[3]         60.57    0.00 0.16 60.27 60.47 60.57 60.67 60.88 120325    1
+    a[4]         60.61    0.00 0.16 60.30 60.51 60.62 60.72 60.93  92336    1
 
-    Samples were drawn using NUTS(diag_e) at Wed Jun 22 14:56:36 2022.
+    Samples were drawn using NUTS(diag_e) at Thu Jun 23 13:37:38 2022.
     For each parameter, n_eff is a crude measure of effective sample size,
     and Rhat is the potential scale reduction factor on split chains (at 
     convergence, Rhat=1).
@@ -793,19 +774,19 @@ We can also get the posterior means alone.
 ```
 
                  mean-chain:1 mean-chain:2 mean-chain:3 mean-chain:4 mean-all chains
-    mu               60.41164     60.38271     60.43582     60.37487        60.40126
-    sigmaalpha        0.46788      0.48728      0.73191      0.50779         0.54871
-    sigmaepsilon      0.35796      0.35961      0.35384      0.35913         0.35764
-    a[1]             60.27782     60.27635     60.27308     60.27618        60.27586
-    a[2]             60.13891     60.13841     60.12765     60.13439        60.13484
-    a[3]             60.57060     60.56850     60.57553     60.56798        60.57065
-    a[4]             60.61542     60.61287     60.62376     60.61686        60.61723
+    mu               60.38502     60.41628     60.40734     60.38729        60.39898
+    sigmaalpha        0.48663      0.49909      0.48386      0.47429         0.48597
+    sigmaepsilon      0.35827      0.35928      0.35942      0.35855         0.35888
+    a[1]             60.27633     60.27663     60.27581     60.27688        60.27641
+    a[2]             60.13736     60.13864     60.13891     60.13822        60.13828
+    a[3]             60.56911     60.56909     60.57060     60.57029        60.56977
+    a[4]             60.61529     60.61390     60.61508     60.61410        60.61459
 
 We see that we get this information for each chain as well as overall.
 This gives a sense of why running more than one chain might be helpful
 in assessing the uncertainty in the posterior inference.
 
-# Posterior Distributions
+## Posterior Distributions
 
 We can use `extract` to get at various components of the STAN fit. We
 plot the posterior densities for the SDs:
@@ -835,6 +816,207 @@ ggplot(data=ref,aes(x=bright, color=Var2))+geom_density()+guides(color=guide_leg
 
 We see that the four operator distributions overlap.
 
+## Tail probability
+
+Previously, we took an interest in whether there is any variation
+between operators and answered this question with a computation of the
+probability that the operator SD is less than 0.1. We computed the
+proportion of sampled values less than 0.1.
+
+``` r
+muc <- rstan::extract(fit, pars="sigmaalpha",  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+mean(mdf$value < 0.1)
+```
+
+    [1] 0.05269
+
+This is a somewhat larger probability than seen previously. The value
+obtained is sensitive to the choice of prior on the error SD. This can
+be changed within STAN but it is easier to experiment with this using
+BRMS.
+
+# BRMS
+
+BRMS stands for Bayesian Regression Models with STAN. It provides a
+convenient wrapper to STAN functionality.
+
+Fitting the model is very similar to `lmer` as seen above:
+
+``` r
+suppressMessages(bmod <- brm(bright ~ 1+(1|operator), pulp))
+```
+
+    Running /Library/Frameworks/R.framework/Resources/bin/R CMD SHLIB foo.c
+    clang -mmacosx-version-min=10.13 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG   -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/Rcpp/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/unsupported"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/BH/include" -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/src/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppParallel/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/rstan/include" -DEIGEN_NO_DEBUG  -DBOOST_DISABLE_ASSERTS  -DBOOST_PENDING_INTEGER_LOG2_HPP  -DSTAN_THREADS  -DUSE_STANC3 -DSTRICT_R_HEADERS  -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION  -DBOOST_NO_AUTO_PTR  -include '/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp'  -D_REENTRANT -DRCPP_PARALLEL_USE_TBB=1   -I/usr/local/include   -fPIC  -Wall -g -O2  -c foo.c -o foo.o
+    In file included from <built-in>:1:
+    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
+    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
+    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:88:
+    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:1: error: unknown type name 'namespace'
+    namespace Eigen {
+    ^
+    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:16: error: expected ';' after top level declarator
+    namespace Eigen {
+                   ^
+                   ;
+    In file included from <built-in>:1:
+    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
+    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
+    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:96:10: fatal error: 'complex' file not found
+    #include <complex>
+             ^~~~~~~~~
+    3 errors generated.
+    make: *** [foo.o] Error 1
+
+We get some warnings but not as severe as seen with our STAN fit above.
+We can obtain some posterior densities and diagnostics with:
+
+``` r
+plot(bmod)
+```
+
+![](figs/pulpbrmsdiag-1..svg)<!-- -->
+
+We can look at the STAN code that `brms` used with:
+
+``` r
+stancode(bmod)
+```
+
+    // generated with brms 2.17.0
+    functions {
+    }
+    data {
+      int<lower=1> N;  // total number of observations
+      vector[N] Y;  // response variable
+      // data for group-level effects of ID 1
+      int<lower=1> N_1;  // number of grouping levels
+      int<lower=1> M_1;  // number of coefficients per level
+      int<lower=1> J_1[N];  // grouping indicator per observation
+      // group-level predictor values
+      vector[N] Z_1_1;
+      int prior_only;  // should the likelihood be ignored?
+    }
+    transformed data {
+    }
+    parameters {
+      real Intercept;  // temporary intercept for centered predictors
+      real<lower=0> sigma;  // dispersion parameter
+      vector<lower=0>[M_1] sd_1;  // group-level standard deviations
+      vector[N_1] z_1[M_1];  // standardized group-level effects
+    }
+    transformed parameters {
+      vector[N_1] r_1_1;  // actual group-level effects
+      real lprior = 0;  // prior contributions to the log posterior
+      r_1_1 = (sd_1[1] * (z_1[1]));
+      lprior += student_t_lpdf(Intercept | 3, 60.5, 2.5);
+      lprior += student_t_lpdf(sigma | 3, 0, 2.5)
+        - 1 * student_t_lccdf(0 | 3, 0, 2.5);
+      lprior += student_t_lpdf(sd_1 | 3, 0, 2.5)
+        - 1 * student_t_lccdf(0 | 3, 0, 2.5);
+    }
+    model {
+      // likelihood including constants
+      if (!prior_only) {
+        // initialize linear predictor term
+        vector[N] mu = Intercept + rep_vector(0.0, N);
+        for (n in 1:N) {
+          // add more terms to the linear predictor
+          mu[n] += r_1_1[J_1[n]] * Z_1_1[n];
+        }
+        target += normal_lpdf(Y | mu, sigma);
+      }
+      // priors including constants
+      target += lprior;
+      target += std_normal_lpdf(z_1[1]);
+    }
+    generated quantities {
+      // actual population-level intercept
+      real b_Intercept = Intercept;
+    }
+
+We see that `brms` is using student t distributions with 3 degrees of
+freedom for the priors. For the two error SDs, this will be truncated at
+zero to form half-t distributions. You can get a more explicit
+description of the priors with `prior_summary(bmod)`. These are
+qualitatively similar to the half-normal and the PC prior used in the
+INLA fit. This explains why we encountered fewer problems in the fit
+because we are supplying more informative priors. Nevertheless, we do
+need to increase the number of iterations for more accurate estimation
+of tail probabilities.
+
+``` r
+bmod <- brm(bright ~ 1+(1|operator), pulp, iter=10000, cores = 4, silent = 2)
+```
+
+    Running /Library/Frameworks/R.framework/Resources/bin/R CMD SHLIB foo.c
+    clang -mmacosx-version-min=10.13 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG   -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/Rcpp/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/unsupported"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/BH/include" -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/src/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppParallel/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/rstan/include" -DEIGEN_NO_DEBUG  -DBOOST_DISABLE_ASSERTS  -DBOOST_PENDING_INTEGER_LOG2_HPP  -DSTAN_THREADS  -DUSE_STANC3 -DSTRICT_R_HEADERS  -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION  -DBOOST_NO_AUTO_PTR  -include '/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp'  -D_REENTRANT -DRCPP_PARALLEL_USE_TBB=1   -I/usr/local/include   -fPIC  -Wall -g -O2  -c foo.c -o foo.o
+    In file included from <built-in>:1:
+    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
+    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
+    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:88:
+    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:1: error: unknown type name 'namespace'
+    namespace Eigen {
+    ^
+    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:16: error: expected ';' after top level declarator
+    namespace Eigen {
+                   ^
+                   ;
+    In file included from <built-in>:1:
+    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
+    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
+    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:96:10: fatal error: 'complex' file not found
+    #include <complex>
+             ^~~~~~~~~
+    3 errors generated.
+    make: *** [foo.o] Error 1
+
+Because the STAN programme was compiled earlier, this takes much less
+time overall even though we are doing 5 times as many iterations as the
+default number of 2000. We examine the fit:
+
+``` r
+summary(bmod)
+```
+
+     Family: gaussian 
+      Links: mu = identity; sigma = identity 
+    Formula: bright ~ 1 + (1 | operator) 
+       Data: pulp (Number of observations: 20) 
+      Draws: 4 chains, each with iter = 10000; warmup = 5000; thin = 1;
+             total post-warmup draws = 20000
+
+    Group-Level Effects: 
+    ~operator (Number of levels: 4) 
+                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+    sd(Intercept)     0.43      0.30     0.06     1.24 1.00     3068     4637
+
+    Population-Level Effects: 
+              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+    Intercept    60.40      0.25    59.85    60.92 1.00     2544     2109
+
+    Family Specific Parameters: 
+          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+    sigma     0.36      0.07     0.25     0.53 1.00     7351     9592
+
+    Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+    and Tail_ESS are effective sample size measures, and Rhat is the potential
+    scale reduction factor on split chains (at convergence, Rhat = 1).
+
+We now have better effective sample sizes. We can estimate the tail
+probability as before
+
+``` r
+bps = posterior_samples(bmod)
+mean(bps$sd_operator__Intercept < 0.1)
+```
+
+    [1] 0.05585
+
+A somewhat higher value than seen previously. The priors used here put
+greater weight on smaller values of the SD.
+
 # Package version info
 
 ``` r
@@ -856,19 +1038,29 @@ sessionInfo()
     [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] rstan_2.21.5         StanHeaders_2.21.0-7 knitr_1.39           INLA_22.06.20-2      sp_1.4-7            
-     [6] foreach_1.5.2        lme4_1.1-29          Matrix_1.4-1         ggplot2_3.3.6        faraway_1.0.8       
+     [1] brms_2.17.0         Rcpp_1.0.8.3        rstan_2.26.11       StanHeaders_2.26.11 knitr_1.39         
+     [6] INLA_22.06.20-2     sp_1.4-7            foreach_1.5.2       lme4_1.1-29         Matrix_1.4-1       
+    [11] ggplot2_3.3.6       faraway_1.0.8      
 
     loaded via a namespace (and not attached):
-     [1] Rcpp_1.0.8.3       svglite_2.1.0      lattice_0.20-45    prettyunits_1.1.1  ps_1.7.0           assertthat_0.2.1  
-     [7] digest_0.6.29      utf8_1.2.2         plyr_1.8.7         R6_2.5.1           stats4_4.2.0       evaluate_0.15     
-    [13] highr_0.9          pillar_1.7.0       rlang_1.0.2        rstudioapi_0.13    minqa_1.2.4        callr_3.7.0       
-    [19] nloptr_2.0.3       rmarkdown_2.14     labeling_0.4.2     splines_4.2.0      stringr_1.4.0      loo_2.5.1         
-    [25] munsell_0.5.0      Deriv_4.1.3        compiler_4.2.0     xfun_0.31          systemfonts_1.0.4  pkgconfig_2.0.3   
-    [31] pkgbuild_1.3.1     htmltools_0.5.2    tidyselect_1.1.2   tibble_3.1.7       gridExtra_2.3      codetools_0.2-18  
-    [37] matrixStats_0.62.0 fansi_1.0.3        crayon_1.5.1       dplyr_1.0.9        withr_2.5.0        MASS_7.3-57       
-    [43] grid_4.2.0         nlme_3.1-157       gtable_0.3.0       lifecycle_1.0.1    DBI_1.1.2          magrittr_2.0.3    
-    [49] scales_1.2.0       RcppParallel_5.1.5 cli_3.3.0          stringi_1.7.6      reshape2_1.4.4     farver_2.1.0      
-    [55] ellipsis_0.3.2     generics_0.1.2     vctrs_0.4.1        boot_1.3-28        iterators_1.0.14   tools_4.2.0       
-    [61] glue_1.6.2         purrr_0.3.4        processx_3.5.3     fastmap_1.1.0      yaml_2.3.5         inline_0.3.19     
-    [67] colorspace_2.0-3  
+      [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2       ggridges_0.5.3       markdown_1.1        
+      [6] base64enc_0.1-3      rstudioapi_0.13      Deriv_4.1.3          farver_2.1.0         DT_0.23             
+     [11] fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18     splines_4.2.0       
+     [16] shinythemes_1.2.0    bayesplot_1.9.0      jsonlite_1.8.0       nloptr_2.0.3         shiny_1.7.1         
+     [21] compiler_4.2.0       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0        cli_3.3.0           
+     [26] later_1.3.0          htmltools_0.5.2      prettyunits_1.1.1    tools_4.2.0          igraph_1.3.1        
+     [31] coda_0.19-4          gtable_0.3.0         glue_1.6.2           reshape2_1.4.4       dplyr_1.0.9         
+     [36] posterior_1.2.2      V8_4.2.0             vctrs_0.4.1          svglite_2.1.0        nlme_3.1-157        
+     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.31            stringr_1.4.0       
+     [46] ps_1.7.0             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.1      gtools_3.9.2.1      
+     [51] MASS_7.3-57          zoo_1.8-10           scales_1.2.0         colourpicker_1.1.1   promises_1.2.0.1    
+     [56] Brobdingnag_1.2-7    inline_0.3.19        shinystan_2.6.0      yaml_2.3.5           curl_4.3.2          
+     [61] gridExtra_2.3        loo_2.5.1            stringi_1.7.6        highr_0.9            dygraphs_1.1.1.6    
+     [66] checkmate_2.1.0      boot_1.3-28          pkgbuild_1.3.1       rlang_1.0.2          pkgconfig_2.0.3     
+     [71] systemfonts_1.0.4    matrixStats_0.62.0   distributional_0.3.0 evaluate_0.15        lattice_0.20-45     
+     [76] purrr_0.3.4          rstantools_2.2.0     htmlwidgets_1.5.4    labeling_0.4.2       processx_3.5.3      
+     [81] tidyselect_1.1.2     plyr_1.8.7           magrittr_2.0.3       R6_2.5.1             generics_0.1.2      
+     [86] DBI_1.1.2            pillar_1.7.0         withr_2.5.0          xts_0.12.1           abind_1.4-5         
+     [91] tibble_3.1.7         crayon_1.5.1         utf8_1.2.2           rmarkdown_2.14       grid_4.2.0          
+     [96] callr_3.7.0          threejs_0.3.3        digest_0.6.29        xtable_1.8-4         httpuv_1.6.5        
+    [101] RcppParallel_5.1.5   stats4_4.2.0         munsell_0.5.0        shinyjs_2.1.0       
