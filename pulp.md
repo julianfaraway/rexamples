@@ -1,7 +1,7 @@
 One Way Anova with a random effect
 ================
 [Julian Faraway](https://julianfaraway.github.io/)
-23 June 2022
+24 June 2022
 
 -   <a href="#data" id="toc-data">Data</a>
 -   <a href="#likelihood-inference" id="toc-likelihood-inference">Likelihood
@@ -28,6 +28,8 @@ One Way Anova with a random effect
     -   <a href="#tail-probability" id="toc-tail-probability">Tail
         probability</a>
 -   <a href="#brms" id="toc-brms">BRMS</a>
+-   <a href="#mgcv" id="toc-mgcv">MGCV</a>
+    -   <a href="#ginla" id="toc-ginla">GINLA</a>
 -   <a href="#package-version-info" id="toc-package-version-info">Package
     version info</a>
 
@@ -46,6 +48,7 @@ library(INLA)
 library(knitr)
 library(rstan, quietly=TRUE)
 library(brms)
+library(mgcv)
 ```
 
 # Data
@@ -947,30 +950,8 @@ need to increase the number of iterations for more accurate estimation
 of tail probabilities.
 
 ``` r
-bmod <- brm(bright ~ 1+(1|operator), pulp, iter=10000, cores = 4, silent = 2)
+bmod <- brm(bright ~ 1+(1|operator), pulp, iter=10000, cores = 4)
 ```
-
-    Running /Library/Frameworks/R.framework/Resources/bin/R CMD SHLIB foo.c
-    clang -mmacosx-version-min=10.13 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG   -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/Rcpp/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/unsupported"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/BH/include" -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/src/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppParallel/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/rstan/include" -DEIGEN_NO_DEBUG  -DBOOST_DISABLE_ASSERTS  -DBOOST_PENDING_INTEGER_LOG2_HPP  -DSTAN_THREADS  -DUSE_STANC3 -DSTRICT_R_HEADERS  -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION  -DBOOST_NO_AUTO_PTR  -include '/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp'  -D_REENTRANT -DRCPP_PARALLEL_USE_TBB=1   -I/usr/local/include   -fPIC  -Wall -g -O2  -c foo.c -o foo.o
-    In file included from <built-in>:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:88:
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:1: error: unknown type name 'namespace'
-    namespace Eigen {
-    ^
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:16: error: expected ';' after top level declarator
-    namespace Eigen {
-                   ^
-                   ;
-    In file included from <built-in>:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:96:10: fatal error: 'complex' file not found
-    #include <complex>
-             ^~~~~~~~~
-    3 errors generated.
-    make: *** [foo.o] Error 1
 
 Because the STAN programme was compiled earlier, this takes much less
 time overall even though we are doing 5 times as many iterations as the
@@ -990,15 +971,15 @@ summary(bmod)
     Group-Level Effects: 
     ~operator (Number of levels: 4) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.43      0.30     0.06     1.24 1.00     3068     4637
+    sd(Intercept)     0.45      0.34     0.07     1.38 1.00     2206     1814
 
     Population-Level Effects: 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept    60.40      0.25    59.85    60.92 1.00     2544     2109
+    Intercept    60.40      0.27    59.77    60.98 1.00     1687      826
 
     Family Specific Parameters: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma     0.36      0.07     0.25     0.53 1.00     7351     9592
+    sigma     0.36      0.07     0.25     0.53 1.00     6812     7918
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -1012,10 +993,110 @@ bps = posterior_samples(bmod)
 mean(bps$sd_operator__Intercept < 0.1)
 ```
 
-    [1] 0.05585
+    [1] 0.0481
 
 A somewhat higher value than seen previously. The priors used here put
 greater weight on smaller values of the SD.
+
+# MGCV
+
+It is possible to fit some GLMMs within the GAM framework of the `mgcv`
+package. An explanation of this can be found in this
+[blog](https://fromthebottomoftheheap.net/2021/02/02/random-effects-in-gams/)
+
+The `operator` term must be a factor for this to work:
+
+``` r
+gmod = gam(bright ~ 1 + s(operator, bs = 're'), data=pulp, method="REML")
+```
+
+and look at the summary output:
+
+``` r
+summary(gmod)
+```
+
+
+    Family: gaussian 
+    Link function: identity 
+
+    Formula:
+    bright ~ 1 + s(operator, bs = "re")
+
+    Parametric coefficients:
+                Estimate Std. Error t value Pr(>|t|)
+    (Intercept)   60.400      0.149     404   <2e-16
+
+    Approximate significance of smooth terms:
+                 edf Ref.df   F p-value
+    s(operator) 2.29      3 3.2   0.021
+
+    R-sq.(adj) =  0.336   Deviance explained = 41.6%
+    -REML = 9.3131  Scale est. = 0.10625   n = 20
+
+We get the estimate and SE for the fixed effect (intercept in this
+example). We also get a test on the random effect (as described in this
+[article](https://doi.org/10.1093/biomet/ast038). The hypothesis of no
+variation between the operators is rejected.
+
+We can get an estimate of the operator and error SD:
+
+``` r
+gam.vcomp(gmod)
+```
+
+
+    Standard deviations and 0.95 confidence intervals:
+
+                std.dev    lower   upper
+    s(operator) 0.26093 0.090812 0.74971
+    scale       0.32596 0.230511 0.46093
+
+    Rank: 2/2
+
+which is the same as the REML estimate from `lmer` earlier.
+
+The random effect estimates for the four operators can be found with:
+
+``` r
+coef(gmod)
+```
+
+      (Intercept) s(operator).1 s(operator).2 s(operator).3 s(operator).4 
+         60.40000      -0.12194      -0.25912       0.16767       0.21340 
+
+which is again the same as before.
+
+## GINLA
+
+In [Wood (2019)](https://doi.org/10.1093/biomet/asz044), a simplified
+version of INLA is proposed. The first construct the GAM model without
+fitting and then use the `ginla()` function to perform the computation.
+
+``` r
+gmod = gam(bright ~ 1 + s(operator, bs = 're'), data=pulp, fit = FALSE)
+gimod = ginla(gmod)
+```
+
+We get the posterior density for the intercept as:
+
+``` r
+plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="brightness",ylab="density")
+```
+
+![](figs/pulpginlaint-1..svg)<!-- -->
+
+and for the fixed effects as:
+
+``` r
+plot(gimod$beta[2,],gimod$density[2,],type="l",xlim=c(-0.8,0.6),
+     xlab="brightness",ylab="density")
+for(i in 3:5){
+  lines(gimod$beta[i,],gimod$density[i,],lty=i-1)
+}
+```
+
+![](figs/pulpginlareff-1..svg)<!-- -->
 
 # Package version info
 
@@ -1038,9 +1119,9 @@ sessionInfo()
     [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] brms_2.17.0         Rcpp_1.0.8.3        rstan_2.26.11       StanHeaders_2.26.11 knitr_1.39         
-     [6] INLA_22.06.20-2     sp_1.4-7            foreach_1.5.2       lme4_1.1-29         Matrix_1.4-1       
-    [11] ggplot2_3.3.6       faraway_1.0.8      
+     [1] mgcv_1.8-40         nlme_3.1-157        brms_2.17.0         Rcpp_1.0.8.3        rstan_2.26.11      
+     [6] StanHeaders_2.26.11 knitr_1.39          INLA_22.06.20-2     sp_1.4-7            foreach_1.5.2      
+    [11] lme4_1.1-29         Matrix_1.4-1        ggplot2_3.3.6       faraway_1.0.8      
 
     loaded via a namespace (and not attached):
       [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2       ggridges_0.5.3       markdown_1.1        
@@ -1050,17 +1131,17 @@ sessionInfo()
      [21] compiler_4.2.0       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0        cli_3.3.0           
      [26] later_1.3.0          htmltools_0.5.2      prettyunits_1.1.1    tools_4.2.0          igraph_1.3.1        
      [31] coda_0.19-4          gtable_0.3.0         glue_1.6.2           reshape2_1.4.4       dplyr_1.0.9         
-     [36] posterior_1.2.2      V8_4.2.0             vctrs_0.4.1          svglite_2.1.0        nlme_3.1-157        
-     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.31            stringr_1.4.0       
-     [46] ps_1.7.0             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.1      gtools_3.9.2.1      
-     [51] MASS_7.3-57          zoo_1.8-10           scales_1.2.0         colourpicker_1.1.1   promises_1.2.0.1    
-     [56] Brobdingnag_1.2-7    inline_0.3.19        shinystan_2.6.0      yaml_2.3.5           curl_4.3.2          
-     [61] gridExtra_2.3        loo_2.5.1            stringi_1.7.6        highr_0.9            dygraphs_1.1.1.6    
-     [66] checkmate_2.1.0      boot_1.3-28          pkgbuild_1.3.1       rlang_1.0.2          pkgconfig_2.0.3     
-     [71] systemfonts_1.0.4    matrixStats_0.62.0   distributional_0.3.0 evaluate_0.15        lattice_0.20-45     
-     [76] purrr_0.3.4          rstantools_2.2.0     htmlwidgets_1.5.4    labeling_0.4.2       processx_3.5.3      
-     [81] tidyselect_1.1.2     plyr_1.8.7           magrittr_2.0.3       R6_2.5.1             generics_0.1.2      
-     [86] DBI_1.1.2            pillar_1.7.0         withr_2.5.0          xts_0.12.1           abind_1.4-5         
-     [91] tibble_3.1.7         crayon_1.5.1         utf8_1.2.2           rmarkdown_2.14       grid_4.2.0          
-     [96] callr_3.7.0          threejs_0.3.3        digest_0.6.29        xtable_1.8-4         httpuv_1.6.5        
-    [101] RcppParallel_5.1.5   stats4_4.2.0         munsell_0.5.0        shinyjs_2.1.0       
+     [36] posterior_1.2.2      V8_4.2.0             vctrs_0.4.1          svglite_2.1.0        iterators_1.0.14    
+     [41] crosstalk_1.2.0      tensorA_0.36.2       xfun_0.31            stringr_1.4.0        ps_1.7.0            
+     [46] mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.1      gtools_3.9.2.1       MASS_7.3-57         
+     [51] zoo_1.8-10           scales_1.2.0         colourpicker_1.1.1   promises_1.2.0.1     Brobdingnag_1.2-7   
+     [56] inline_0.3.19        shinystan_2.6.0      yaml_2.3.5           curl_4.3.2           gridExtra_2.3       
+     [61] loo_2.5.1            stringi_1.7.6        highr_0.9            dygraphs_1.1.1.6     checkmate_2.1.0     
+     [66] boot_1.3-28          pkgbuild_1.3.1       rlang_1.0.2          pkgconfig_2.0.3      systemfonts_1.0.4   
+     [71] matrixStats_0.62.0   distributional_0.3.0 evaluate_0.15        lattice_0.20-45      purrr_0.3.4         
+     [76] rstantools_2.2.0     htmlwidgets_1.5.4    labeling_0.4.2       processx_3.5.3       tidyselect_1.1.2    
+     [81] plyr_1.8.7           magrittr_2.0.3       R6_2.5.1             generics_0.1.2       DBI_1.1.2           
+     [86] pillar_1.7.0         withr_2.5.0          xts_0.12.1           abind_1.4-5          tibble_3.1.7        
+     [91] crayon_1.5.1         utf8_1.2.2           rmarkdown_2.14       grid_4.2.0           callr_3.7.0         
+     [96] threejs_0.3.3        digest_0.6.29        xtable_1.8-4         httpuv_1.6.5         RcppParallel_5.1.5  
+    [101] stats4_4.2.0         munsell_0.5.0        shinyjs_2.1.0       

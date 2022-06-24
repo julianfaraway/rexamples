@@ -34,6 +34,7 @@ library(INLA)
 library(knitr)
 library(rstan, quietly=TRUE)
 library(brms)
+library(mgcv)
 ```
 
 # Data
@@ -641,16 +642,69 @@ greater weight on smaller values of the SD.
 
 # MGCV
 
+It is possible to fit some GLMMs within the GAM framework of the `mgcv`
+package. An explanation of this can be found in this 
 [blog](https://fromthebottomoftheheap.net/2021/02/02/random-effects-in-gams/)
 
+The `operator` term must be a factor for this to work:
+
 ```{r}
-gmod = gam(bright ~ 1 + s(operator, bs = 're'), data=pulp)
+gmod = gam(bright ~ 1 + s(operator, bs = 're'), data=pulp, method="REML")
 ```
+
+and look at the summary output:
+
+```{r}
+summary(gmod)
+```
+
+We get the estimate and SE for the fixed effect (intercept in this example).
+We also get a test on the random effect (as described in this [article](https://doi.org/10.1093/biomet/ast038). The hypothesis of no variation
+between the operators is rejected.
+
+We can get an estimate of the operator and error SD:
 
 ```{r}
 gam.vcomp(gmod)
 ```
 
+which is the same as the REML estimate from `lmer` earlier.
+
+The random effect estimates for the four operators can be found with:
+
+```{r}
+coef(gmod)
+```
+
+which is again the same as before.
+
+## GINLA
+
+In [Wood (2019)](https://doi.org/10.1093/biomet/asz044), a
+simplified version of INLA is proposed. The first
+construct the GAM model without fitting and then use
+the `ginla()` function to perform the computation.
+
+```{r}
+gmod = gam(bright ~ 1 + s(operator, bs = 're'), data=pulp, fit = FALSE)
+gimod = ginla(gmod)
+```
+
+We get the posterior density for the intercept as:
+
+```{r pulpginlaint}
+plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="brightness",ylab="density")
+```
+
+and for the fixed effects as:
+
+```{r pulpginlareff}
+plot(gimod$beta[2,],gimod$density[2,],type="l",xlim=c(-0.8,0.6),
+     xlab="brightness",ylab="density")
+for(i in 3:5){
+  lines(gimod$beta[i,],gimod$density[i,],lty=i-1)
+}
+```
 
 
 # Package version info
