@@ -1,9 +1,13 @@
 One Way Anova with a random effect
 ================
 [Julian Faraway](https://julianfaraway.github.io/)
-24 June 2022
+28 June 2022
 
 -   <a href="#data" id="toc-data">Data</a>
+-   <a href="#questions" id="toc-questions">Questions</a>
+-   <a href="#linear-model-with-fixed-effects"
+    id="toc-linear-model-with-fixed-effects">Linear model with fixed
+    effects</a>
 -   <a href="#likelihood-inference" id="toc-likelihood-inference">Likelihood
     inference</a>
     -   <a href="#hypothesis-testing" id="toc-hypothesis-testing">Hypothesis
@@ -30,6 +34,7 @@ One Way Anova with a random effect
 -   <a href="#brms" id="toc-brms">BRMS</a>
 -   <a href="#mgcv" id="toc-mgcv">MGCV</a>
     -   <a href="#ginla" id="toc-ginla">GINLA</a>
+-   <a href="#discussion" id="toc-discussion">Discussion</a>
 -   <a href="#package-version-info" id="toc-package-version-info">Package
     version info</a>
 
@@ -81,6 +86,82 @@ In this example, there are only five replicates per level. There is no
 strong reason to reject the normality assumption. We don’t care about
 the specific operators, who are named a, b, c and d, but we do want to
 know how they vary.
+
+# Questions
+
+1.  Is there a difference between operators in general?
+2.  How much is the difference between operators in general?
+3.  How does the variation between operators compare to the variation
+    within operators?
+4.  What is the difference between these four operators?
+
+We are mostly interested in the first three questions.
+
+# Linear model with fixed effects
+
+We start with the simplest analysis although it is not correct. It will
+be useful for comparisons. We treat the operator as a fixed effect
+meaning that the analysis refers to these four operators and not to
+other possible operators. Since we probably don’t care about these
+particular four operators, this would not be the best choice.
+
+You can use the `lm()` or `aov()` functions:
+
+``` r
+amod = aov(bright ~ operator, pulp)
+```
+
+Now test for a difference between operators:
+
+``` r
+anova(amod)
+```
+
+    Analysis of Variance Table
+
+    Response: bright
+              Df Sum Sq Mean Sq F value Pr(>F)
+    operator   3   1.34   0.447     4.2  0.023
+    Residuals 16   1.70   0.106               
+
+We find a statistically significant difference. We can estimate the
+coefficients:
+
+``` r
+coef(amod)
+```
+
+    (Intercept)   operatorb   operatorc   operatord 
+          60.24       -0.18        0.38        0.44 
+
+The treatment coding sets operator a as the reference level. The
+intercept is the mean for operator a and the other estimates are
+differences in the mean from operator a. We can also test for a
+difference between pairs of operators:
+
+``` r
+TukeyHSD(amod)
+```
+
+      Tukey multiple comparisons of means
+        95% family-wise confidence level
+
+    Fit: aov(formula = bright ~ operator, data = pulp)
+
+    $operator
+         diff       lwr     upr   p adj
+    b-a -0.18 -0.769814 0.40981 0.81854
+    c-a  0.38 -0.209814 0.96981 0.29030
+    d-a  0.44 -0.149814 1.02981 0.18448
+    c-b  0.56 -0.029814 1.14981 0.06579
+    d-b  0.62  0.030186 1.20981 0.03767
+    d-c  0.06 -0.529814 0.64981 0.99108
+
+Only the d to b difference is found significant.
+
+We have answered the fourth question stated above. We could make some
+speculations on the first three questions (what can be said about
+operators in general) but our analysis was not designed to do this.
 
 # Likelihood inference
 
@@ -1098,7 +1179,147 @@ for(i in 3:5){
 
 ![](figs/pulpginlareff-1..svg)<!-- -->
 
+It is not straightforward to obtain the posterior densities of the
+hyperparameters.
+
+# Discussion
+
+It is interesting to compare these methods. We cannot make numerical
+comparisons across the whole set because the models, assumptions and
+even statistical philosophies are not the same. We cannot hope to claim
+one method is objectively better than another. Even so, the researcher,
+who wants to know the nature of the difference between the operators,
+must decide between them and so a qualitative comparison is entirely
+reasonable.
+
+Let us assume the perspective of researcher who is not statistician.
+Although such researchers are usually tolerant of complexity and
+ambiguity in research questions, they are far less willing to wade into
+theoretical and computational marshes of statistics. They would like to
+submit a manuscript for publication where questions won’t be raised over
+their choice of statistical methodology. They want to software that is
+easy to use and does not require opaque, complex and finicky
+computations.
+
+> All the software discussed here has been provided free. Researchers
+> have gone beyond the call of duty to provide this. Academic research
+> articles require only text and perhaps some demonstration of software.
+> The production of functional software requires immensely more effort
+> and is usually not rewarded in a career or financial sense. The
+> efforts of these producers has advanced science immeasurably beyond
+> what would have been achieved by purely commercial statistical
+> software. Any criticism below should be measured against these huge
+> achievements.
+
+1.  The fixed effect linear model solution is by far the easiest to
+    implement. The methodology has been established for decades and the
+    manner in which such results should be presented is well understood
+    and accepted. It requires only the installation of base R and runs
+    almost instantly. The only problem is that it does not properly
+    answer the main questions of interest.
+
+2.  The likelihood-based analysis using `lme4` is relatively
+    straightforward. We need to install only one well-established R
+    package: `lme4`. This package has been used and installed so many
+    times that we are unlikely to encounter any unexpected problems. We
+    do need to understand the difference between ML and REML estimation.
+    Testing for the operator effect is more complicated than we might
+    like.
+
+3.  Many years ago, `lme4` would produce a likelihood ratio test that
+    was not correct for this class of models (more precisely, the null
+    distribution was wrong). Collectively, statisticians might have had
+    reservations about the use of such tests but for a long time, they
+    were routinely used in these circumstances. After all, there are
+    many tests used now which we know to be approximations but feel
+    comfortable with accepting. But eventually the evidence built up
+    against these particular tests and the functionality was abruptly
+    withdrawn from `lme4`. Having used these tests in the first edition
+    of *Extending the Linear Models with R*, I was perturbed. I had
+    recommended a procedure that was wrong. Many others who had
+    published results were also discomfited. But getting it right is
+    more important than any embarassment. The episode illustrated the
+    uncomfortable fact that not all statistical procedures can be
+    regarded as incontrovertibly correct for all time.
+
+4.  I used a parametric bootstrap procedure here which requires some
+    undesirable complication to use from the perspective of the
+    non-statistician. There are R packages which provide other good
+    tests but also require more advanced understanding. All this is a
+    nuisance for the non-statistician writing up results for publication
+    in a non-statistics journal. The referees may well not be familiar
+    with these tests and trouble may result. The fixed effects analysis
+    would not be questioned in this way.
+
+5.  The Bayesian approaches introduce additional aspects of complexity
+    into the analysis. Our non-statistician researcher will have to
+    decide whether to brave the possible complications of submitting a
+    Bayesian analysis to an academic journal. It’s fine for me to extol
+    the virtues of a Bayesian analysis but no good if the article gets
+    rejected as a result. Putting that aside, we must specify priors. In
+    some cases, the priors do not make much difference to the
+    conclusions. In this example, the priors make a large difference to
+    the chance that the operator variation is negligible. This reflects
+    the small size of the data and that we have information on only four
+    operators. Although this is the reality, it does contrast with the
+    definitive answers provided by the previous analyses.
+
+6.  The Bayesian approaches also entail practical and computational
+    complications. Installing INLA or STAN involves various difficulties
+    that may or may not arise depending on the operating system and
+    other software on your computer. If I were to ask a class of 100
+    undergraduates to get INLA or STAN up and running, I would consign
+    myself to many hours of dealing with frustrated emails involving
+    computer problems that I have only the vaguest ideas about solving.
+    Of course, it would be more practical to ask them to use a central
+    server where everything is installed but this results in other
+    problems regarding access and usage. After several decades of
+    fiddling with computers to get software to work, I (mostly) possess
+    the patience and experience to get these things to work. That’s far
+    from true for many potential users.
+
+7.  Both STAN and INLA are being actively developed. Of course, it’s
+    good to know that functionality and performance are being improved.
+    In both cases, I installed the release version and encountered
+    problems. I fared better with the development versions although in
+    the case of INLA, I had to use an “experimental” mode. It’s not
+    unusual to complete an analysis, come back to it a year later and
+    find that the results are different in some important way or that
+    the code does not run at all. Again I can ride along with this but
+    less experienced users find this problematic. At some point, they
+    may ask “How do I know if this is the right answer?” and the
+    reassurance is not entirely convincing. In contrast, it is not
+    unusual to feed S vintage code into base R and have it give the same
+    results as it did 30 years ago.
+
+8.  Specifying and fitting Bayesian models is inherently more
+    complicated than standard linear models or those fit by `lme4`. We
+    expect to work harder but surely there is some scope for a
+    notational advance in model specification. The extended
+    Wilkinson-Rogers model notation and the grammar of graphics ideas
+    seen in `ggplot2` are examples where notation has helped advance
+    understanding beyond simple convenience. STAN requires us to learn a
+    new language merely to specify. Fortunately, `brms` (and `rstanarm`)
+    allow less advanced users to skip these complications.
+
+9.  Fitting Bayesian models is more likely to go wrong than GLMM models.
+    For our STAN model, there were insufficient iterations. We did get a
+    warning that suggested the solution of more iterations. Some
+    warnings remained but we knew that is was safe to ignore them. With
+    the INLA model, the default prior led to some unbelievable results.
+    It took some knowledge to know the solution was to use a more
+    informative prior (and this would have been another solution to the
+    STAN fitting problem.) There were less problems in using `lme4`
+    although the bootstrapping does throw large numbers of warnings when
+    the parameter estimate falls on the boundary. Again we had to know
+    it was safe to let this pass. All this requires some expertise and
+    may confuse the non-statistician.
+
 # Package version info
+
+These analyses required a shockingly large number of packages. One
+worries that a small change in just one of these packages might cause
+the analysis above to fail or change in some unexpected manner.
 
 ``` r
 sessionInfo()
