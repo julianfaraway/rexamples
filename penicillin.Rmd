@@ -1,0 +1,579 @@
+---
+title: Randomized Block Design
+author: "[Julian Faraway](https://julianfaraway.github.io/)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  github_document:
+    toc: true
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(comment=NA, 
+                      echo = TRUE,
+                      fig.path="figs/",
+                      dev = 'svglite',  
+                      fig.ext = ".svg",
+                      warning=FALSE, 
+                      message=FALSE)
+ggplot2::theme_set(ggplot2::theme_bw())
+par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
+```
+
+See the [introduction](index.md) for an overview. 
+
+This example is discussed in more detail in my book
+[Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
+
+Required libraries:
+
+```{r}
+library(faraway)
+library(ggplot2)
+library(lme4)
+library(INLA)
+library(knitr)
+library(rstan, quietly=TRUE)
+library(brms)
+library(mgcv)
+```
+
+# Data
+
+Load in and plot the data:
+
+```{r peni}
+data(penicillin, package="faraway")
+summary(penicillin)
+ggplot(penicillin,aes(x=blend,y=yield,group=treat,linetype=treat))+geom_line()
+ggplot(penicillin,aes(x=treat,y=yield,group=blend,linetype=blend))+geom_line()
+```
+
+The production of penicillin uses a raw material, corn steep liquor, which is quite variable and can only be made in blends sufficient for four runs. There are four processes, A, B, C and D, for the production. See `help(penicillin)` for more information about the data.
+
+In this example, the treatments are the four processes. These are the specific
+four processes of interest that we wish to compare. The five blends are five
+among many blends that would be randomly created during production. We are
+not interested in these five specific blends but are interested in how
+the blends vary. An interaction between blends and treatments would complicate
+matters. But (a) there is no reason to expect this exists and (b) with only one
+replicate per treatment and blend combination, it is difficult to check for
+an interaction.
+
+The plots show no outliers, no skewness, no obviously unequal variances and 
+no clear evidence of interaction. Let's proceed.
+
+# Questions
+
+1. Is there a difference between treatments? If so, what?
+2. Is there variation between the blends? What is the extent of this variation?
+
+# Linear Model
+
+Consider the model: $$y_{ijk} = \mu + \tau_i + v_j + \epsilon_{ijk}$$
+where the $\mu$, $\tau_i$ and $v_j$ are fixed effects and the error
+$\epsilon_{ijk}$ is independent and
+identically distributed $N(0,\sigma^2)$. We can fit the model with:
+```{r}
+lmod <- aov(yield ~ blend + treat, penicillin)
+summary(lmod)
+```
+There is no significant difference between the treatments. The blends
+do meet the 5% level for statistical significance. But this asserts a
+difference between these particular five blends. It's less clear
+what this means about blends in general. We can get the estimated parameters
+with:
+```{r}
+coef(lmod)
+```
+Blend 1 and treatment A are the reference levels. We can also use a
+sum (or deviation) coding:
+
+```{r}
+op <- options(contrasts=c("contr.sum", "contr.poly"))
+lmod <- aov(yield ~ blend + treat, penicillin)
+coef(lmod)
+options(op)
+```
+
+The fit is the same but the parameterization is different. We
+can get the full set of estimated effects as:
+
+```{r}
+model.tables(lmod)
+```
+
+# Mixed Effect Model
+
+Since we are not interested in the blends specifically, we may
+wish to treat it as a random effect. The model becomes: $$y_{ijk} = \mu + \tau_i + v_j + \epsilon_{ijk}$$
+where the $\mu$ and$\tau_i$ are fixed effects and the error
+$\epsilon_{ijk}$ is independent and
+identically distributed $N(0,\sigma^2)$. The $v_j$ are now random
+effects and are independent and
+identically distributed $N(0,\sigma^2_v)$. We fit the model
+using REML: (again using sum coding)
+```{r}
+op <- options(contrasts=c("contr.sum", "contr.poly"))
+mmod <- lmer(yield ~ treat + (1|blend), penicillin)
+faraway::sumary(mmod)
+options(op)
+```
+We get the same fixed effect estimates but now we have an
+estimated blend SD. We can get random effect estimates:
+```{r}
+ranef(mmod)$blend
+```
+which are a shrunk version of the fixed effect estimates.
+We can test for a difference of the fixed effects with:
+```{r}
+anova(mmod)
+```
+No p-value is supplied because there is some doubt in general over
+the validity of the null F-distribution. In this specific example, with
+a simple balanced design, it can be shown that the null F is correct. As
+it happens, it is the same as that produced in the all fixed effects
+analysis earlier:
+```{r}
+anova(lmod)
+```
+So no evidence of a difference between the treatments. More general tests
+are available such as the Kenward-Roger method which adjusts the degrees
+of freedom - see [Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/) for details.
+
+We can test the hypothesis $H_0: \sigma^2_v = 0$ using a parametric 
+bootstrap method:
+```{r penibootblend, cache=TRUE}
+rmod <- lmer(yield ~ treat + (1|blend), penicillin)
+nlmod <- lm(yield ~ treat, penicillin)
+as.numeric(2*(logLik(rmod)-logLik(nlmod,REML=TRUE)))
+lrstatf <- numeric(1000)
+for(i in 1:1000){
+   ryield <-  unlist(simulate(nlmod))
+   nlmodr <- lm(ryield ~ treat, penicillin)
+   rmodr <- lmer(ryield ~ treat + (1|blend), penicillin)
+   lrstatf[i] <- 2*(logLik(rmodr)-logLik(nlmodr,REML=TRUE))
+  }
+mean(lrstatf > 2.7629)
+```
+The result falls just below the 5\% level for significance. Because
+of resampling variability, we should repeat with more boostrap samples.
+At any rate, the evidence for variation between the blends is not
+decisive.
+
+# INLA
+
+Integrated nested Laplace approximation is a method of Bayesian computation
+which uses approximation rather than simulation. More can be found
+on this topic in [Bayesian Regression Modeling with INLA](http://julianfaraway.github.io/brinla/) and the 
+[chapter on GLMMs](https://julianfaraway.github.io/brinlabook/chaglmm.html)
+
+Use the most recent computational methodology:
+
+
+```{r}
+inla.setOption(inla.mode="experimental")
+inla.setOption("short.summary",TRUE)
+```
+ 
+Fit the default INLA model:
+
+```{r peniinladefault, cache=TRUE}
+formula = yield ~ treat+f(blend, model="iid")
+result = inla(formula, family="gaussian", data=penicillin)
+summary(result)
+```
+
+Precision for the blend effect looks implausibly large. There is a problem with default gamma prior (it needs to be more informative).
+
+## Half-normal priors on the SDs
+
+Try a half-normal prior on the blend precision. I have used variance of the response to help with the scaling so these
+are more informative.
+
+```{r pulpinlahn, cache=TRUE}
+resprec <- 1/var(penicillin$yield)
+formula = yield ~ treat+f(blend, model="iid", prior="logtnormal", param=c(0, resprec))
+result = inla(formula, family="gaussian", data=penicillin)
+summary(result)
+```
+
+Looks more plausible.
+Compute the transforms to an SD scale for the blend and error. Make a table of summary statistics for the posteriors:
+
+```{r sumstats}
+sigmaalpha <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[2]])
+sigmaepsilon <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[1]])
+restab=sapply(result$marginals.fixed, function(x) inla.zmarginal(x,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmaalpha,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmaepsilon,silent=TRUE))
+restab=cbind(restab, sapply(result$marginals.random$blend,function(x) inla.zmarginal(x, silent=TRUE)))
+colnames(restab) = c("mu","B-A","C-A","D-A","blend","error",levels(penicillin$blend))
+data.frame(restab) |> kable()
+```
+
+Also construct a plot the SD posteriors:
+
+```{r penipdsd}
+ddf <- data.frame(rbind(sigmaalpha,sigmaepsilon),errterm=gl(2,nrow(sigmaalpha),labels = c("blend","error")))
+ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("yield")+ylab("density")+xlim(0,15)
+```
+
+Posterior for the blend SD is more diffuse than the error SD. Posterior for the blend SD has zero density at zero.
+
+Is there any variation between blends? We framed this question as an
+hypothesis test previously but that is not sensible in this framework. We might
+ask the probability that the blend SD is zero. Since we have posited a
+continuous prior that places no discrete mass on zero, the posterior probability
+will be zero, regardless of the data. Instead we might ask the probability 
+that the operator SD is small. Given the response is measured to the nearest
+integer, 1 is a reasonable representation of *small* if we take this to mean
+the smallest amount we care about. (Clearly you cannot rely on the degree
+of rounding to make such decisions in general).
+
+We can compute the probability that the operator SD is smaller than 0.1:
+
+```{r}
+inla.pmarginal(1, sigmaalpha)
+```
+
+The probability is very small. 
+
+
+## Informative gamma priors on the precisions
+
+Now try more informative gamma priors for the precisions. Define it so the mean value of gamma prior is set to the inverse of the
+variance of the fixed-effects model residuals. We expect the two error variances to be lower than this variance so this is an overestimate.
+The variance of the gamma prior (for the precision) is controlled by the `apar` shape parameter - smaller values are less informative.
+
+```{r pulpinlaig, cache=TRUE}
+apar <- 0.5
+lmod <- lm(yield ~ treat, data=penicillin)
+bpar <- apar*var(residuals(lmod))
+lgprior <- list(prec = list(prior="loggamma", param = c(apar,bpar)))
+formula = yield ~ treat+f(blend, model="iid", hyper = lgprior)
+result <- inla(formula, family="gaussian", data=penicillin)
+summary(result)
+```
+
+Compute the summaries as before:
+
+```{r  ref.label="sumstats"}
+```
+
+Make the plots:
+
+```{r penigam}
+ddf <- data.frame(rbind(sigmaalpha,sigmaepsilon),errterm=gl(2,nrow(sigmaalpha),labels = c("blend","error")))
+ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("yield")+ylab("density")+xlim(0,15)
+```
+
+Posterior for blend SD has no weight near zero.
+
+We can compute the probability that the operator SD is smaller than 0.1:
+
+```{r}
+inla.pmarginal(1, sigmaalpha)
+```
+
+The probability is very small. 
+
+## Penalized Complexity Prior
+
+In [Simpson et al (2015)](http://arxiv.org/abs/1403.4630v3), penalized complexity priors are proposed. This
+requires that we specify a scaling for the SDs of the random effects. We use the SD of the residuals
+of the fixed effects only model (what might be called the base model in the paper) to provide this scaling.
+
+```{r pulpinlapc, cache=TRUE}
+lmod <- lm(yield ~ treat, data=penicillin)
+sdres <- sd(residuals(lmod))
+pcprior <- list(prec = list(prior="pc.prec", param = c(3*sdres,0.01)))
+formula <- yield ~ treat + f(blend, model="iid", hyper = pcprior)
+result <- inla(formula, family="gaussian", data=penicillin)
+summary(result)
+```
+
+Compute the summaries as before:
+
+```{r ref.label="sumstats"}
+```
+
+Make the plots:
+
+```{r penipc}
+ddf <- data.frame(rbind(sigmaalpha,sigmaepsilon),errterm=gl(2,nrow(sigmaalpha),labels = c("blend","error")))
+ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("yield")+ylab("density")+xlim(0,15)
+```
+
+Posterior for blend SD has some weight near zero. Results are comparable to previous analyses.
+
+We can compute the probability that the operator SD is smaller than 0.1:
+
+```{r}
+inla.pmarginal(1, sigmaalpha)
+```
+
+The probability is still very small. 
+
+# STAN
+
+[STAN](https://mc-stan.org/) performs Bayesian inference using
+MCMC.
+
+Set up STAN to use multiple cores. Set the random number seed for reproducibility.
+
+```{r}
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+set.seed(123)
+```
+
+We need to use a STAN command file [penicillin.stan](stancode/penicillin.stan) which we view here:
+
+```{r}
+writeLines(readLines("stancode/penicillin.stan"))
+```
+
+We have used uninformative priors for the treatment effects and the two variances.
+We prepare data in a format consistent with the command file. Needs to be a list.
+
+```{r}
+ntreat <- as.numeric(penicillin$treat)
+blk <- as.numeric(penicillin$blend)
+penidat <- list(N=nrow(penicillin), Nt=max(ntreat), Nb=max(blk), treat=ntreat, blk=blk, y=penicillin$yield)
+```
+
+
+```{r penistancomp, cache=TRUE}
+rt <- stanc(file="stancode/penicillin.stan")
+suppressMessages(sm <- stan_model(stanc_ret = rt, verbose=FALSE))
+system.time(fit <- sampling(sm, data=penidat))
+```
+
+We get some warnings but nothing too serious.
+
+## Diagnostics
+
+Plot the chains for the block SD
+
+```{r penisigmablk}
+pname <- "sigmablk"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+which is satistfactory. The same for the error SD:
+
+```{r penisigmaepsilon}
+pname <- "sigmaepsilon"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+which also looks reasonable.
+
+## Output summaries
+
+Examine the output:
+
+```{r}
+fit
+```
+
+We are not interested in the `yhat` values. In bigger datasets, there might be a lot
+of these so we can select which parameters we view:
+
+```{r}
+print(fit, pars=c("trt","sigmablk","sigmaepsilon","bld"))
+```
+
+We see the posterior mean, SE and SD of the samples. We see some quantiles from which we could construct a 95% credible
+interval (for example). The `n_eff` is a rough measure of the sample size taking into account the correlation in the
+samples. The effective sample sizes for the primary parameters is adequate for most purposes.  The $\hat R$ statistics are good.
+
+We can also get the posterior means alone.
+
+```{r}
+(get_posterior_mean(fit, pars=c("eta","trt","sigmablk","sigmaepsilon","bld")))
+```
+
+We see that we get this information for each chain as well as overall. This gives a sense of why running more
+than one chain might be helpful in assessing the uncertainty in the posterior inference.
+
+## Posterior Distributions
+
+We can use extract to get at various components of the STAN fit.
+
+```{r penistanpdsig}
+postsig <- rstan::extract(fit, pars=c("sigmablk","sigmaepsilon"))
+ref <- reshape2::melt(postsig,value.name="yield")
+ggplot(data=ref,aes(x=yield, color=L1))+geom_density()+guides(color=guide_legend(title="SD"))
+```
+
+We see that the error SD can be localized much more than the block SD.
+We can compute the chance that the block SD is less than one. We've chosen 1 as the response is only measured to the nearest integer
+so an SD of less than one would not be particularly noticeable.
+
+```{r}
+mean(postsig$sigmablk < 1)
+```
+
+We see that this probability is small and would be smaller if we had specified a lower threshold.
+
+We can also look at the blend effects:
+
+```{r penistanblendrf}
+opre <- rstan::extract(fit, pars="bld")
+ref <- reshape2::melt(opre, value.name="yield")
+ggplot(data=ref,aes(x=yield, color=factor(Var2)))+geom_density()+guides(color=guide_legend(title="blend"))
+```
+
+We see that all five blend distributions clearly overlap zero.
+We can also look at the treatment effects:
+
+```{r penistantrt}
+opre <- rstan::extract(fit, pars="trt")
+ref <- reshape2::melt(opre, value.name="yield")
+ref[,2] <- (LETTERS[1:4])[ref[,2]]
+ggplot(data=ref,aes(x=yield, color=factor(Var2)))+geom_density()+guides(color=guide_legend(title="treatment"))
+```
+
+We did not include an intercept so the treatment effects are not differences from zero. We see the distributions overlap
+substantially.
+
+# BRMS
+
+BRMS stands for Bayesian Regression Models with STAN. It provides
+a convenient wrapper to STAN functionality.
+
+Fitting the model is very similar to `lmer` as seen above:
+
+```{r brmfit, cache=TRUE}
+suppressMessages(bmod <- brm(yield ~ treat + (1|blend), penicillin, cores=4))
+```
+
+We get some warnings but not as severe as seen with our STAN fit
+above. We can obtain some posterior densities and diagnostics with:
+
+```{r penibrmsdiag}
+plot(bmod)
+```
+
+Looks OK.
+
+We can look at the STAN code that `brms` used with:
+
+```{r}
+stancode(bmod)
+```
+
+We see that `brms` is using student t distributions with 3 degrees of
+freedom for the priors. For the two error SDs, this will be truncated at
+zero to form half-t distributions. You can get a more explicit description
+of the priors with `prior_summary(bmod)`. These are qualitatively similar to the
+half-normal and the PC prior used in the INLA fit. 
+
+We examine the fit:
+
+```{r}
+summary(bmod)
+```
+
+The parameterisation of the treatment effects is different from
+the STAN version but not in an important way.
+
+We can estimate the tail probability as before
+
+```{r}
+bps = posterior_samples(bmod)
+mean(bps$sd_blend__Intercept < 1)
+```
+
+A somewhat higher value than seen previously. The priors used here put
+greater weight on smaller values of the SD.
+
+# MGCV
+
+It is possible to fit some GLMMs within the GAM framework of the `mgcv`
+package. An explanation of this can be found in this 
+[blog](https://fromthebottomoftheheap.net/2021/02/02/random-effects-in-gams/)
+
+The `blend` term must be a factor for this to work:
+
+```{r}
+gmod = gam(yield ~ treat + s(blend, bs = 're'), data=penicillin, method="REML")
+```
+
+and look at the summary output:
+
+```{r}
+summary(gmod)
+```
+
+We get the fixed effect estimates.
+We also get a test on the random effect (as described in this [article](https://doi.org/10.1093/biomet/ast038). The hypothesis of no variation
+between the operators is rejected.
+
+We can get an estimate of the operator and error SD:
+
+```{r}
+gam.vcomp(gmod)
+```
+
+which is the same as the REML estimate from `lmer` earlier.
+
+The random effect estimates for the four operators can be found with:
+
+```{r}
+coef(gmod)
+```
+
+which is again the same as before.
+
+## GINLA
+
+In [Wood (2019)](https://doi.org/10.1093/biomet/asz044), a
+simplified version of INLA is proposed. The first
+construct the GAM model without fitting and then use
+the `ginla()` function to perform the computation.
+
+```{r}
+gmod = gam(yield ~ treat + s(blend, bs = 're'), data=penicillin, fit = FALSE)
+gimod = ginla(gmod)
+```
+
+We get the posterior density for the intercept as:
+
+```{r peniginlaint}
+plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="yield",ylab="density")
+```
+
+and for the treatment effects as:
+
+```{r peniginlateff}
+xmat = t(gimod$beta[2:4,])
+ymat = t(gimod$density[2:4,])
+matplot(xmat, ymat,type="l",xlab="yield",ylab="density")
+legend("right",c("B","C","D"),col=1:3,lty=1:3)
+```
+
+```{r peniginlareff}
+xmat = t(gimod$beta[5:9,])
+ymat = t(gimod$density[5:9,])
+matplot(xmat, ymat,type="l",xlab="yield",ylab="density")
+legend("right",paste0("blend",1:5),col=1:5,lty=1:5)
+```
+
+It is not straightforward to obtain the posterior densities of
+the hyperparameters. 
+
+# Discussion
+
+See the [Discussion of the single random effect model](pulp.md) for
+general comments. In this example, the default model for INLA failed
+due to a default prior that was insufficiently informative. But the
+default prior in STAN produced more credible results. As in the simple
+single random effect sample, the conclusions were very sensitive to the
+choice of prior. There was a substantive difference between STAN and INLA.
+
