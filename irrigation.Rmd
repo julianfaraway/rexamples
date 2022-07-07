@@ -1,0 +1,347 @@
+---
+title: Split Plot Design
+author: "[Julian Faraway](https://julianfaraway.github.io/)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  github_document:
+    toc: true
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(comment=NA, 
+                      echo = TRUE,
+                      fig.path="figs/",
+                      dev = 'svglite',  
+                      fig.ext = ".svg",
+                      warning=FALSE, 
+                      message=FALSE)
+ggplot2::theme_set(ggplot2::theme_bw())
+par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
+```
+
+See the [introduction](index.md) for an overview. 
+
+This example is discussed in more detail in my book
+[Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
+
+Required libraries:
+
+```{r}
+library(faraway)
+library(ggplot2)
+library(lme4)
+library(pbkrtest)
+library(RLRsim)
+library(INLA)
+library(knitr)
+library(rstan, quietly=TRUE)
+library(brms)
+library(mgcv)
+```
+
+# Data
+
+In an agricultural field trial, the
+objective was to determine the effects of two crop varieties and four
+different irrigation methods. Eight fields were available, but only one
+type of irrigation may be applied to each field. The fields may be
+divided into two parts with a different variety planted in each half.
+The whole plot factor is the method of irrigation, which should be
+randomly assigned to the fields. Within each field, the variety is
+randomly assigned.
+
+Load in and plot the data:
+
+```{r irriplot}
+data(irrigation, package="faraway")
+summary(irrigation)
+ggplot(irrigation, aes(y=yield, x=field, shape=variety, color=irrigation)) + geom_point()
+```
+
+# Mixed Effect Model
+
+The irrigation and variety are fixed effects, but the field is 
+a random effect. We must also consider the interaction between field
+and variety, which is necessarily also a random effect because one of
+the two components is random. The fullest model that we might consider
+is: $$y_{ijk} = \mu + i_i + v_j + (iv)_{ij} + f_k + (vf)_{jk} + \epsilon_{ijk}$$
+where $\mu, i_i, v_j, (iv)_{ij}$ are fixed effects; the rest are random
+having variances $\sigma^2_f$, $\sigma^2_{vf}$ and $\sigma^2_\epsilon$.
+Note that we have no $(if)_{ik}$ term in this model. It would not be
+possible to estimate such an effect since only one type of irrigation
+is used on a given field; the factors are not crossed. Unfortunately,
+it is not possible to
+distinguish the variety within the field variation.  We would need
+more than one observation per variety within each field for us to
+separate the two variabilities. We resort to a simpler model that omits the variety by field interaction random effect: $$y_{ijk} = \mu + i_i + v_j + (iv)_{ij} + f_k +  \epsilon_{ijk}$$
+
+We fit this model with:
+
+```{r}
+lmod <- lme4::lmer(yield ~ irrigation * variety + (1|field), irrigation)
+faraway::sumary(lmod)
+```
+
+The fixed effects don't look very significant. We could use a parametric
+bootstrap to test this but it's less work to use the `pbkrtest` package
+which implements the Kenward-Roger approximation. First test the interaction:
+
+```{r}
+lmoda <- lmer(yield ~ irrigation + variety + (1|field),data=irrigation)
+pbkrtest::KRmodcomp(lmod, lmoda)
+```
+
+We can drop the interaction. Now test for a variety effect:
+
+```{r}
+lmodi <- lmer(yield ~ irrigation + (1|field), irrigation)
+KRmodcomp(lmoda, lmodi)
+```
+
+The variety can go also. Now check the irrigation method.
+
+```{r}
+lmodv <- lmer(yield ~  variety + (1|field), irrigation)
+KRmodcomp(lmoda, lmodv)
+```
+
+This can go also. As a final check, lets compare the null model
+with no fixed effects to the full model.
+
+```{r}
+lmodn <- lmer(yield ~  1 + (1|field), irrigation)
+KRmodcomp(lmod, lmodn)
+```
+
+This confirms the lack of statistical significance for the variety
+and irrigation factors.
+
+
+We can check the significance of the random effect (field) term with:
+
+```{r}
+RLRsim::exactRLRT(lmod)
+```
+
+We can see that there is a significant variation among the fields.
+
+# INLA
+
+Integrated nested Laplace approximation is a method of Bayesian computation
+which uses approximation rather than simulation. More can be found
+on this topic in [Bayesian Regression Modeling with INLA](http://julianfaraway.github.io/brinla/) and the 
+[chapter on GLMMs](https://julianfaraway.github.io/brinlabook/chaglmm.html)
+
+Use the most recent computational methodology:
+
+
+```{r}
+inla.setOption(inla.mode="experimental")
+inla.setOption("short.summary",TRUE)
+```
+
+Try the default INLA fit
+
+```{r irriinladef, cache=TRUE}
+formula <- yield ~ irrigation + variety +f(field, model="iid")
+result <- inla(formula, family="gaussian", data=irrigation)
+summary(result)
+```
+
+Default looks more plausible than [one way](pulp.md) and [RBD](penicillin.md) examples.
+
+Compute the transforms to an SD scale for the field and error. Make a table of summary statistics for the posteriors:
+
+```{r sumstats}
+sigmaalpha <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[2]])
+sigmaepsilon <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[1]])
+restab=sapply(result$marginals.fixed, function(x) inla.zmarginal(x,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmaalpha,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmaepsilon,silent=TRUE))
+colnames(restab) = c("mu","ir2","ir3","ir4","v2","alpha","epsilon")
+data.frame(restab)
+```
+
+Also construct a plot the SD posteriors:
+
+```{r plotsdsirri}
+ddf <- data.frame(rbind(sigmaalpha,sigmaepsilon),errterm=gl(2,nrow(sigmaalpha),labels = c("alpha","epsilon")))
+ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("yield")+ylab("density")+xlim(0,10)
+```
+
+Posteriors look OK.
+
+# Informative Gamma priors on the precisions
+
+Now try more informative gamma priors for the precisions. Define it so
+the mean value of gamma prior is set to the inverse of the variance of
+the residuals of the fixed-effects only model. We expect the two error
+variances to be lower than this variance so this is an overestimate.
+The variance of the gamma prior (for the precision) is controlled by
+the `apar` shape parameter.
+
+```{r irriinlaig, cache=TRUE}
+apar <- 0.5
+lmod <- lm(yield ~ irrigation+variety, data=irrigation)
+bpar <- apar*var(residuals(lmod))
+lgprior <- list(prec = list(prior="loggamma", param = c(apar,bpar)))
+formula = yield ~ irrigation+variety+f(field, model="iid", hyper = lgprior)
+result <- inla(formula, family="gaussian", data=irrigation)
+summary(result)
+```
+
+Compute the summaries as before:
+
+```{r ref.label="sumstats"}
+```
+
+Make the plots:
+
+```{r irrigam, ref.label="plotsdsirri"}
+```
+
+Posteriors look OK.
+
+# Penalized Complexity Prior
+
+In [Simpson et al (2015)](http://arxiv.org/abs/1403.4630v3), penalized complexity priors are proposed. This
+requires that we specify a scaling for the SDs of the random effects. We use the SD of the residuals
+of the fixed effects only model (what might be called the base model in the paper) to provide this scaling.
+
+```{r irriinlapc, cache=TRUE}
+lmod <- lm(yield ~ irrigation+variety, irrigation)
+sdres <- sd(residuals(lmod))
+pcprior <- list(prec = list(prior="pc.prec", param = c(3*sdres,0.01)))
+formula <- yield ~ irrigation+variety+f(field, model="iid", hyper = pcprior)
+result <- inla(formula, family="gaussian", data=irrigation)
+summary(result)
+```
+
+Compute the summaries as before:
+
+```{r ref.label="sumstats"}
+```
+
+Make the plots:
+
+```{r irripc, ref.label="plotsdsirri"}
+```
+
+Posteriors look OK. Not much difference between the three priors tried here.
+
+# STAN
+
+[STAN](https://mc-stan.org/) performs Bayesian inference using
+MCMC.
+Set up STAN to use multiple cores. Set the random number seed for reproducibility.
+
+```{r}
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+set.seed(123)
+```
+
+Fit the model. Requires use of STAN command file [irrigation.stan](stancode/irrigation.stan). We have used uninformative priors
+for the fixed effects and the two variances. Prepare data in a format consistent with the command file. Needs to be a list.
+
+```{r}
+irridat <- with(irrigation,list(N=length(yield), y=yield, field=as.numeric(field), irrigation=as.numeric(irrigation), variety=as.numeric(variety)))
+```
+
+Fit the model in three steps:
+
+```{r  irristan, cache=TRUE}
+rt <- stanc(file="stancode/irrigation.stan")
+sm <- stan_model(stanc_ret = rt, verbose=FALSE)
+system.time(fit <- sampling(sm, data=irridat))
+```
+
+We get several kinds of warning. The easiest way to solve this is
+simply running more iterations.
+
+```{r irristanbigiter, cache=TRUE}
+system.time(fit <- sampling(sm, data=irridat, iter=10000))
+```
+
+# Diagnostics
+
+First for the error SD
+
+```{r irristansigmay}
+pname <- "sigmay"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+which is satisfactory. The same for the field SD:
+
+```{r  irristansigmaf}
+pname <- "sigmaf"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+which also looks reasonable.
+
+
+# Output summaries
+
+Examine the output for the parameters we are mostly interested in:
+
+```{r}
+print(fit, pars=c("mu","ir2","ir3","ir4","va2","sigmaf","sigmay","fld"))
+```
+
+We see the posterior mean, SE and SD of the samples. We see some quantiles from which we could construct a 95% credible
+interval (for example). The `n_eff` is a rough measure of the sample size taking into account the correlation in the
+samples. The effective sample sizes for the primary parameters is good enough for most purposes.  The $\hat R$ statistics are good.
+
+# Posterior Distributions
+
+Plot the posteriors for the variance components
+
+```{r  irristanvc}
+postsig <- rstan::extract(fit, pars=c("sigmay","sigmaf"))
+ref <- reshape2::melt(postsig,value.name="yield")
+ggplot(data=ref,aes(x=yield, color=L1))+geom_density()+guides(color=guide_legend(title="SD"))+xlim(0,20)
+```
+
+We see that the error SD can be localized much more than the field SD.
+We can also look at the field effects:
+
+```{r  irristanfld}
+opre <- rstan::extract(fit, pars="fld")
+ref <- reshape2::melt(opre, value.name="yield")
+ggplot(data=ref,aes(x=yield, color=factor(Var2)))+geom_density()+guides(color=guide_legend(title="field"))
+```
+
+We are looking at the differences from the overall mean. We see that all eight field distributions clearly overlap zero. There
+is a distinction between the first four and the second four fields.
+We can also look at the "fixed" effects:
+
+```{r  irristanfixed}
+opre <- rstan::extract(fit, pars=c("ir2","ir3","ir4","va2"))
+ref <- reshape2::melt(opre)
+colnames(ref)[2:3] <- c("yield","fixed")
+ggplot(data=ref,aes(x=yield, color=fixed))+geom_density()
+```
+
+We are looking at the differences from the reference level. We see that all four distributions clearly overlap zero
+although we are able to locate the difference between the varieties more precisely than the difference between the fields.
+
+
+
+# Package version info
+
+```{r}
+sessionInfo()
+```
+
+
+
+
+
+
+
