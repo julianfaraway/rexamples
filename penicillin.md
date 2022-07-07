@@ -1,7 +1,7 @@
 Randomized Block Design
 ================
 [Julian Faraway](https://julianfaraway.github.io/)
-06 July 2022
+07 July 2022
 
 -   <a href="#data" id="toc-data">Data</a>
 -   <a href="#questions" id="toc-questions">Questions</a>
@@ -26,6 +26,8 @@ Randomized Block Design
 -   <a href="#mgcv" id="toc-mgcv">MGCV</a>
     -   <a href="#ginla" id="toc-ginla">GINLA</a>
 -   <a href="#discussion" id="toc-discussion">Discussion</a>
+-   <a href="#package-version-info" id="toc-package-version-info">Package
+    version info</a>
 
 See the [introduction](index.md) for an overview.
 
@@ -408,7 +410,7 @@ representation of *small* if we take this to mean the smallest amount we
 care about. (Clearly you cannot rely on the degree of rounding to make
 such decisions in general).
 
-We can compute the probability that the operator SD is smaller than 0.1:
+We can compute the probability that the operator SD is smaller than 1:
 
 ``` r
 inla.pmarginal(1, sigmaalpha)
@@ -485,7 +487,7 @@ ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("yield")+ylab("density"
 
 Posterior for blend SD has no weight near zero.
 
-We can compute the probability that the operator SD is smaller than 0.1:
+We can compute the probability that the operator SD is smaller than 1:
 
 ``` r
 inla.pmarginal(1, sigmaalpha)
@@ -558,10 +560,25 @@ ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("yield")+ylab("density"
 
 ![](figs/penipc-1..svg)<!-- -->
 
-Posterior for blend SD has some weight near zero. Results are comparable
-to previous analyses.
+Posterior for blend SD has no weight at zero. Results are comparable to
+previous analyses.
 
-We can compute the probability that the operator SD is smaller than 0.1:
+We can plot the posterior marginals of the random effects:
+
+``` r
+nlevels = length(unique(penicillin$blend))
+rdf = data.frame(do.call(rbind,result$marginals.random$blend))
+rdf$blend = gl(nlevels,nrow(rdf)/nlevels,labels=1:nlevels)
+ggplot(rdf,aes(x=x,y=y,group=blend, color=blend)) + 
+  geom_line() +
+  xlab("") + ylab("Density") 
+```
+
+![](figs/penirandeffpden-1..svg)<!-- -->
+
+There is substantial overlap and we cannot distinguish the blends.
+
+We can compute the probability that the operator SD is smaller than 1:
 
 ``` r
 inla.pmarginal(1, sigmaalpha)
@@ -1148,9 +1165,61 @@ hyperparameters.
 
 # Discussion
 
-See the [Discussion of the single random effect model](pulp.md) for
-general comments. In this example, the default model for INLA failed due
-to a default prior that was insufficiently informative. But the default
-prior in STAN produced more credible results. As in the simple single
-random effect sample, the conclusions were very sensitive to the choice
-of prior. There was a substantive difference between STAN and INLA.
+See the [Discussion of the single random effect
+model](pulp.md#Discussion) for general comments. In this example, the
+default model for INLA failed due to a default prior that was
+insufficiently informative. But the default prior in STAN produced more
+credible results. As in the simple single random effect sample, the
+conclusions were very sensitive to the choice of prior. There was a
+substantive difference between STAN and INLA, particularly regarding the
+lower tail of the blend SD. Although the priors are not identical,
+preventing direct comparison, STAN does give higher weight to the lower
+tail. This is concerning.
+
+# Package version info
+
+``` r
+sessionInfo()
+```
+
+    R version 4.2.0 (2022-04-22)
+    Platform: x86_64-apple-darwin17.0 (64-bit)
+    Running under: macOS Big Sur/Monterey 10.16
+
+    Matrix products: default
+    BLAS:   /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRblas.0.dylib
+    LAPACK: /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRlapack.dylib
+
+    locale:
+    [1] en_GB.UTF-8/en_GB.UTF-8/en_GB.UTF-8/C/en_GB.UTF-8/en_GB.UTF-8
+
+    attached base packages:
+    [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
+
+    other attached packages:
+     [1] mgcv_1.8-40         nlme_3.1-157        brms_2.17.0         Rcpp_1.0.8.3        rstan_2.26.13      
+     [6] StanHeaders_2.26.13 knitr_1.39          INLA_22.06.20-2     sp_1.4-7            foreach_1.5.2      
+    [11] lme4_1.1-29         Matrix_1.4-1        ggplot2_3.3.6       faraway_1.0.8      
+
+    loaded via a namespace (and not attached):
+      [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2       ggridges_0.5.3       markdown_1.1        
+      [6] base64enc_0.1-3      rstudioapi_0.13      Deriv_4.1.3          farver_2.1.0         DT_0.23             
+     [11] fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18     splines_4.2.0       
+     [16] shinythemes_1.2.0    bayesplot_1.9.0      jsonlite_1.8.0       nloptr_2.0.3         shiny_1.7.1         
+     [21] compiler_4.2.0       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0        cli_3.3.0           
+     [26] later_1.3.0          htmltools_0.5.2      prettyunits_1.1.1    tools_4.2.0          igraph_1.3.1        
+     [31] coda_0.19-4          gtable_0.3.0         glue_1.6.2           reshape2_1.4.4       dplyr_1.0.9         
+     [36] posterior_1.2.2      V8_4.2.0             vctrs_0.4.1          svglite_2.1.0        iterators_1.0.14    
+     [41] crosstalk_1.2.0      tensorA_0.36.2       xfun_0.31            stringr_1.4.0        ps_1.7.0            
+     [46] mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.1      gtools_3.9.2.1       MASS_7.3-57         
+     [51] zoo_1.8-10           scales_1.2.0         colourpicker_1.1.1   promises_1.2.0.1     Brobdingnag_1.2-7   
+     [56] inline_0.3.19        shinystan_2.6.0      yaml_2.3.5           curl_4.3.2           gridExtra_2.3       
+     [61] loo_2.5.1            stringi_1.7.6        highr_0.9            dygraphs_1.1.1.6     checkmate_2.1.0     
+     [66] boot_1.3-28          pkgbuild_1.3.1       rlang_1.0.2          pkgconfig_2.0.3      systemfonts_1.0.4   
+     [71] matrixStats_0.62.0   distributional_0.3.0 evaluate_0.15        lattice_0.20-45      purrr_0.3.4         
+     [76] rstantools_2.2.0     htmlwidgets_1.5.4    labeling_0.4.2       processx_3.5.3       tidyselect_1.1.2    
+     [81] plyr_1.8.7           magrittr_2.0.3       R6_2.5.1             generics_0.1.2       DBI_1.1.2           
+     [86] pillar_1.7.0         withr_2.5.0          xts_0.12.1           abind_1.4-5          tibble_3.1.7        
+     [91] crayon_1.5.1         utf8_1.2.2           rmarkdown_2.14       grid_4.2.0           callr_3.7.0         
+     [96] threejs_0.3.3        digest_0.6.29        xtable_1.8-4         httpuv_1.6.5         RcppParallel_5.1.5  
+    [101] stats4_4.2.0         munsell_0.5.0        shinyjs_2.1.0       

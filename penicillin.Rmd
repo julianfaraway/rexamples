@@ -230,7 +230,7 @@ integer, 1 is a reasonable representation of *small* if we take this to mean
 the smallest amount we care about. (Clearly you cannot rely on the degree
 of rounding to make such decisions in general).
 
-We can compute the probability that the operator SD is smaller than 0.1:
+We can compute the probability that the operator SD is smaller than 1:
 
 ```{r}
 inla.pmarginal(1, sigmaalpha)
@@ -269,7 +269,7 @@ ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("yield")+ylab("density"
 
 Posterior for blend SD has no weight near zero.
 
-We can compute the probability that the operator SD is smaller than 0.1:
+We can compute the probability that the operator SD is smaller than 1:
 
 ```{r}
 inla.pmarginal(1, sigmaalpha)
@@ -304,9 +304,22 @@ ddf <- data.frame(rbind(sigmaalpha,sigmaepsilon),errterm=gl(2,nrow(sigmaalpha),l
 ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("yield")+ylab("density")+xlim(0,15)
 ```
 
-Posterior for blend SD has some weight near zero. Results are comparable to previous analyses.
+Posterior for blend SD has no weight at zero. Results are comparable to previous analyses.
 
-We can compute the probability that the operator SD is smaller than 0.1:
+We can plot the posterior marginals of the random effects:
+
+```{r penirandeffpden}
+nlevels = length(unique(penicillin$blend))
+rdf = data.frame(do.call(rbind,result$marginals.random$blend))
+rdf$blend = gl(nlevels,nrow(rdf)/nlevels,labels=1:nlevels)
+ggplot(rdf,aes(x=x,y=y,group=blend, color=blend)) + 
+  geom_line() +
+  xlab("") + ylab("Density") 
+```
+
+There is substantial overlap and we cannot distinguish the blends.
+
+We can compute the probability that the operator SD is smaller than 1:
 
 ```{r}
 inla.pmarginal(1, sigmaalpha)
@@ -570,10 +583,19 @@ the hyperparameters.
 
 # Discussion
 
-See the [Discussion of the single random effect model](pulp.md) for
+See the [Discussion of the single random effect model](pulp.md#Discussion) for
 general comments. In this example, the default model for INLA failed
 due to a default prior that was insufficiently informative. But the
 default prior in STAN produced more credible results. As in the simple
 single random effect sample, the conclusions were very sensitive to the
-choice of prior. There was a substantive difference between STAN and INLA.
+choice of prior. There was a substantive difference between STAN and INLA,
+particularly regarding the lower tail of the blend SD. Although the priors
+are not identical, preventing direct comparison, STAN does give higher weight
+to the lower tail. This is concerning.
 
+# Package version info
+
+
+```{r}
+sessionInfo()
+```
