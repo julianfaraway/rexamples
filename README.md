@@ -1,7 +1,7 @@
-# rexamples
+# Worked R examples
 
-worked R examples
+## Mixed effect models
 
-- [Single Random Effect](pulp.md)
-- [Randomized Block Design](penicillin.md)
-- [Split Plot Design](irrigation.md)
+- [Single Random Effect](mixed/pulp.md)
+- [Randomized Block Design](mixed/penicillin.md)
+- [Split Plot Design](mixed/irrigation.md)

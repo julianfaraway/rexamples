@@ -23,7 +23,7 @@ par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
 ggplot2::theme_set(ggplot2::theme_bw())
 ```
 
-See the [introduction](index.md) for an overview. 
+See the [introduction](../index.md) for an overview. 
 
 This example is discussed in more detail in my book
 [Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
@@ -344,10 +344,10 @@ options(mc.cores = parallel::detectCores())
 set.seed(123)
 ```
 
-We need to use a STAN command file [penicillin.stan](stancode/penicillin.stan) which we view here:
+We need to use a STAN command file [penicillin.stan](../stancode/penicillin.stan) which we view here:
 
 ```{r}
-writeLines(readLines("stancode/penicillin.stan"))
+writeLines(readLines("../stancode/penicillin.stan"))
 ```
 
 We have used uninformative priors for the treatment effects and the two variances.
@@ -361,7 +361,7 @@ penidat <- list(N=nrow(penicillin), Nt=max(ntreat), Nb=max(blk), treat=ntreat, b
 
 
 ```{r penistancomp, cache=TRUE}
-rt <- stanc(file="stancode/penicillin.stan")
+rt <- stanc(file="../stancode/penicillin.stan")
 suppressMessages(sm <- stan_model(stanc_ret = rt, verbose=FALSE))
 system.time(fit <- sampling(sm, data=penidat))
 ```
@@ -461,7 +461,7 @@ substantially.
 
 # BRMS
 
-BRMS stands for Bayesian Regression Models with STAN. It provides
+[BRMS](https://paul-buerkner.github.io/brms/) stands for Bayesian Regression Models with STAN. It provides
 a convenient wrapper to STAN functionality.
 
 Fitting the model is very similar to `lmer` as seen above:

@@ -246,7 +246,7 @@ options(mc.cores = parallel::detectCores())
 set.seed(123)
 ```
 
-Fit the model. Requires use of STAN command file [irrigation.stan](stancode/irrigation.stan). We have used uninformative priors
+Fit the model. Requires use of STAN command file [irrigation.stan](../stancode/irrigation.stan). We have used uninformative priors
 for the fixed effects and the two variances. Prepare data in a format consistent with the command file. Needs to be a list.
 
 ```{r}
@@ -256,7 +256,7 @@ irridat <- with(irrigation,list(N=length(yield), y=yield, field=as.numeric(field
 Fit the model in three steps:
 
 ```{r  irristan, cache=TRUE}
-rt <- stanc(file="stancode/irrigation.stan")
+rt <- stanc(file="../stancode/irrigation.stan")
 sm <- stan_model(stanc_ret = rt, verbose=FALSE)
 system.time(fit <- sampling(sm, data=irridat))
 ```

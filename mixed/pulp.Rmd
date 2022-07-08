@@ -24,7 +24,7 @@ ggplot2::theme_set(ggplot2::theme_bw())
 ```
 
 
-See the [introduction](index.md) for an overview. 
+See the [introduction](../index.md) for an overview. 
 
 This example is discussed in more detail in my book
 [Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
@@ -486,7 +486,7 @@ set.seed(123)
 We need the STAN command file `pulp.stan` which we view here:
 
 ```{r}
-writeLines(readLines("stancode/pulp.stan"))
+writeLines(readLines("../stancode/pulp.stan"))
 ```
 
 We have used
@@ -505,7 +505,7 @@ pulpdat <- list(N=nrow(pulp),
 Break the fitting process into three steps:
 
 ```{r pulpstancomp, cache=TRUE}
-rt <- stanc(file="stancode/pulp.stan")
+rt <- stanc(file="../stancode/pulp.stan")
 suppressMessages(sm <- stan_model(stanc_ret = rt, verbose=FALSE))
 system.time(fit <- sampling(sm, data=pulpdat))
 ```
@@ -643,7 +643,7 @@ with this using BRMS.
 
 # BRMS
 
-BRMS stands for Bayesian Regression Models with STAN. It provides
+[BRMS](https://paul-buerkner.github.io/brms/) stands for Bayesian Regression Models with STAN. It provides
 a convenient wrapper to STAN functionality.
 
 Fitting the model is very similar to `lmer` as seen above:
