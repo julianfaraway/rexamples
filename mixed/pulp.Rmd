@@ -16,7 +16,6 @@ knitr::opts_chunk$set(comment=NA,
                       warning=FALSE, 
                       message=FALSE)
 knitr::opts_knit$set(global.par = TRUE)
-
 ```
 
 ```{r graphopts, include=FALSE}
