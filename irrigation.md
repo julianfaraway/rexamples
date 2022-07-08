@@ -1,23 +1,27 @@
 Split Plot Design
 ================
 [Julian Faraway](https://julianfaraway.github.io/)
-07 July 2022
+08 July 2022
 
 -   <a href="#data" id="toc-data">Data</a>
 -   <a href="#mixed-effect-model" id="toc-mixed-effect-model">Mixed Effect
     Model</a>
 -   <a href="#inla" id="toc-inla">INLA</a>
--   <a href="#informative-gamma-priors-on-the-precisions"
-    id="toc-informative-gamma-priors-on-the-precisions">Informative Gamma
-    priors on the precisions</a>
--   <a href="#penalized-complexity-prior"
-    id="toc-penalized-complexity-prior">Penalized Complexity Prior</a>
+    -   <a href="#informative-gamma-priors-on-the-precisions"
+        id="toc-informative-gamma-priors-on-the-precisions">Informative Gamma
+        priors on the precisions</a>
+    -   <a href="#penalized-complexity-prior"
+        id="toc-penalized-complexity-prior">Penalized Complexity Prior</a>
 -   <a href="#stan" id="toc-stan">STAN</a>
--   <a href="#diagnostics" id="toc-diagnostics">Diagnostics</a>
--   <a href="#output-summaries" id="toc-output-summaries">Output
-    summaries</a>
--   <a href="#posterior-distributions"
-    id="toc-posterior-distributions">Posterior Distributions</a>
+    -   <a href="#diagnostics" id="toc-diagnostics">Diagnostics</a>
+    -   <a href="#output-summaries" id="toc-output-summaries">Output
+        summaries</a>
+    -   <a href="#posterior-distributions"
+        id="toc-posterior-distributions">Posterior Distributions</a>
+-   <a href="#brms" id="toc-brms">BRMS</a>
+-   <a href="#mgcv" id="toc-mgcv">MGCV</a>
+-   <a href="#ginla" id="toc-ginla">GINLA</a>
+-   <a href="#discussion" id="toc-discussion">Discussion</a>
 -   <a href="#package-version-info" id="toc-package-version-info">Package
     version info</a>
 
@@ -135,6 +139,27 @@ interaction:
 
 ``` r
 lmoda <- lmer(yield ~ irrigation + variety + (1|field),data=irrigation)
+faraway::sumary(lmoda)
+```
+
+    Fixed Effects:
+                 coef.est coef.se
+    (Intercept)  38.43     2.95  
+    irrigationi2  1.00     4.15  
+    irrigationi3  0.60     4.15  
+    irrigationi4  4.10     4.15  
+    varietyv2     0.75     0.60  
+
+    Random Effects:
+     Groups   Name        Std.Dev.
+     field    (Intercept) 4.07    
+     Residual             1.19    
+    ---
+    number of obs: 16, groups: field, 8
+    AIC = 68.8, DIC = 85.1
+    deviance = 70.0 
+
+``` r
 pbkrtest::KRmodcomp(lmod, lmoda)
 ```
 
@@ -195,7 +220,7 @@ RLRsim::exactRLRT(lmod)
         (p-value based on 10000 simulated values)
 
     data:  
-    RLRT = 6.11, p-value = 0.011
+    RLRT = 6.11, p-value = 0.01
 
 We can see that there is a significant variation among the fields.
 
@@ -273,7 +298,7 @@ ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("yield")+ylab("density"
 
 Posteriors look OK.
 
-# Informative Gamma priors on the precisions
+## Informative Gamma priors on the precisions
 
 Now try more informative gamma priors for the precisions. Define it so
 the mean value of gamma prior is set to the inverse of the variance of
@@ -339,7 +364,7 @@ ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("yield")+ylab("density"
 
 Posteriors look OK.
 
-# Penalized Complexity Prior
+## Penalized Complexity Prior
 
 In [Simpson et al (2015)](http://arxiv.org/abs/1403.4630v3), penalized
 complexity priors are proposed. This requires that we specify a scaling
@@ -471,7 +496,7 @@ system.time(fit <- sampling(sm, data=irridat, iter=10000))
        user  system elapsed 
      19.990   0.423   6.673 
 
-# Diagnostics
+## Diagnostics
 
 First for the error SD
 
@@ -497,7 +522,7 @@ ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$para
 
 which also looks reasonable.
 
-# Output summaries
+## Output summaries
 
 Examine the output for the parameters we are mostly interested in:
 
@@ -539,7 +564,10 @@ the primary parameters is good enough for most purposes. The
 ![\hat R](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Chat%20R "\hat R")
 statistics are good.
 
-# Posterior Distributions
+Notice that the posterior mean for field SD is substantially larger than
+seen in the mixed effect model or the previous INLA models.
+
+## Posterior Distributions
 
 Plot the posteriors for the variance components
 
@@ -580,6 +608,312 @@ We are looking at the differences from the reference level. We see that
 all four distributions clearly overlap zero although we are able to
 locate the difference between the varieties more precisely than the
 difference between the fields.
+
+# BRMS
+
+[BRMS](https://paul-buerkner.github.io/brms/) stands for Bayesian
+Regression Models with STAN. It provides a convenient wrapper to STAN
+functionality.
+
+Fitting the model is very similar to `lmer` as seen above:
+
+``` r
+suppressMessages(bmod <- brm(yield ~ irrigation + variety + (1|field), 
+                             irrigation, iter=10000, cores=4))
+```
+
+    Running /Library/Frameworks/R.framework/Resources/bin/R CMD SHLIB foo.c
+    clang -mmacosx-version-min=10.13 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG   -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/Rcpp/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/unsupported"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/BH/include" -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/src/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppParallel/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/rstan/include" -DEIGEN_NO_DEBUG  -DBOOST_DISABLE_ASSERTS  -DBOOST_PENDING_INTEGER_LOG2_HPP  -DSTAN_THREADS  -DUSE_STANC3 -DSTRICT_R_HEADERS  -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION  -DBOOST_NO_AUTO_PTR  -include '/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp'  -D_REENTRANT -DRCPP_PARALLEL_USE_TBB=1   -I/usr/local/include   -fPIC  -Wall -g -O2  -c foo.c -o foo.o
+    In file included from <built-in>:1:
+    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
+    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
+    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:88:
+    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:1: error: unknown type name 'namespace'
+    namespace Eigen {
+    ^
+    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:16: error: expected ';' after top level declarator
+    namespace Eigen {
+                   ^
+                   ;
+    In file included from <built-in>:1:
+    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
+    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
+    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:96:10: fatal error: 'complex' file not found
+    #include <complex>
+             ^~~~~~~~~
+    3 errors generated.
+    make: *** [foo.o] Error 1
+
+We get some warnings but not as severe as seen with our STAN fit above.
+We can obtain some posterior densities and diagnostics with:
+
+``` r
+plot(bmod, variable = "^s", regex=TRUE)
+```
+
+![](figs/irribrmsdiag-1..svg)<!-- -->
+
+We have chosen only the random effect hyperparameters since this is
+where problems will appear first. Looks OK.
+
+We can look at the STAN code that `brms` used with:
+
+``` r
+stancode(bmod)
+```
+
+    // generated with brms 2.17.0
+    functions {
+    }
+    data {
+      int<lower=1> N;  // total number of observations
+      vector[N] Y;  // response variable
+      int<lower=1> K;  // number of population-level effects
+      matrix[N, K] X;  // population-level design matrix
+      // data for group-level effects of ID 1
+      int<lower=1> N_1;  // number of grouping levels
+      int<lower=1> M_1;  // number of coefficients per level
+      int<lower=1> J_1[N];  // grouping indicator per observation
+      // group-level predictor values
+      vector[N] Z_1_1;
+      int prior_only;  // should the likelihood be ignored?
+    }
+    transformed data {
+      int Kc = K - 1;
+      matrix[N, Kc] Xc;  // centered version of X without an intercept
+      vector[Kc] means_X;  // column means of X before centering
+      for (i in 2:K) {
+        means_X[i - 1] = mean(X[, i]);
+        Xc[, i - 1] = X[, i] - means_X[i - 1];
+      }
+    }
+    parameters {
+      vector[Kc] b;  // population-level effects
+      real Intercept;  // temporary intercept for centered predictors
+      real<lower=0> sigma;  // dispersion parameter
+      vector<lower=0>[M_1] sd_1;  // group-level standard deviations
+      vector[N_1] z_1[M_1];  // standardized group-level effects
+    }
+    transformed parameters {
+      vector[N_1] r_1_1;  // actual group-level effects
+      real lprior = 0;  // prior contributions to the log posterior
+      r_1_1 = (sd_1[1] * (z_1[1]));
+      lprior += student_t_lpdf(Intercept | 3, 40.1, 3.9);
+      lprior += student_t_lpdf(sigma | 3, 0, 3.9)
+        - 1 * student_t_lccdf(0 | 3, 0, 3.9);
+      lprior += student_t_lpdf(sd_1 | 3, 0, 3.9)
+        - 1 * student_t_lccdf(0 | 3, 0, 3.9);
+    }
+    model {
+      // likelihood including constants
+      if (!prior_only) {
+        // initialize linear predictor term
+        vector[N] mu = Intercept + rep_vector(0.0, N);
+        for (n in 1:N) {
+          // add more terms to the linear predictor
+          mu[n] += r_1_1[J_1[n]] * Z_1_1[n];
+        }
+        target += normal_id_glm_lpdf(Y | Xc, mu, b, sigma);
+      }
+      // priors including constants
+      target += lprior;
+      target += std_normal_lpdf(z_1[1]);
+    }
+    generated quantities {
+      // actual population-level intercept
+      real b_Intercept = Intercept - dot_product(means_X, b);
+    }
+
+We see that `brms` is using student t distributions with 3 degrees of
+freedom for the priors. For the two error SDs, this will be truncated at
+zero to form half-t distributions. You can get a more explicit
+description of the priors with `prior_summary(bmod)`. These are
+qualitatively similar to the half-normal and the PC prior used in the
+INLA fit.
+
+We examine the fit:
+
+``` r
+summary(bmod)
+```
+
+     Family: gaussian 
+      Links: mu = identity; sigma = identity 
+    Formula: yield ~ irrigation + variety + (1 | field) 
+       Data: irrigation (Number of observations: 16) 
+      Draws: 4 chains, each with iter = 10000; warmup = 5000; thin = 1;
+             total post-warmup draws = 20000
+
+    Group-Level Effects: 
+    ~field (Number of levels: 8) 
+                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+    sd(Intercept)     4.40      1.72     2.11     8.75 1.00     5021     5674
+
+    Population-Level Effects: 
+                 Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+    Intercept       38.47      3.34    31.81    45.29 1.00     7445     6792
+    irrigationi2     0.96      4.76    -8.71    10.64 1.00     8539     8380
+    irrigationi3     0.54      4.87    -9.17    10.41 1.00     7290     6788
+    irrigationi4     3.94      4.88    -6.35    13.37 1.00     7290     5154
+    varietyv2        0.75      0.79    -0.84     2.32 1.00    16386    10038
+
+    Family Specific Parameters: 
+          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+    sigma     1.48      0.53     0.83     2.82 1.00     4204     4626
+
+    Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+    and Tail_ESS are effective sample size measures, and Rhat is the potential
+    scale reduction factor on split chains (at convergence, Rhat = 1).
+
+The posterior mean for the field SD is more comparable to the mixed
+model and INLA values seen earlier and smaller than the STAN fit. This
+can be ascribed to the more informative prior used for the BRMS fit.
+
+# MGCV
+
+It is possible to fit some GLMMs within the GAM framework of the `mgcv`
+package. An explanation of this can be found in this
+[blog](https://fromthebottomoftheheap.net/2021/02/02/random-effects-in-gams/)
+
+The `field` term must be a factor for this to work:
+
+``` r
+gmod = gam(yield ~ irrigation + variety + s(field,bs="re"), 
+           data=irrigation, method="REML")
+```
+
+and look at the summary output:
+
+``` r
+summary(gmod)
+```
+
+
+    Family: gaussian 
+    Link function: identity 
+
+    Formula:
+    yield ~ irrigation + variety + s(field, bs = "re")
+
+    Parametric coefficients:
+                 Estimate Std. Error t value Pr(>|t|)
+    (Intercept)    38.425      2.952   13.02    3e-06
+    irrigationi2    1.000      4.154    0.24     0.82
+    irrigationi3    0.600      4.154    0.14     0.89
+    irrigationi4    4.100      4.154    0.99     0.36
+    varietyv2       0.750      0.597    1.26     0.25
+
+    Approximate significance of smooth terms:
+              edf Ref.df    F p-value
+    s(field) 3.83      4 23.2 0.00034
+
+    R-sq.(adj) =  0.888   Deviance explained = 94.6%
+    -REML = 27.398  Scale est. = 1.4257    n = 16
+
+We get the fixed effect estimates. We also get a test on the random
+effect (as described in this
+[article](https://doi.org/10.1093/biomet/ast038). The hypothesis of no
+variation between the fields is rejected.
+
+We can get an estimate of the operator and error SD:
+
+``` r
+gam.vcomp(gmod)
+```
+
+
+    Standard deviations and 0.95 confidence intervals:
+
+             std.dev   lower  upper
+    s(field)   4.067 1.97338 8.3820
+    scale      1.194 0.70717 2.0161
+
+    Rank: 2/2
+
+which is the same as the REML estimate from `lmer` earlier.
+
+The random effect estimates for the fields can be found with:
+
+``` r
+coef(gmod)
+```
+
+     (Intercept) irrigationi2 irrigationi3 irrigationi4    varietyv2   s(field).1   s(field).2   s(field).3   s(field).4 
+         38.4250       1.0000       0.6000       4.1000       0.7500      -2.0612      -2.2529      -3.6430      -3.0199 
+      s(field).5   s(field).6   s(field).7   s(field).8 
+          2.0612       2.2529       3.6430       3.0199 
+
+# GINLA
+
+In [Wood (2019)](https://doi.org/10.1093/biomet/asz044), a simplified
+version of INLA is proposed. The first construct the GAM model without
+fitting and then use the `ginla()` function to perform the computation.
+
+``` r
+gmod = gam(yield ~ irrigation + variety + s(field,bs="re"), 
+           data=irrigation, fit = FALSE)
+gimod = ginla(gmod)
+```
+
+We get the posterior density for the intercept as:
+
+``` r
+plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="yield",ylab="density")
+```
+
+![](figs/irriginlaint-1..svg)<!-- -->
+
+and for the treatment effects as:
+
+``` r
+xmat = t(gimod$beta[2:5,])
+ymat = t(gimod$density[2:5,])
+matplot(xmat, ymat,type="l",xlab="yield",ylab="density")
+legend("right",c("i2","i3","i4","v2"),col=1:4,lty=1:4)
+```
+
+![](figs/irriginlateff-1..svg)<!-- -->
+
+``` r
+xmat = t(gimod$beta[6:13,])
+ymat = t(gimod$density[6:13,])
+matplot(xmat, ymat,type="l",xlab="yield",ylab="density")
+legend("right",paste0("field",1:8),col=1:8,lty=1:8)
+```
+
+![](figs/irriginlareff-1..svg)<!-- -->
+
+It is not straightforward to obtain the posterior densities of the
+hyperparameters.
+
+# Discussion
+
+See the [Discussion of the single random effect
+model](pulp.md#Discussion) for general comments. Given that the fixed
+effects are not significant here, this example is not so different from
+the single random effect example. This provides an illustration of why
+we need to pay attention to the priors. In the `pulp` example, the
+default priors resulted in unbelievable results from INLA and we were
+prompted to consider alternatives. In this example, the default INLA
+priors produce output that looked passable and, if we were feeling lazy,
+we might have skipped a look at the alternatives. In this case, they do
+not make much difference. Contrast this with the default STAN priors
+used - the output looks reasonable but the answers are somewhat
+different. Had we not been trying these other analyses, we would not be
+aware of this. The minimal analyst might have stopped there. But BRMS
+uses more informative priors and produces results closer to the other
+methods.
+
+STAN/BRMS put more weight on low values of the random effects SDs
+whereas the INLA posteriors are clearly bounded away from zero. We saw a
+similar effect in the `pulp` example. Although we have not matched up
+the priors exactly, there does appear to be some structural difference.
+
+Much of the worry above centers on the random effect SDs. The fixed
+effects seem quite robust to these concerns. If we only care about
+these, GINLA is giving us what we need with the minimum amount of effort
+(we would not even need to install any packages beyond the default
+distribution of R, though this is an historic advantage for `mgcv`).
 
 # Package version info
 

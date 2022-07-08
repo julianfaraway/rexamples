@@ -88,6 +88,7 @@ which implements the Kenward-Roger approximation. First test the interaction:
 
 ```{r}
 lmoda <- lmer(yield ~ irrigation + variety + (1|field),data=irrigation)
+faraway::sumary(lmoda)
 pbkrtest::KRmodcomp(lmod, lmoda)
 ```
 
@@ -171,7 +172,7 @@ ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("yield")+ylab("density"
 
 Posteriors look OK.
 
-# Informative Gamma priors on the precisions
+## Informative Gamma priors on the precisions
 
 Now try more informative gamma priors for the precisions. Define it so
 the mean value of gamma prior is set to the inverse of the variance of
@@ -202,7 +203,7 @@ Make the plots:
 
 Posteriors look OK.
 
-# Penalized Complexity Prior
+## Penalized Complexity Prior
 
 In [Simpson et al (2015)](http://arxiv.org/abs/1403.4630v3), penalized complexity priors are proposed. This
 requires that we specify a scaling for the SDs of the random effects. We use the SD of the residuals
@@ -263,7 +264,7 @@ simply running more iterations.
 system.time(fit <- sampling(sm, data=irridat, iter=10000))
 ```
 
-# Diagnostics
+## Diagnostics
 
 First for the error SD
 
@@ -286,7 +287,7 @@ ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$para
 which also looks reasonable.
 
 
-# Output summaries
+## Output summaries
 
 Examine the output for the parameters we are mostly interested in:
 
@@ -298,7 +299,10 @@ We see the posterior mean, SE and SD of the samples. We see some quantiles from 
 interval (for example). The `n_eff` is a rough measure of the sample size taking into account the correlation in the
 samples. The effective sample sizes for the primary parameters is good enough for most purposes.  The $\hat R$ statistics are good.
 
-# Posterior Distributions
+Notice that the posterior mean for field SD is substantially larger
+than seen in the mixed effect model or the previous INLA models.
+
+## Posterior Distributions
 
 Plot the posteriors for the variance components
 
@@ -332,8 +336,155 @@ We are looking at the differences from the reference level. We see that all four
 although we are able to locate the difference between the varieties more precisely than the difference between the fields.
 
 
+# BRMS
+
+[BRMS](https://paul-buerkner.github.io/brms/) stands for Bayesian Regression Models with STAN. It provides
+a convenient wrapper to STAN functionality.
+
+Fitting the model is very similar to `lmer` as seen above:
+
+```{r brmfit, cache=TRUE}
+suppressMessages(bmod <- brm(yield ~ irrigation + variety + (1|field), 
+                             irrigation, iter=10000, cores=4))
+```
+
+We get some warnings but not as severe as seen with our STAN fit
+above. We can obtain some posterior densities and diagnostics with:
+
+```{r irribrmsdiag}
+plot(bmod, variable = "^s", regex=TRUE)
+```
+
+We have chosen only the random effect hyperparameters since this is
+where problems will appear first. Looks OK.
+
+We can look at the STAN code that `brms` used with:
+
+```{r}
+stancode(bmod)
+```
+
+We see that `brms` is using student t distributions with 3 degrees of
+freedom for the priors. For the two error SDs, this will be truncated at
+zero to form half-t distributions. You can get a more explicit description
+of the priors with `prior_summary(bmod)`. These are qualitatively similar to the
+half-normal and the PC prior used in the INLA fit. 
+
+We examine the fit:
+
+```{r}
+summary(bmod)
+```
+
+The posterior mean for the field SD is more comparable to the mixed model
+and INLA values seen earlier and smaller than the STAN fit. This can be
+ascribed to the more informative prior used for the BRMS fit.
+
+# MGCV
+
+It is possible to fit some GLMMs within the GAM framework of the `mgcv`
+package. An explanation of this can be found in this 
+[blog](https://fromthebottomoftheheap.net/2021/02/02/random-effects-in-gams/)
+
+The `field` term must be a factor for this to work:
+
+```{r}
+gmod = gam(yield ~ irrigation + variety + s(field,bs="re"), 
+           data=irrigation, method="REML")
+```
+
+and look at the summary output:
+
+```{r}
+summary(gmod)
+```
+
+We get the fixed effect estimates.
+We also get a test on the random effect (as described in this [article](https://doi.org/10.1093/biomet/ast038). The hypothesis of no variation
+between the fields is rejected.
+
+We can get an estimate of the operator and error SD:
+
+```{r}
+gam.vcomp(gmod)
+```
+
+which is the same as the REML estimate from `lmer` earlier.
+
+The random effect estimates for the fields can be found with:
+
+```{r}
+coef(gmod)
+```
+
+
+# GINLA
+
+In [Wood (2019)](https://doi.org/10.1093/biomet/asz044), a
+simplified version of INLA is proposed. The first
+construct the GAM model without fitting and then use
+the `ginla()` function to perform the computation.
+
+```{r}
+gmod = gam(yield ~ irrigation + variety + s(field,bs="re"), 
+           data=irrigation, fit = FALSE)
+gimod = ginla(gmod)
+```
+
+We get the posterior density for the intercept as:
+
+```{r irriginlaint}
+plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="yield",ylab="density")
+```
+
+and for the treatment effects as:
+
+```{r irriginlateff}
+xmat = t(gimod$beta[2:5,])
+ymat = t(gimod$density[2:5,])
+matplot(xmat, ymat,type="l",xlab="yield",ylab="density")
+legend("right",c("i2","i3","i4","v2"),col=1:4,lty=1:4)
+```
+
+```{r irriginlareff}
+xmat = t(gimod$beta[6:13,])
+ymat = t(gimod$density[6:13,])
+matplot(xmat, ymat,type="l",xlab="yield",ylab="density")
+legend("right",paste0("field",1:8),col=1:8,lty=1:8)
+```
+
+It is not straightforward to obtain the posterior densities of
+the hyperparameters. 
+
+# Discussion
+
+See the [Discussion of the single random effect model](pulp.md#Discussion) for
+general comments. Given that the fixed effects are not significant here,
+this example is not so different from the single random effect example. This
+provides an illustration of why we need to pay attention to the priors. In
+the `pulp` example, the default priors resulted in unbelievable results from
+INLA and we were prompted to consider alternatives. In this example, the 
+default INLA priors produce output that looked passable and, if we were
+feeling lazy, we might have skipped a look at the alternatives. In this case,
+they do not make much difference. Contrast this with the default STAN priors
+used - the output looks reasonable but the answers are somewhat different. Had
+we not been trying these other analyses, we would not be aware of this. The
+minimal analyst might have stopped there. But BRMS uses more informative priors
+and produces results closer to the other methods.
+
+STAN/BRMS put more weight on low values of the random effects SDs whereas the INLA posteriors are clearly bounded away from zero. We saw a similar effect in
+the `pulp` example. Although we have not matched up the priors exactly, there
+does appear to be some structural difference.
+
+Much of the worry above centers on the random effect SDs. The fixed effects
+seem quite robust to these concerns. If we only care about these, GINLA is
+giving us what we need with the minimum amount of effort (we would not even
+need to install any packages beyond the default distribution of R, though
+this is an historic advantage for `mgcv`).
+
 
 # Package version info
+
 
 ```{r}
 sessionInfo()
