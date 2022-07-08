@@ -1,7 +1,7 @@
 One Way Anova with a random effect
 ================
 [Julian Faraway](https://julianfaraway.github.io/)
-28 June 2022
+08 July 2022
 
 -   <a href="#data" id="toc-data">Data</a>
 -   <a href="#questions" id="toc-questions">Questions</a>
@@ -1228,19 +1228,19 @@ computations.
 
 3.  Many years ago, `lme4` would produce a likelihood ratio test that
     was not correct for this class of models (more precisely, the null
-    distribution was wrong). Collectively, statisticians might have had
+    distribution was wrong). Some statisticians might have had
     reservations about the use of such tests but for a long time, they
     were routinely used in these circumstances. After all, there are
     many tests used now which we know to be approximations but feel
-    comfortable with accepting. But eventually the evidence built up
-    against these particular tests and the functionality was abruptly
-    withdrawn from `lme4`. Having used these tests in the first edition
-    of *Extending the Linear Models with R*, I was perturbed. I had
-    recommended a procedure that was wrong. Many others who had
-    published results were also discomfited. But getting it right is
-    more important than any embarassment. The episode illustrated the
-    uncomfortable fact that not all statistical procedures can be
-    regarded as incontrovertibly correct for all time.
+    comfortable with accepting. No one wants to open a can of worms. But
+    eventually the evidence built up against these particular tests and
+    the functionality was abruptly withdrawn from `lme4`. Having used
+    these tests in the first edition of *Extending the Linear Models
+    with R*, I was perturbed. I had recommended a procedure that was
+    wrong. Many others who had published results were also discomfited.
+    But getting it right is more important than any embarassment. The
+    episode illustrated the uncomfortable fact that not all statistical
+    procedures can be regarded as incontrovertibly correct for all time.
 
 4.  I used a parametric bootstrap procedure here which requires some
     undesirable complication to use from the perspective of the
@@ -1299,8 +1299,8 @@ computations.
     Wilkinson-Rogers model notation and the grammar of graphics ideas
     seen in `ggplot2` are examples where notation has helped advance
     understanding beyond simple convenience. STAN requires us to learn a
-    new language merely to specify. Fortunately, `brms` (and `rstanarm`)
-    allow less advanced users to skip these complications.
+    new language merely to specify the model. Fortunately, `brms` (and
+    `rstanarm`) allow less advanced users to skip these complications.
 
 9.  Fitting Bayesian models is more likely to go wrong than GLMM models.
     For our STAN model, there were insufficient iterations. We did get a
@@ -1319,7 +1319,9 @@ computations.
 
 These analyses required a shockingly large number of packages. One
 worries that a small change in just one of these packages might cause
-the analysis above to fail or change in some unexpected manner.
+the analysis above to fail or change in some unexpected manner. Not all
+of the attached packages are actually used but it is hard to know what
+we could do without.
 
 ``` r
 sessionInfo()
@@ -1340,8 +1342,8 @@ sessionInfo()
     [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-40         nlme_3.1-157        brms_2.17.0         Rcpp_1.0.8.3        rstan_2.26.11      
-     [6] StanHeaders_2.26.11 knitr_1.39          INLA_22.06.20-2     sp_1.4-7            foreach_1.5.2      
+     [1] mgcv_1.8-40         nlme_3.1-157        brms_2.17.0         Rcpp_1.0.8.3        rstan_2.26.13      
+     [6] StanHeaders_2.26.13 knitr_1.39          INLA_22.06.20-2     sp_1.4-7            foreach_1.5.2      
     [11] lme4_1.1-29         Matrix_1.4-1        ggplot2_3.3.6       faraway_1.0.8      
 
     loaded via a namespace (and not attached):
