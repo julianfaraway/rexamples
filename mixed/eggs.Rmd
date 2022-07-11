@@ -1,0 +1,369 @@
+---
+title: Nested Design
+author: "[Julian Faraway](https://julianfaraway.github.io/)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  github_document:
+    toc: true
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(comment=NA, 
+                      echo = TRUE,
+                      fig.path="figs/",
+                      dev = 'svglite',  
+                      fig.ext = ".svg",
+                      warning=FALSE, 
+                      message=FALSE)
+knitr::opts_knit$set(global.par = TRUE)
+```
+
+```{r graphopts, include=FALSE}
+par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
+ggplot2::theme_set(ggplot2::theme_bw())
+```
+
+See the [introduction](index.md) for an overview. 
+
+This example is discussed in more detail in my book
+[Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
+
+Required libraries:
+
+```{r}
+library(faraway)
+library(ggplot2)
+library(lme4)
+library(pbkrtest)
+library(RLRsim)
+library(INLA)
+library(knitr)
+library(rstan, quietly=TRUE)
+library(brms)
+library(mgcv)
+```
+
+# Data
+
+When the levels of one factor vary only within the levels of another
+factor, that factor is said to be *nested*. Here is an example to illustrate nesting. Consistency between laboratory tests is important and yet the results may depend on who did the test and where the test was performed. In an experiment to
+test levels of consistency, a large jar of dried egg powder was
+divided up into a number of samples. Because the powder was
+homogenized, the fat content of the samples is the same, but this fact
+is withheld from the laboratories. Four samples were sent to each of
+six laboratories.  Two of the samples were labeled as G and two as H,
+although in fact they were identical.  The laboratories were
+instructed to give two samples to two different technicians. The
+technicians were then instructed to divide their samples into two
+parts and measure the fat content of each.  So each laboratory
+reported eight measures, each technician four measures, that is, two replicated
+measures on each of two samples.
+
+Load in and plot the data:
+
+```{r eggplot}
+data(eggs, package="faraway")
+summary(eggs)
+ggplot(eggs, aes(y=Fat, x=Lab, color=Technician, shape=Sample)) + geom_point(position = position_jitter(width=0.1, height=0.0))
+```
+
+# Mixed Effect Model
+
+The model is $$y_{ijkl} = \mu + L_i + T_{ij} + S_{ijk} + \epsilon_{ijkl}$$
+where laboratories (L), technicians (T) and samples (S) are all random effects:
+
+```{r}
+cmod = lmer(Fat ~ 1 + (1|Lab) + (1|Lab:Technician) +  (1|Lab:Technician:Sample), data=eggs)
+faraway::sumary(cmod)
+```
+
+Is there a difference between samples? The `exactRLRT` function requires 
+not only the specification of a null model without the random effect of interest
+but also one where only that random effect is present. Note that because
+of the way the samples are coded, we need to specify this a three-way interaction.
+Otherwise `G` from one lab would be linked to `G` from another lab (which is
+not the case).
+
+```{r}
+cmodr <- lmer(Fat ~ 1 + (1|Lab) + (1|Lab:Technician), data=eggs)
+cmods <- lmer(Fat ~ 1 + (1|Lab:Technician:Sample), data=eggs)
+exactRLRT(cmods, cmod, cmodr)
+```
+
+We can remove the sample random effect from the model. But consider
+the confidence intervals:
+
+```{r eggsconfint, cache=TRUE}
+confint(cmod, method="boot")
+```
+
+We see that all three random effects include zero at the lower end, indicating
+that we might equally have disposed of the lab or technician random effects first.
+There is considerable uncertainty in the apportioning of variation due the three
+effects.
+
+# INLA
+
+Integrated nested Laplace approximation is a method of Bayesian computation
+which uses approximation rather than simulation. More can be found
+on this topic in [Bayesian Regression Modeling with INLA](http://julianfaraway.github.io/brinla/) and the 
+[chapter on GLMMs](https://julianfaraway.github.io/brinlabook/chaglmm.html)
+
+Use the most recent computational methodology:
+
+
+```{r}
+inla.setOption(inla.mode="experimental")
+inla.setOption("short.summary",TRUE)
+```
+
+Need to construct unique labels for
+nested factor levels. Don't really care which technician and sample is
+which otherwise would take more care with the labeling.
+
+```{r}
+eggs$labtech <- factor(paste0(eggs$Lab,eggs$Technician))
+eggs$labtechsamp <- factor(paste0(eggs$Lab,eggs$Technician,eggs$Sample))
+```
+
+```{r eggsinladef, cache=TRUE}
+formula <- Fat ~ 1 + f(Lab, model="iid") + f(labtech, model="iid") + f(labtechsamp, model="iid")
+result <- inla(formula, family="gaussian", data=eggs)
+summary(result)
+```
+
+The lab and sample precisions look far too high. Need to change the default prior
+
+## Informative Gamma priors on the precisions
+
+Now try more informative gamma priors for the precisions. Define it so
+the mean value of gamma prior is set to the inverse of the variance of
+the residuals of the fixed-effects only model. We expect the error
+variances to be lower than this variance so this is an overestimate.
+The variance of the gamma prior (for the precision) is controlled by
+the `apar` shape parameter in the code.
+
+```{r eggsinlaig, cache=TRUE}
+apar <- 0.5
+bpar <- apar*var(eggs$Fat)
+lgprior <- list(prec = list(prior="loggamma", param = c(apar,bpar)))
+formula = Fat ~ 1+f(Lab, model="iid", hyper = lgprior)+f(labtech, model="iid", hyper = lgprior)+f(labtechsamp, model="iid", hyper = lgprior)
+result <- inla(formula, family="gaussian", data=eggs)
+summary(result)
+```
+
+Looks more credible.
+
+Compute the transforms to an SD scale for the field and error. Make a table of summary statistics for the posteriors:
+
+```{r sumstats}
+sigmaLab <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[2]])
+sigmaTech <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[3]])
+sigmaSample <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[4]])
+sigmaepsilon <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[1]])
+restab=sapply(result$marginals.fixed, function(x) inla.zmarginal(x,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmaLab,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmaTech,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmaSample,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmaepsilon,silent=TRUE))
+colnames(restab) = c("mu","Lab","Technician","Sample","epsilon")
+data.frame(restab)
+```
+
+Also construct a plot the SD posteriors:
+
+```{r plotsdseggs}
+ddf <- data.frame(rbind(sigmaLab,sigmaTech,sigmaSample,sigmaepsilon),errterm=gl(4,nrow(sigmaLab),labels = c("Lab","Tech","Samp","epsilon")))
+ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("Fat")+ylab("density")+xlim(0,0.25)
+```
+
+Posteriors look OK. Notice that they are all well bounded away from zero.
+
+## Penalized Complexity Prior
+
+In [Simpson et al (2015)](http://arxiv.org/abs/1403.4630v3), penalized complexity priors are proposed. This
+requires that we specify a scaling for the SDs of the random effects. We use the SD of the residuals
+of the fixed effects only model (what might be called the base model in the paper) to provide this scaling.
+
+```{r eggsinlapc, cache=TRUE}
+sdres <- sd(eggs$Fat)
+pcprior <- list(prec = list(prior="pc.prec", param = c(3*sdres,0.01)))
+formula = Fat ~ 1+f(Lab, model="iid", hyper = pcprior)+f(labtech, model="iid", hyper = pcprior)+f(labtechsamp,model="iid", hyper = pcprior)
+result <- inla(formula, family="gaussian", data=eggs, control.family=list(hyper=pcprior))
+summary(result)
+```
+
+Compute the summaries as before:
+
+```{r ref.label="sumstats"}
+```
+
+Make the plots:
+
+```{r eggspc, ref.label="plotsdseggs"}
+```
+
+Posteriors have generally smaller values for the three random effects and 
+the possibility of values closer to zero is given greater weight.
+
+# STAN
+
+[STAN](https://mc-stan.org/) performs Bayesian inference using
+MCMC. Set up STAN to use multiple cores. Set the random number seed for reproducibility.
+
+```{r}
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+set.seed(123)
+```
+Requires use of STAN command file [eggs.stan](../stancode/eggs.stan). We have
+used half-cauchy priors for four variances using the SD of the
+response to help with scaling. We view the code here:
+
+```{r}
+writeLines(readLines("../stancode/eggs.stan"))
+```
+
+
+```{r}
+levind1 <- as.numeric(eggs$Lab)
+levind2 <- as.numeric(eggs$labtech)
+levind3 <- as.numeric(eggs$labtechsamp)
+sdscal <- sd(eggs$Fat)
+eggdat <- list(Nobs=nrow(eggs),
+               Nlev1=max(levind1),
+               Nlev2=max(levind2),
+               Nlev3=max(levind3),
+               y=eggs$Fat,
+               levind1=levind1,
+               levind2=levind2,
+               levind3=levind3,
+               sdscal=sdscal)
+```
+
+```{r eggsstancomp, cache=TRUE}
+rt <- stanc(file="../stancode/eggs.stan")
+sm <- stan_model(stanc_ret = rt, verbose=FALSE)
+system.time(fit <- sampling(sm, data=eggdat, iter=10000))
+```
+
+## Diagnostics
+
+For the error SD:
+
+```{r eggssigmaeps}
+pname <- "sigmaeps"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+For the Lab SD
+
+```{r eggssigmalev1}
+pname <- "sigmalev1"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+For the technician SD
+
+```{r eggssigmalev2}
+pname <- "sigmalev2"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+For the sample SD
+
+```{reggssigmalev3}
+pname <- "sigmalev3"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+All these are satisfactory.
+
+
+## Output summaries
+
+Display the parameters of interest:
+
+```{r}
+print(fit,pars=c("mu","sigmalev1","sigmalev2","sigmalev3","sigmaeps"))
+```
+
+We see the posterior mean, SE and SD of the samples. We see some quantiles from which we could construct a 95% credible
+interval (for example). The `n_eff` is a rough measure of the sample size taking into account the correlation in the
+samples. The effective sample sizes for the  primary parameters  are respectable. The $\hat R$ statistics are good.
+
+
+## Posterior Distributions
+
+We can use extract to get at various components of the STAN fit.
+
+```{r eggsstanhypsd}
+postsig <- rstan::extract(fit, pars=c("sigmalev1","sigmalev2","sigmalev3","sigmaeps"))
+ref <- reshape2::melt(postsig)
+colnames(ref)[2:3] <- c("Fat","SD")
+ggplot(data=ref,aes(x=Fat, color=SD))+geom_density()
+```
+
+We see that the error SD can be localized much more than the other SDs. The technician SD looks to be the largest of the three. We see non-zero
+density at zero in contrast with the INLA posteriors.
+
+# BRMS
+
+[BRMS](https://paul-buerkner.github.io/brms/) stands for Bayesian Regression Models with STAN. It provides
+a convenient wrapper to STAN functionality.
+
+Fitting the model is very similar to `lmer` as seen above:
+
+```{r brmfit, cache=TRUE}
+suppressMessages(bmod <- brm(Fat ~ 1 + (1|Lab) + (1|Lab:Technician) +  (1|Lab:Technician:Sample), data=eggs,iter=10000, cores=4))
+```
+
+We get some warnings. We can obtain some posterior densities and diagnostics with:
+
+```{r eggsbrmsdiag}
+plot(bmod, variable = "^s", regex=TRUE)
+```
+
+We have chosen only the random effect hyperparameters since this is
+where problems will appear first. Looks OK.
+
+We can look at the STAN code that `brms` used with:
+
+```{r}
+stancode(bmod)
+```
+
+We see that `brms` is using student t distributions with 3 degrees of
+freedom for the priors. For the two error SDs, this will be truncated at
+zero to form half-t distributions. You can get a more explicit description
+of the priors with `prior_summary(bmod)`. These are qualitatively similar to the
+half-normal and the PC prior used in the INLA fit. 
+
+We examine the fit:
+
+```{r}
+summary(bmod)
+```
+
+The effective sample sizes for the lab and intercept terms are
+surprisingly small, especially since we increased the default
+number of iterations. Something may be wrong here.
+
+
+
+# Package version info
+
+```{r}
+sessionInfo()
+```
+
+
+
