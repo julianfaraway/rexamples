@@ -296,8 +296,10 @@ Display the parameters of interest:
 print(fit,pars=c("mu","sigmalev1","sigmalev2","sigmalev3","sigmaeps"))
 ```
 
-We see the posterior mean, SE and SD of the samples. We see some quantiles from which we could construct a 95% credible
-interval (for example). The `n_eff` is a rough measure of the sample size taking into account the correlation in the
+We see the posterior mean, SE and SD, quantiles of the samples.
+The posterior means are somewhat different from the REML estimates seen
+in the `lmer` output.
+The `n_eff` is a rough measure of the sample size taking into account the correlation in the
 samples. The effective sample sizes for the  primary parameters  are respectable. The $\hat R$ statistics are good.
 
 
@@ -320,10 +322,15 @@ density at zero in contrast with the INLA posteriors.
 [BRMS](https://paul-buerkner.github.io/brms/) stands for Bayesian Regression Models with STAN. It provides
 a convenient wrapper to STAN functionality.
 
-Fitting the model is very similar to `lmer` as seen above:
+The form of the model specification is important in this example. If we use
+`Fat ~ 1 + (1|Lab) + (1|Lab:Technician) +  (1|Lab:Technician:Sample)` as
+in the `lmer` fit earlier, we get poor convergence whereas the supposedly
+equivalent specification below does far better. In the form below, the
+nesting is signalled by the form of the model specification which
+may be essential to achieve the best results.
 
 ```{r brmfit, cache=TRUE}
-suppressMessages(bmod <- brm(Fat ~ 1 + (1|Lab) + (1|Lab:Technician) +  (1|Lab:Technician:Sample), data=eggs,iter=10000, cores=4))
+suppressMessages(bmod <- brm(Fat ~ 1 + (1|Lab/Technician/Sample), data=eggs,iter=10000, cores=4))
 ```
 
 We get some warnings. We can obtain some posterior densities and diagnostics with:
@@ -333,7 +340,8 @@ plot(bmod, variable = "^s", regex=TRUE)
 ```
 
 We have chosen only the random effect hyperparameters since this is
-where problems will appear first. Looks OK.
+where problems will appear first. Looks OK. We can see some weight
+is given to values of the random effect SDs close to zero.
 
 We can look at the STAN code that `brms` used with:
 
@@ -345,7 +353,7 @@ We see that `brms` is using student t distributions with 3 degrees of
 freedom for the priors. For the two error SDs, this will be truncated at
 zero to form half-t distributions. You can get a more explicit description
 of the priors with `prior_summary(bmod)`. These are qualitatively similar to the
-half-normal and the PC prior used in the INLA fit. 
+the PC prior used in the INLA fit. 
 
 We examine the fit:
 
@@ -353,11 +361,126 @@ We examine the fit:
 summary(bmod)
 ```
 
-The effective sample sizes for the lab and intercept terms are
-surprisingly small, especially since we increased the default
-number of iterations. Something may be wrong here.
+The results are consistent with those seen previously.
+
+# MGCV
+
+It is possible to fit some GLMMs within the GAM framework of the `mgcv`
+package. An explanation of this can be found in this 
+[blog](https://fromthebottomoftheheap.net/2021/02/02/random-effects-in-gams/)
 
 
+```{r}
+gmod = gam(Fat ~ 1 + s(Lab,bs="re") + s(Lab,Technician,bs="re") + 
+             s(Lab,Technician,Sample,bs="re"),
+           data=eggs, method="REML")
+```
+
+and look at the summary output:
+
+```{r}
+summary(gmod)
+```
+
+We get the fixed effect estimate.
+We also get tests on the random effects (as described in this [article](https://doi.org/10.1093/biomet/ast038). The hypothesis of no variation
+is not rejected for any of the three sources of variation. This is consistent
+with earlier findings.
+
+We can get an estimate of the operator and error SD:
+
+```{r}
+gam.vcomp(gmod)
+```
+
+The point estimates are the same as the REML estimates from `lmer` earlier.
+The confidence intervals are different. A bootstrep method was used for
+the `lmer` fit whereas `gam` is using an asymptotic approximation resulting
+in substantially different results. Given the problems of parameters on
+the boundary present in this example, the bootstrap results appear more
+trustworthy.
+
+The random effect estimates for the fields can be found with:
+
+```{r}
+coef(gmod)
+```
+
+although these have not been centered in contrast with that found from
+the `lmer` fit.
+
+
+# GINLA
+
+In [Wood (2019)](https://doi.org/10.1093/biomet/asz044), a
+simplified version of INLA is proposed. The first
+construct the GAM model without fitting and then use
+the `ginla()` function to perform the computation.
+
+```{r}
+gmod = gam(Fat ~ 1 + s(Lab,bs="re") + s(Lab,Technician,bs="re") + 
+             s(Lab,Technician,Sample,bs="re"),
+           data=eggs, fit = FALSE)
+gimod = ginla(gmod)
+```
+
+We get the posterior density for the intercept as:
+
+```{r eggsginlaint}
+plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="yield",ylab="fat")
+```
+
+and for the laboratory effects as:
+
+```{r eggsginlaleff}
+xmat = t(gimod$beta[2:7,])
+ymat = t(gimod$density[2:7,])
+matplot(xmat, ymat,type="l",xlab="fat",ylab="density")
+legend("right",paste0("Lab",1:6),col=1:6,lty=1:6)
+```
+
+We can see the first lab tends to be higher but still substantial
+overlap with the other labs.
+
+The random effects for the technicians are:
+
+```{r eggsginlateff}
+sel = 8:19
+xmat = t(gimod$beta[sel,])
+ymat = t(gimod$density[sel,])
+matplot(xmat, ymat,type="l",xlab="fat",ylab="density")
+legend("right",row.names(coef(cmod)[[2]]),col=1:length(sel),lty=1:length(sel))
+```
+
+There are a couple of technicians which stick out from the others. Not overwhelming
+evidence that they are different but certainly worth further investigation.
+
+There are too many of the sample random effects to make plotting helpful.
+
+It is not straightforward to obtain the posterior densities of
+the hyperparameters. 
+
+# Discussion
+
+See the [Discussion of the single random effect model](pulp.md#Discussion) for
+general comments. 
+
+- As with some of the other analyses, we see that the INLA-produced posterior
+densities for the random effect SDs are well-bounded away from zero. We
+see that the choice of prior does make an important difference and that
+the default choice is a clear failure.
+
+- The default STAN priors produce a credible result and posteriors do
+give some weight to values close to zero. There is no ground truth here
+but given the experience in the `lmer` analysis, there does appear to be
+some suggestion that any of the three sources of variation could be very
+small. INLA is the odd-one-out in this instance.
+
+- The `mgcv` based analysis is mostly the same as the `lme4` fit excepting
+the confidence intervals where a different method has been used.
+
+- The `ginla` does not readily produce posterior densities for the hyperparameters
+so we cannot compare on that basis. The other posteriors were produced very rapidly.
 
 # Package version info
 
