@@ -1,0 +1,300 @@
+---
+title: Crossed Effects Design
+author: "[Julian Faraway](https://julianfaraway.github.io/)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  github_document:
+    toc: true
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(comment=NA, 
+                      echo = TRUE,
+                      fig.path="figs/",
+                      dev = 'svglite',  
+                      fig.ext = ".svg",
+                      warning=FALSE, 
+                      message=FALSE)
+knitr::opts_knit$set(global.par = TRUE)
+```
+
+```{r graphopts, include=FALSE}
+par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
+ggplot2::theme_set(ggplot2::theme_bw())
+```
+
+See the [introduction](index.md) for an overview. 
+
+This example is discussed in more detail in my book
+[Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
+
+Required libraries:
+
+```{r}
+library(faraway)
+library(ggplot2)
+library(lme4)
+library(pbkrtest)
+library(RLRsim)
+library(INLA)
+library(knitr)
+library(rstan, quietly=TRUE)
+library(brms)
+library(mgcv)
+```
+
+# Data
+
+Effects are said to be crossed when they are
+not nested. When at least some crossing occurs, methods for nested
+designs cannot be used. We consider a latin square example.
+
+In an experiment, four materials, A, B,
+C and D, were fed into a wear-testing machine. The response is the
+loss of weight in 0.1 mm over the testing period. The machine could
+process four samples at a time and past experience indicated that
+there were some differences due to the position of these four samples.
+Also some differences were suspected from run to run. Four runs were made. The latin
+square structure of the design may be observed:
+
+```{r}
+data(abrasion, package="faraway")
+matrix(abrasion$material,4,4)
+```
+
+We can plot the data
+
+```{r abrasionplot}
+ggplot(abrasion,aes(x=material, y=wear, shape=run, color=position))+geom_point(position = position_jitter(width=0.1, height=0.0))
+```
+
+# Mixed Effect Model
+
+Since we are most interested in the choice of material, treating this as
+a fixed effect is natural. We must account for variation due to the
+run and the position but were not interested in their specific values
+because we believe these may vary between experiments. We treat these
+as random effects.
+
+```{r}
+mmod <- lmer(wear ~ material + (1|run) + (1|position), abrasion)
+faraway::sumary(mmod)
+```
+
+We test the random effects:
+
+```{r}
+mmodp <- lmer(wear ~ material + (1|position), abrasion)
+mmodr <- lmer(wear ~ material + (1|run), abrasion)
+exactRLRT(mmodp, mmod, mmodr)
+exactRLRT(mmodr, mmod, mmodp)
+```
+
+We see both are statistically significant. 
+
+We can test the fixed effect:
+
+```{r}
+mmod <- lmer(wear ~ material + (1|run) + (1|position), abrasion,REML=FALSE)
+nmod <- lmer(wear ~ 1+ (1|run) + (1|position), abrasion,REML=FALSE)
+KRmodcomp(mmod, nmod)
+```
+
+We see the fixed effect is significant.
+
+# INLA
+
+Integrated nested Laplace approximation is a method of Bayesian computation
+which uses approximation rather than simulation. More can be found
+on this topic in [Bayesian Regression Modeling with INLA](http://julianfaraway.github.io/brinla/) and the 
+[chapter on GLMMs](https://julianfaraway.github.io/brinlabook/chaglmm.html)
+
+Use the most recent computational methodology:
+
+
+```{r}
+inla.setOption(inla.mode="experimental")
+inla.setOption("short.summary",TRUE)
+```
+
+```{r abrainladef, cache=TRUE}
+formula <- wear ~ material + f(run, model="iid") + f(position, model="iid")
+result <- inla(formula, family="gaussian", data=abrasion)
+summary(result)
+```
+
+The run and position precisions look far too high. Need to change the default prior.
+
+## Informative Gamma priors on the precisions
+
+Now try more informative gamma priors for the random effect precisions. Define it so
+the mean value of gamma prior is set to the inverse of the variance of
+the residuals of the fixed-effects only model. We expect the error
+variances to be lower than this variance so this is an overestimate.
+The variance of the gamma prior (for the precision) is controlled by
+the `apar` shape parameter.
+
+```{r abrainlaig, cache=TRUE}
+apar <- 0.5
+lmod <- lm(wear ~ material, abrasion)
+bpar <- apar*var(residuals(lmod))
+lgprior <- list(prec = list(prior="loggamma", param = c(apar,bpar)))
+formula = wear ~ material+f(run, model="iid", hyper = lgprior)+f(position, model="iid", hyper = lgprior)
+result <- inla(formula, family="gaussian", data=abrasion)
+summary(result)
+```
+
+Results are more credible.
+
+Compute the transforms to an SD scale for the random effect terms. Make a table of summary statistics for the posteriors:
+
+```{r sumstats}
+sigmarun <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[2]])
+sigmapos <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[3]])
+sigmaepsilon <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[1]])
+restab=sapply(result$marginals.fixed, function(x) inla.zmarginal(x,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmarun,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmapos,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmaepsilon,silent=TRUE))
+colnames(restab) = c("mu","B - A","C - A","D - A","run","position","epsilon")
+data.frame(restab) |> kable()
+```
+
+Also construct a plot the SD posteriors:
+
+```{r plotsdsab}
+ddf <- data.frame(rbind(sigmarun,sigmapos,sigmaepsilon),errterm=gl(3,nrow(sigmarun),labels = c("run","position","epsilon")))
+ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("wear")+ylab("density")+xlim(0,35)
+```
+
+Posteriors look OK although no weight given to smaller values.
+
+## Penalized Complexity Prior
+
+In [Simpson et al (2015)](http://arxiv.org/abs/1403.4630v3), penalized complexity priors are proposed. This
+requires that we specify a scaling for the SDs of the random effects. We use the SD of the residuals
+of the fixed effects only model (what might be called the base model in the paper) to provide this scaling.
+
+```{r abrainlapc, cache=TRUE}
+lmod <- lm(wear ~ material, abrasion)
+sdres <- sd(residuals(lmod))
+pcprior <- list(prec = list(prior="pc.prec", param = c(3*sdres,0.01)))
+formula = wear ~ material+f(run, model="iid", hyper = pcprior)+f(position, model="iid", hyper = pcprior)
+result <- inla(formula, family="gaussian", data=abrasion)
+summary(result)
+```
+
+Compute the summaries as before:
+
+```{r ref.label="sumstats"}
+```
+
+Make the plots:
+
+```{r abrapc, ref.label="plotsdsab"}
+```
+
+Posteriors put more weight on lower values compared to gamma prior.
+
+# STAN
+
+[STAN](https://mc-stan.org/) performs Bayesian inference using
+MCMC.
+Set up STAN to use multiple cores. Set the random number seed for reproducibility.
+
+```{r}
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+set.seed(123)
+```
+
+Fit the model. Requires use of STAN command file [abrasion.stan](../stancode/abrasion.stan). We have used uninformative priors for the fixed effects and half-cauchy priors for the three variances. Prepare data in a format consistent with the command file. Needs to be a list:
+
+```{r}
+sdscal <- sd(residuals(lm(wear ~ material, abrasion)))
+abrdat <- list(N=16, Nt=4, treat=as.numeric(abrasion$material), blk1=as.numeric(abrasion$run), blk2=as.numeric(abrasion$position), y=abrasion$wear, sdscal=sdscal)
+```
+
+Run in three steps:
+
+```{r abrastan, cache=TRUE}
+rt <- stanc(file="../stancode/abrasion.stan")
+sm <- stan_model(stanc_ret = rt, verbose=FALSE)
+system.time(fit <- sampling(sm, data=abrdat))
+```
+
+We have not used an overall mean. If we want an overall mean
+parameter, we have to set up dummy variables. We can do this but it
+requires more work.
+
+
+## Diagnostics
+
+For the error SD:
+
+```{r abrasigmaepsdiag}
+pname <- "sigmaeps"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+For the block one (run) SD:
+
+```{r abrasigmab1diag}
+pname <- "sigmab1"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+For the block two (position) SD:
+
+```{r abrasigmab2}
+pname <- "sigmab2"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+Everything looks reasonable.
+
+## Output Summary
+
+```{r}
+print(fit,pars=c("trt","sigmaeps","sigmab1","sigmab2"))
+```
+
+The effective sample sizes are a bit low so we might want to rerun this with more iterations
+if we care about the tails in particular.
+
+## Posterior Distributions
+
+We can use extract to get at various components of the STAN fit. First consider the SDs for random components:
+
+```{r abrapostsig}
+postsig <- rstan::extract(fit, pars=c("sigmaeps","sigmab1","sigmab2"))
+ref <- reshape2::melt(postsig)
+colnames(ref)[2:3] <- c("wear","SD")
+ggplot(data=ref,aes(x=wear, color=SD))+geom_density()
+```
+
+As usual the error SD distribution is a bit more concentrated. We can see
+some weight at zero for the random effects in contrast to the INLA posteriors.
+
+Now the treatment effects:
+
+
+```{r abraposttrt}
+postsig <- rstan::extract(fit, pars="trt")
+ref <- reshape2::melt(postsig)
+colnames(ref)[2:3] <- c("material","wear")
+ref$material <- LETTERS[1:4][ref$material]
+ggplot(data=ref,aes(x=wear, color=material))+geom_density()
+```
+
+We can see that material A shows some separation from the other levels.
+
+
+
+
