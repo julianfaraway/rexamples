@@ -1,0 +1,3 @@
+function (x) <<NEWLINE>>exp(x)
+function (x) <<NEWLINE>>exp(x)
+function (x) <<NEWLINE>>exp(x)

@@ -1,0 +1,3 @@
+function (x) <<NEWLINE>>log(x)
+function (x) <<NEWLINE>>log(x)
+function (x) <<NEWLINE>>log(x)

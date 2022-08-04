@@ -1,0 +1,479 @@
+---
+title: Multilevel Design
+author: "[Julian Faraway](https://julianfaraway.github.io/)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  github_document:
+    toc: true
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(comment=NA, 
+                      echo = TRUE,
+                      fig.path="figs/",
+                      dev = 'svglite',  
+                      fig.ext = ".svg",
+                      warning=FALSE, 
+                      message=FALSE)
+knitr::opts_knit$set(global.par = TRUE)
+```
+
+```{r graphopts, include=FALSE}
+par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
+ggplot2::theme_set(ggplot2::theme_bw())
+```
+
+See the [introduction](index.md) for an overview. 
+
+This example is discussed in more detail in my book
+[Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
+
+Required libraries:
+
+```{r}
+library(faraway)
+library(ggplot2)
+library(lme4)
+library(pbkrtest)
+library(RLRsim)
+library(INLA)
+library(knitr)
+library(rstan, quietly=TRUE)
+library(brms)
+library(mgcv)
+```
+
+# Data
+
+*Multilevel* models is a term used for models for data with hierarchical
+structure. The term is most commonly used in the social sciences.
+We can use the methodology we have already developed to fit some of these models.
+
+We take as our example some data from the Junior School Project collected
+from primary (U.S. term is elementary) schools in inner London. 
+We math test score result from year two as the response
+and try to model this as a function of gender, social class and the Raven's test
+score from the first year which might be taken as a measure of ability when entering
+the school. We subset the data to ignore the math scores from the first two years,
+we centre the Raven score and create a combined class-by-school label:
+
+
+```{r}
+data(jsp, package="faraway")
+jspr <- jsp[jsp$year==2,]
+jspr$craven <- jspr$raven-mean(jspr$raven)
+jspr$classch <- paste(jspr$school,jspr$class,sep=".")
+```
+
+We can plot the data
+
+```{r jspplot}
+ggplot(jspr, aes(x=raven, y=math))+xlab("Raven Score")+ylab("Math Score")+geom_point(position = position_jitter())
+ggplot(jspr, aes(x=social, y=math))+xlab("Social Class")+ylab("Math Score")+geom_boxplot()
+```
+
+# Mixed Effect Model
+
+As discussed in [Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/),
+we simplify to model with an interaction between the centred Raven score and
+the social class as fixed effects and the school and class nested within school as
+random effects.
+
+```{r}
+mmod <- lmer(math ~ craven*social+(1|school)+(1|school:class),jspr)
+faraway::sumary(mmod)
+```
+
+We can see the math score is strongly related to
+the entering Raven score. We see that for the same entering score, the
+final math score tends to be lower as social class goes down. 
+We also see the most substantial variation at the individual level with smaller
+amounts of variation at the school and class level.
+
+We test the random effects:
+
+```{r}
+mmodc <- lmer(math ~ craven*social+(1|school:class),jspr)
+mmods <- lmer(math ~ craven*social+(1|school),jspr)
+exactRLRT(mmodc, mmod, mmods)
+exactRLRT(mmods, mmod, mmodc)
+```
+
+The first test is for the class effect which just fails to meet the 5% significance level.
+The second test is for the school effect and shows strong evidence of differences between
+schools.
+
+
+We can test the interaction fixed effect:
+
+```{r}
+mmodm <- lmer(math ~ craven+social+(1|school)+(1|school:class),jspr)
+KRmodcomp(mmod, mmodm)
+```
+
+We see the interaction is significant.
+
+We can compute confidence intervals for the parameters:
+
+```{r jspconfint, cache=TRUE}
+confint(mmod, method="boot")
+```
+
+The lower end of the class confidence interval is zero while the school random effect
+is clearly larger.
+
+
+# INLA
+
+Integrated nested Laplace approximation is a method of Bayesian computation
+which uses approximation rather than simulation. More can be found
+on this topic in [Bayesian Regression Modeling with INLA](http://julianfaraway.github.io/brinla/) and the 
+[chapter on GLMMs](https://julianfaraway.github.io/brinlabook/chaglmm.html)
+
+Use the most recent computational methodology:
+
+
+```{r}
+inla.setOption(inla.mode="experimental")
+inla.setOption("short.summary",TRUE)
+```
+
+```{r jspinladef, cache=TRUE}
+formula <- math ~ social+craven + f(school, model="iid") + f(classch, model="iid")
+result <- inla(formula, family="gaussian", data=jspr)
+summary(result)
+```
+
+As usual, the default priors result in precisions for the random effects which are unbelievably large and we need to change the default prior.
+
+## Informative Gamma priors on the precisions
+
+Now try more informative gamma priors for the random effect precisions. Define it so
+the mean value of gamma prior is set to the inverse of the variance of
+the residuals of the fixed-effects only model. We expect the error
+variances to be lower than this variance so this is an overestimate.
+The variance of the gamma prior (for the precision) is controlled by
+the `apar` shape parameter.
+
+```{r jspinlaig, cache=TRUE}
+apar <- 0.5
+lmod <- lm(math ~ social+craven, jspr)
+bpar <- apar*var(residuals(lmod))
+lgprior <- list(prec = list(prior="loggamma", param = c(apar,bpar)))
+formula = math ~ social+craven+f(school, model="iid", hyper = lgprior)+f(classch, model="iid", hyper = lgprior)
+result <- inla(formula, family="gaussian", data=jspr)
+summary(result)
+```
+
+Results are more credible.
+
+Compute the transforms to an SD scale for the random effect terms. Make a table of summary statistics for the posteriors:
+
+```{r sumstats}
+sigmarun <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[2]])
+sigmapos <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[3]])
+sigmaepsilon <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[1]])
+restab=sapply(result$marginals.fixed, function(x) inla.zmarginal(x,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmarun,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmapos,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmaepsilon,silent=TRUE))
+colnames(restab) = c("mu","B -- A","C -- A","D -- A","run","position","epsilon")
+data.frame(restab) |> kable()
+```
+
+Also construct a plot the SD posteriors:
+
+```{r plotsdsab}
+ddf <- data.frame(rbind(sigmarun,sigmapos,sigmaepsilon),errterm=gl(3,nrow(sigmarun),labels = c("run","position","epsilon")))
+ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("wear")+ylab("density")+xlim(0,35)
+```
+
+Posteriors look OK although no weight given to smaller values.
+
+## Penalized Complexity Prior
+
+In [Simpson et al (2015)](http://arxiv.org/abs/1403.4630v3), penalized complexity priors are proposed. This
+requires that we specify a scaling for the SDs of the random effects. We use the SD of the residuals
+of the fixed effects only model (what might be called the base model in the paper) to provide this scaling.
+
+```{r abrainlapc, cache=TRUE}
+lmod <- lm(wear ~ material, abrasion)
+sdres <- sd(residuals(lmod))
+pcprior <- list(prec = list(prior="pc.prec", param = c(3*sdres,0.01)))
+formula = wear ~ material+f(run, model="iid", hyper = pcprior)+f(position, model="iid", hyper = pcprior)
+result <- inla(formula, family="gaussian", data=abrasion)
+summary(result)
+```
+
+Compute the summaries as before:
+
+```{r ref.label="sumstats"}
+```
+
+Make the plots:
+
+```{r abrapc, ref.label="plotsdsab"}
+```
+
+Posteriors put more weight on lower values compared to gamma prior.
+
+# STAN
+
+[STAN](https://mc-stan.org/) performs Bayesian inference using
+MCMC.
+Set up STAN to use multiple cores. Set the random number seed for reproducibility.
+
+```{r}
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+set.seed(123)
+```
+
+Fit the model. Requires use of STAN command file [abrasion.stan](../stancode/abrasion.stan). We have used uninformative priors for the fixed effects and half-cauchy priors for the three variances. Prepare data in a format consistent with the command file. Needs to be a list:
+
+```{r}
+sdscal <- sd(residuals(lm(wear ~ material, abrasion)))
+abrdat <- list(N=16, Nt=4, treat=as.numeric(abrasion$material), blk1=as.numeric(abrasion$run), blk2=as.numeric(abrasion$position), y=abrasion$wear, sdscal=sdscal)
+```
+
+Run in three steps:
+
+```{r abrastan, cache=TRUE}
+rt <- stanc(file="../stancode/abrasion.stan")
+sm <- stan_model(stanc_ret = rt, verbose=FALSE)
+system.time(fit <- sampling(sm, data=abrdat))
+```
+
+We have not used an overall mean. If we want an overall mean
+parameter, we have to set up dummy variables. We can do this but it
+requires more work.
+
+
+## Diagnostics
+
+For the error SD:
+
+```{r abrasigmaepsdiag}
+pname <- "sigmaeps"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+For the block one (run) SD:
+
+```{r abrasigmab1diag}
+pname <- "sigmab1"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+For the block two (position) SD:
+
+```{r abrasigmab2}
+pname <- "sigmab2"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+Everything looks reasonable.
+
+## Output Summary
+
+```{r}
+print(fit,pars=c("trt","sigmaeps","sigmab1","sigmab2"))
+```
+
+The effective sample sizes are a bit low so we might want to rerun this with more iterations
+if we care about the tails in particular.
+
+## Posterior Distributions
+
+We can use extract to get at various components of the STAN fit. First consider the SDs for random components:
+
+```{r abrapostsig}
+postsig <- rstan::extract(fit, pars=c("sigmaeps","sigmab1","sigmab2"))
+ref <- reshape2::melt(postsig)
+colnames(ref)[2:3] <- c("wear","SD")
+ggplot(data=ref,aes(x=wear, color=SD))+geom_density()
+```
+
+As usual the error SD distribution is a bit more concentrated. We can see
+some weight at zero for the random effects in contrast to the INLA posteriors.
+
+Now the treatment effects:
+
+
+```{r abraposttrt}
+postsig <- rstan::extract(fit, pars="trt")
+ref <- reshape2::melt(postsig)
+colnames(ref)[2:3] <- c("material","wear")
+ref$material <- LETTERS[1:4][ref$material]
+ggplot(data=ref,aes(x=wear, color=material))+geom_density()
+```
+
+We can see that material A shows some separation from the other levels.
+
+# BRMS
+
+[BRMS](https://paul-buerkner.github.io/brms/) stands for Bayesian Regression Models with STAN. It provides a convenient wrapper to STAN functionality. We specify the model as in `lmer()` above.
+I have used more than the standard number of iterations because this reduces some problems
+and does not cost much computationally.
+
+
+```{r brmfit, cache=TRUE}
+suppressMessages(bmod <- brm(wear ~ material + (1|run) + (1|position), data=abrasion,iter=10000, cores=4))
+```
+
+We get some minor warnings. We can obtain some posterior densities and diagnostics with:
+
+```{r eggsbrmsdiag}
+plot(bmod, variable = "^s", regex=TRUE)
+```
+
+We have chosen only the random effect hyperparameters since this is
+where problems will appear first. Looks OK. We can see some weight
+is given to values of the random effect SDs close to zero.
+
+We can look at the STAN code that `brms` used with:
+
+```{r}
+stancode(bmod)
+```
+
+We see that `brms` is using student t distributions with 3 degrees of
+freedom for the priors. For the three error SDs, this will be truncated at
+zero to form half-t distributions. You can get a more explicit description
+of the priors with `prior_summary(bmod)`. These are qualitatively similar to the
+the PC prior used in the INLA fit. 
+
+We examine the fit:
+
+```{r}
+summary(bmod)
+```
+
+The results are consistent with those seen previously.
+
+# MGCV
+
+It is possible to fit some GLMMs within the GAM framework of the `mgcv`
+package. An explanation of this can be found in this 
+[blog](https://fromthebottomoftheheap.net/2021/02/02/random-effects-in-gams/)
+
+
+```{r}
+gmod = gam(wear ~ material + s(run,bs="re") + s(position,bs="re"),
+           data=abrasion, method="REML")
+```
+
+and look at the summary output:
+
+```{r}
+summary(gmod)
+```
+
+We get the fixed effect estimates.
+We also get tests on the random effects (as described in this [article](https://doi.org/10.1093/biomet/ast038). The hypothesis of no variation
+is rejected for both the run and the position. This is consistent
+with earlier findings.
+
+We can get an estimate of the operator and error SD:
+
+```{r}
+gam.vcomp(gmod)
+```
+
+The point estimates are the same as the REML estimates from `lmer` earlier.
+The confidence intervals are different. A bootstrap method was used for
+the `lmer` fit whereas `gam` is using an asymptotic approximation resulting
+in substantially different results. Given the problems of parameters on
+the boundary present in this example, the bootstrap results appear more
+trustworthy.
+
+The random effect estimates for the fields can be found with:
+
+```{r}
+coef(gmod)
+```
+
+# GINLA
+
+In [Wood (2019)](https://doi.org/10.1093/biomet/asz044), a
+simplified version of INLA is proposed. The first
+construct the GAM model without fitting and then use
+the `ginla()` function to perform the computation.
+
+```{r}
+gmod = gam(wear ~ material + s(run,bs="re") + s(position,bs="re"),
+           data=abrasion, fit = FALSE)
+gimod = ginla(gmod)
+```
+
+We get the posterior density for the intercept as:
+
+```{r abraginlaint}
+plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="yield",ylab="wear")
+```
+
+and for the material effects as:
+
+```{r abraginlalmat}
+xmat = t(gimod$beta[2:4,])
+ymat = t(gimod$density[2:4,])
+matplot(xmat, ymat,type="l",xlab="wear",ylab="density")
+legend("right",paste0("Material",LETTERS[2:4]),col=1:3,lty=1:3)
+```
+
+We can see some overlap between the effects but clear separation from zero.
+
+The run effects are:
+
+```{r abraginlalrun}
+xmat = t(gimod$beta[5:8,])
+ymat = t(gimod$density[5:8,])
+matplot(xmat, ymat,type="l",xlab="wear",ylab="density")
+legend("right",paste0("run",1:4),col=1:4,lty=1:4)
+```
+
+All the run effects overlap with zero but runs 3 and 4 are more distinct than 1 and 2.
+
+The position effects are:
+
+```{r abraginlalpos}
+xmat = t(gimod$beta[9:12,])
+ymat = t(gimod$density[9:12,])
+matplot(xmat, ymat,type="l",xlab="wear",ylab="density")
+legend("right",paste0("position",1:4),col=1:4,lty=1:4)
+```
+
+Here positions 1 and 2 are more distinct in their effects.
+
+It is not straightforward to obtain the posterior densities of
+the hyperparameters. 
+
+# Discussion
+
+See the [Discussion of the single random effect model](pulp.md#Discussion) for
+general comments. 
+
+- All but the INLA analysis have some ambiguity about whether there is much difference in the
+run and position effects. In the mixed effect model, the effects are just statistically significant
+while the Bayesian analyses also suggest these effects have some impact while still expressing
+some chance that they do not. The INLA analysis does not give any weight to the no effect claim.
+
+- None of the analysis had any problem with the crossed effects.
+
+- There were no major computational issue with the analyses (in contrast with some of
+the other examples)
+
+# Package version info
+
+```{r}
+sessionInfo()
+```
+
+
+
