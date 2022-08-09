@@ -1,7 +1,7 @@
 Crossed Effects Design
 ================
 [Julian Faraway](https://julianfaraway.github.io/)
-04 August 2022
+09 August 2022
 
 -   <a href="#data" id="toc-data">Data</a>
 -   <a href="#mixed-effect-model" id="toc-mixed-effect-model">Mixed Effect
@@ -121,7 +121,7 @@ exactRLRT(mmodp, mmod, mmodr)
         (p-value based on 10000 simulated values)
 
     data:  
-    RLRT = 4.59, p-value = 0.014
+    RLRT = 4.59, p-value = 0.015
 
 ``` r
 exactRLRT(mmodr, mmod, mmodp)
@@ -133,7 +133,7 @@ exactRLRT(mmodr, mmod, mmodp)
         (p-value based on 10000 simulated values)
 
     data:  
-    RLRT = 3.05, p-value = 0.033
+    RLRT = 3.05, p-value = 0.034
 
 We see both are statistically significant.
 
@@ -363,8 +363,56 @@ set.seed(123)
 Fit the model. Requires use of STAN command file
 [abrasion.stan](../stancode/abrasion.stan). We have used uninformative
 priors for the fixed effects and half-cauchy priors for the three
-variances. Prepare data in a format consistent with the command file.
-Needs to be a list:
+variances. We view the code here:
+
+``` r
+writeLines(readLines("../stancode/abrasion.stan"))
+```
+
+    /*
+    Latin square style design
+    */
+    data {
+      int<lower=0> N;
+      int<lower=0> Nt;
+      int<lower=1,upper=Nt> treat[N];
+      int<lower=1,upper=Nt> blk1[N];
+      int<lower=1,upper=Nt> blk2[N];
+      vector[N] y;
+      real<lower=0> sdscal;
+    }
+    parameters {
+      vector[Nt] eta1;
+      vector[Nt] eta2;
+      vector[Nt] trt;
+      real<lower=0> sigmab1;
+      real<lower=0> sigmab2;
+      real<lower=0> sigmaeps;
+    }
+    transformed parameters {
+      vector[Nt] bld1;
+      vector[Nt] bld2;
+      vector[N] yhat;
+
+      bld1 = sigmab1 * eta1;
+      bld2 = sigmab2 * eta2;
+
+      for (i in 1:N)
+        yhat[i] = trt[treat[i]] + bld1[blk1[i]] + bld2[blk2[i]];
+
+    }
+    model {
+      eta1 ~ normal(0, 1);
+      eta2 ~ normal(0, 1);
+      sigmab1 ~ cauchy(0, 2.5*sdscal);
+      sigmab2 ~ cauchy(0, 2.5*sdscal);
+      sigmaeps ~ cauchy(0, 2.5*sdscal);
+
+      y ~ normal(yhat, sigmaeps);
+    }
+
+Prepare data in a format consistent with the command file. Needs to be a
+list:
 
 ``` r
 sdscal <- sd(residuals(lm(wear ~ material, abrasion)))
@@ -821,24 +869,23 @@ sessionInfo()
 
     loaded via a namespace (and not attached):
       [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2       ggridges_0.5.3       markdown_1.1        
-      [6] base64enc_0.1-3      rstudioapi_0.13      Deriv_4.1.3          farver_2.1.1         MatrixModels_0.5-0  
-     [11] DT_0.23              fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18    
-     [16] splines_4.2.1        shinythemes_1.2.0    bayesplot_1.9.0      jsonlite_1.8.0       nloptr_2.0.3        
-     [21] broom_1.0.0          shiny_1.7.2          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1    
-     [26] fastmap_1.1.0        cli_3.3.0            later_1.3.0          htmltools_0.5.3      prettyunits_1.1.1   
-     [31] tools_4.2.1          igraph_1.3.4         coda_0.19-4          gtable_0.3.0         glue_1.6.2          
-     [36] reshape2_1.4.4       dplyr_1.0.9          posterior_1.2.2      V8_4.2.0             vctrs_0.4.1         
-     [41] svglite_2.1.0        iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.31           
-     [46] stringr_1.4.0        ps_1.7.1             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.1     
-     [51] gtools_3.9.3         MASS_7.3-58          zoo_1.8-10           scales_1.2.0         colourpicker_1.1.1  
-     [56] promises_1.2.0.1     Brobdingnag_1.2-7    inline_0.3.19        shinystan_2.6.0      yaml_2.3.5          
-     [61] curl_4.3.2           gridExtra_2.3        loo_2.5.1            stringi_1.7.8        highr_0.9           
-     [66] dygraphs_1.1.1.6     checkmate_2.1.0      boot_1.3-28          pkgbuild_1.3.1       systemfonts_1.0.4   
-     [71] rlang_1.0.4          pkgconfig_2.0.3      matrixStats_0.62.0   distributional_0.3.0 evaluate_0.15       
-     [76] lattice_0.20-45      purrr_0.3.4          labeling_0.4.2       rstantools_2.2.0     htmlwidgets_1.5.4   
-     [81] processx_3.7.0       tidyselect_1.1.2     plyr_1.8.7           magrittr_2.0.3       R6_2.5.1            
-     [86] generics_0.1.3       DBI_1.1.3            pillar_1.8.0         withr_2.5.0          xts_0.12.1          
-     [91] abind_1.4-5          tibble_3.1.8         crayon_1.5.1         utf8_1.2.2           rmarkdown_2.14      
-     [96] grid_4.2.1           callr_3.7.1          threejs_0.3.3        digest_0.6.29        xtable_1.8-4        
-    [101] tidyr_1.2.0          httpuv_1.6.5         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0       
-    [106] shinyjs_2.1.0       
+      [6] base64enc_0.1-3      rstudioapi_0.13      Deriv_4.1.3          farver_2.1.1         DT_0.23             
+     [11] fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18     splines_4.2.1       
+     [16] shinythemes_1.2.0    bayesplot_1.9.0      jsonlite_1.8.0       nloptr_2.0.3         broom_1.0.0         
+     [21] shiny_1.7.2          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0       
+     [26] cli_3.3.0            later_1.3.0          htmltools_0.5.3      prettyunits_1.1.1    tools_4.2.1         
+     [31] igraph_1.3.4         coda_0.19-4          gtable_0.3.0         glue_1.6.2           reshape2_1.4.4      
+     [36] dplyr_1.0.9          posterior_1.2.2      V8_4.2.0             vctrs_0.4.1          svglite_2.1.0       
+     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.31            stringr_1.4.0       
+     [46] ps_1.7.1             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.1      gtools_3.9.3        
+     [51] MASS_7.3-58          zoo_1.8-10           scales_1.2.0         colourpicker_1.1.1   promises_1.2.0.1    
+     [56] Brobdingnag_1.2-7    inline_0.3.19        shinystan_2.6.0      yaml_2.3.5           curl_4.3.2          
+     [61] gridExtra_2.3        loo_2.5.1            stringi_1.7.8        highr_0.9            dygraphs_1.1.1.6    
+     [66] checkmate_2.1.0      boot_1.3-28          pkgbuild_1.3.1       systemfonts_1.0.4    rlang_1.0.4         
+     [71] pkgconfig_2.0.3      matrixStats_0.62.0   distributional_0.3.0 evaluate_0.15        lattice_0.20-45     
+     [76] purrr_0.3.4          labeling_0.4.2       rstantools_2.2.0     htmlwidgets_1.5.4    processx_3.7.0      
+     [81] tidyselect_1.1.2     plyr_1.8.7           magrittr_2.0.3       R6_2.5.1             generics_0.1.3      
+     [86] DBI_1.1.3            pillar_1.8.0         withr_2.5.0          xts_0.12.1           abind_1.4-5         
+     [91] tibble_3.1.8         crayon_1.5.1         utf8_1.2.2           rmarkdown_2.14       grid_4.2.1          
+     [96] callr_3.7.1          threejs_0.3.3        digest_0.6.29        xtable_1.8-4         tidyr_1.2.0         
+    [101] httpuv_1.6.5         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       

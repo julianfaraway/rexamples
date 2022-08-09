@@ -218,7 +218,13 @@ options(mc.cores = parallel::detectCores())
 set.seed(123)
 ```
 
-Fit the model. Requires use of STAN command file [abrasion.stan](../stancode/abrasion.stan). We have used uninformative priors for the fixed effects and half-cauchy priors for the three variances. Prepare data in a format consistent with the command file. Needs to be a list:
+Fit the model. Requires use of STAN command file [abrasion.stan](../stancode/abrasion.stan). We have used uninformative priors for the fixed effects and half-cauchy priors for the three variances. We view the code here:
+
+```{r}
+writeLines(readLines("../stancode/abrasion.stan"))
+```
+
+Prepare data in a format consistent with the command file. Needs to be a list:
 
 ```{r}
 sdscal <- sd(residuals(lm(wear ~ material, abrasion)))

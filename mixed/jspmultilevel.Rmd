@@ -74,27 +74,26 @@ ggplot(jspr, aes(x=social, y=math))+xlab("Social Class")+ylab("Math Score")+geom
 
 # Mixed Effect Model
 
-As discussed in [Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/),
-we simplify to model with an interaction between the centred Raven score and
+Although the data supports a more complex model, we simplify to having the centred Raven score and
 the social class as fixed effects and the school and class nested within school as
-random effects.
+random effects. 
+See [Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/),
 
 ```{r}
-mmod <- lmer(math ~ craven*social+(1|school)+(1|school:class),jspr)
+mmod <- lmer(math ~ craven + social+(1|school)+(1|school:class),jspr)
 faraway::sumary(mmod)
 ```
 
 We can see the math score is strongly related to
-the entering Raven score. We see that for the same entering score, the
-final math score tends to be lower as social class goes down. 
+the entering Raven score. We see that the math score tends to be lower as social class goes down. 
 We also see the most substantial variation at the individual level with smaller
 amounts of variation at the school and class level.
 
 We test the random effects:
 
 ```{r}
-mmodc <- lmer(math ~ craven*social+(1|school:class),jspr)
-mmods <- lmer(math ~ craven*social+(1|school),jspr)
+mmodc <- lmer(math ~ craven + social+(1|school:class),jspr)
+mmods <- lmer(math ~ craven + social+(1|school),jspr)
 exactRLRT(mmodc, mmod, mmods)
 exactRLRT(mmods, mmod, mmodc)
 ```
@@ -104,14 +103,14 @@ The second test is for the school effect and shows strong evidence of difference
 schools.
 
 
-We can test the interaction fixed effect:
+We can test the social fixed effect:
 
 ```{r}
-mmodm <- lmer(math ~ craven+social+(1|school)+(1|school:class),jspr)
+mmodm <- lmer(math ~ craven + (1|school)+(1|school:class),jspr)
 KRmodcomp(mmod, mmodm)
 ```
 
-We see the interaction is significant.
+We see the social effect is significant.
 
 We can compute confidence intervals for the parameters:
 
@@ -120,7 +119,7 @@ confint(mmod, method="boot")
 ```
 
 The lower end of the class confidence interval is zero while the school random effect
-is clearly larger.
+is clearly larger. This is consistent with the earlier tests.
 
 
 # INLA
@@ -170,22 +169,22 @@ Results are more credible.
 Compute the transforms to an SD scale for the random effect terms. Make a table of summary statistics for the posteriors:
 
 ```{r sumstats}
-sigmarun <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[2]])
-sigmapos <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[3]])
+sigmasch <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[2]])
+sigmacla <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[3]])
 sigmaepsilon <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[1]])
 restab=sapply(result$marginals.fixed, function(x) inla.zmarginal(x,silent=TRUE))
-restab=cbind(restab, inla.zmarginal(sigmarun,silent=TRUE))
-restab=cbind(restab, inla.zmarginal(sigmapos,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmasch,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmacla,silent=TRUE))
 restab=cbind(restab, inla.zmarginal(sigmaepsilon,silent=TRUE))
-colnames(restab) = c("mu","B -- A","C -- A","D -- A","run","position","epsilon")
+colnames(restab) = c("mu",result$names.fixed[2:10],"school SD","class SD","epsilon")
 data.frame(restab) |> kable()
 ```
 
 Also construct a plot the SD posteriors:
 
 ```{r plotsdsab}
-ddf <- data.frame(rbind(sigmarun,sigmapos,sigmaepsilon),errterm=gl(3,nrow(sigmarun),labels = c("run","position","epsilon")))
-ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("wear")+ylab("density")+xlim(0,35)
+ddf <- data.frame(rbind(sigmasch,sigmacla,sigmaepsilon),errterm=gl(3,nrow(sigmasch),labels = c("school","class","epsilon")))
+ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("wear")+ylab("density")
 ```
 
 Posteriors look OK although no weight given to smaller values.
@@ -196,12 +195,12 @@ In [Simpson et al (2015)](http://arxiv.org/abs/1403.4630v3), penalized complexit
 requires that we specify a scaling for the SDs of the random effects. We use the SD of the residuals
 of the fixed effects only model (what might be called the base model in the paper) to provide this scaling.
 
-```{r abrainlapc, cache=TRUE}
-lmod <- lm(wear ~ material, abrasion)
+```{r jspinlapc, cache=TRUE}
+lmod <- lm(math ~ craven + social, jspr)
 sdres <- sd(residuals(lmod))
 pcprior <- list(prec = list(prior="pc.prec", param = c(3*sdres,0.01)))
-formula = wear ~ material+f(run, model="iid", hyper = pcprior)+f(position, model="iid", hyper = pcprior)
-result <- inla(formula, family="gaussian", data=abrasion)
+formula = math ~ social+craven+f(school, model="iid", hyper = pcprior)+f(classch, model="iid", hyper = pcprior)
+result <- inla(formula, family="gaussian", data=jspr)
 summary(result)
 ```
 
@@ -229,92 +228,135 @@ options(mc.cores = parallel::detectCores())
 set.seed(123)
 ```
 
-Fit the model. Requires use of STAN command file [abrasion.stan](../stancode/abrasion.stan). We have used uninformative priors for the fixed effects and half-cauchy priors for the three variances. Prepare data in a format consistent with the command file. Needs to be a list:
+Fit the model. Requires use of STAN command file [jspmultilevel.stan](../stancode/jspmultilevel.stan). We view the code here:
 
 ```{r}
-sdscal <- sd(residuals(lm(wear ~ material, abrasion)))
-abrdat <- list(N=16, Nt=4, treat=as.numeric(abrasion$material), blk1=as.numeric(abrasion$run), blk2=as.numeric(abrasion$position), y=abrasion$wear, sdscal=sdscal)
+writeLines(readLines("../stancode/jspmultilevel.stan"))
 ```
 
-Run in three steps:
+We have used uninformative priors
+for the treatment effects but slightly informative half-cauchy priors
+for the three variances. All the fixed effects have been collected
+into a single design matrix.  The school and class variables need to
+be renumbered into consecutive positive integers. Somewhat
+inconvenient since the schools are numbered up to 50 but have no data
+for two schools so only 48 schools are actually used.
 
-```{r abrastan, cache=TRUE}
-rt <- stanc(file="../stancode/abrasion.stan")
+```{r}
+lmod <- lm(math ~ craven + social, jspr)
+sdscal <- sd(residuals(lmod))
+Xmatrix <- model.matrix( ~ craven + social, jspr)
+jspr$school <- factor(jspr$school)
+jspr$classch <- factor(paste(jspr$school,jspr$class,sep="."))
+jspdat <- list(Nobs=nrow(jspr),
+               Npreds=ncol(Xmatrix),
+               Nlev1=length(unique(jspr$school)),
+               Nlev2=length(unique(jspr$classch)),
+               y=jspr$math,
+               x=Xmatrix,
+               levind1=as.numeric(jspr$school),
+               levind2=as.numeric(jspr$classch),
+               sdscal=sdscal)
+```
+
+Break the fitting of the model into three steps. We use 5x the default number
+of iterations to ensure sufficient sample size for the later estimations.
+
+```{r jspstancomp, cache=TRUE}
+rt <- stanc("../stancode/jspmultilevel.stan")
 sm <- stan_model(stanc_ret = rt, verbose=FALSE)
-system.time(fit <- sampling(sm, data=abrdat))
+set.seed(123)
+system.time(fit <- sampling(sm, data=jspdat, iter=10000))
 ```
-
-We have not used an overall mean. If we want an overall mean
-parameter, we have to set up dummy variables. We can do this but it
-requires more work.
-
 
 ## Diagnostics
 
 For the error SD:
 
-```{r abrasigmaepsdiag}
+```{r jspsigmaeps}
 pname <- "sigmaeps"
 muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
 mdf <- reshape2::melt(muc)
 ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
 ```
 
-For the block one (run) SD:
+For the School SD
 
-```{r abrasigmab1diag}
-pname <- "sigmab1"
+```{r jspsigmalev1}
+pname <- "sigmalev1"
 muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
 mdf <- reshape2::melt(muc)
 ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
 ```
 
-For the block two (position) SD:
+For the class SD
 
-```{r abrasigmab2}
-pname <- "sigmab2"
+```{r jspsigmalev2}
+pname <- "sigmalev2"
 muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
 mdf <- reshape2::melt(muc)
 ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
 ```
 
-Everything looks reasonable.
+All these are satisfactory.
 
 ## Output Summary
 
+Examine the main parameters of interest:
+
 ```{r}
-print(fit,pars=c("trt","sigmaeps","sigmab1","sigmab2"))
+print(fit,pars=c("beta","sigmalev1","sigmalev2","sigmaeps"))
 ```
 
-The effective sample sizes are a bit low so we might want to rerun this with more iterations
-if we care about the tails in particular.
+Remember that the beta correspond to the following parameters:
+
+```{r}
+colnames(Xmatrix)
+```
+
+The results are comparable to the REML fit. The effective sample sizes are sufficient.
 
 ## Posterior Distributions
 
 We can use extract to get at various components of the STAN fit. First consider the SDs for random components:
 
-```{r abrapostsig}
-postsig <- rstan::extract(fit, pars=c("sigmaeps","sigmab1","sigmab2"))
+```{r jsppostsig}
+postsig <- rstan::extract(fit, pars=c("sigmaeps","sigmalev1","sigmalev2"))
 ref <- reshape2::melt(postsig)
-colnames(ref)[2:3] <- c("wear","SD")
-ggplot(data=ref,aes(x=wear, color=SD))+geom_density()
+colnames(ref)[2:3] <- c("math","SD")
+ggplot(data=ref,aes(x=math, color=SD))+geom_density()
 ```
 
-As usual the error SD distribution is a bit more concentrated. We can see
-some weight at zero for the random effects in contrast to the INLA posteriors.
-
-Now the treatment effects:
+As usual the error SD distribution is a more concentrated. The school SD is more diffuse and smaller whereas the class SD is smaller
+still. Now the treatement effects, considering the social class parameters first:
 
 
-```{r abraposttrt}
-postsig <- rstan::extract(fit, pars="trt")
+```{r jspbetapost}
+postsig <- rstan::extract(fit, pars="beta")
 ref <- reshape2::melt(postsig)
-colnames(ref)[2:3] <- c("material","wear")
-ref$material <- LETTERS[1:4][ref$material]
-ggplot(data=ref,aes(x=wear, color=material))+geom_density()
+colnames(ref)[2:3] <- c("beta","math")
+ref$beta <- colnames(Xmatrix)[ref$beta]
+ref %>% dplyr::filter(grepl("social",beta)) %>% ggplot(aes(x=math, color=beta))+geom_density()
 ```
 
-We can see that material A shows some separation from the other levels.
+Now just the raven score parameter:
+
+```{r jspcravenpost}
+ref %>% dplyr::filter(grepl("craven", beta)) %>% ggplot(aes(x=math))+geom_density()
+```
+
+Now for the schools:
+
+```{r jspschoolspost}
+postsig <- rstan::extract(fit, pars="ran1")
+ref <- reshape2::melt(postsig,value.name="math",variable.name="school")
+colnames(ref)[2:3] <- c("school","math")
+ref$school <- factor(unique(jspr$school)[ref$school])
+ggplot(ref,aes(x=math,group=school))+geom_density()
+```
+
+We can see the variation between schools. A league table might be used to rank the schools but the
+high overlap in these distributions show that such a ranking should not be interpreted too seriously.
 
 # BRMS
 
@@ -323,19 +365,19 @@ I have used more than the standard number of iterations because this reduces som
 and does not cost much computationally.
 
 
-```{r brmfit, cache=TRUE}
-suppressMessages(bmod <- brm(wear ~ material + (1|run) + (1|position), data=abrasion,iter=10000, cores=4))
+```{r jspbrmfit, cache=TRUE}
+suppressMessages(bmod <- brm(math ~ craven + social+(1|school)+(1|school:class),data=jspr,iter=10000, cores=4))
 ```
 
 We get some minor warnings. We can obtain some posterior densities and diagnostics with:
 
-```{r eggsbrmsdiag}
+```{r jspbrmsdiag}
 plot(bmod, variable = "^s", regex=TRUE)
 ```
 
 We have chosen only the random effect hyperparameters since this is
 where problems will appear first. Looks OK. We can see some weight
-is given to values of the random effect SDs close to zero.
+is given to values of the class effect SD close to zero.
 
 We can look at the STAN code that `brms` used with:
 
@@ -365,8 +407,7 @@ package. An explanation of this can be found in this
 
 
 ```{r}
-gmod = gam(wear ~ material + s(run,bs="re") + s(position,bs="re"),
-           data=abrasion, method="REML")
+gmod = gam(math ~ craven + social+s(school,bs="re")+s(classch,bs="re"),data=jspr, method="REML")
 ```
 
 and look at the summary output:
@@ -377,7 +418,7 @@ summary(gmod)
 
 We get the fixed effect estimates.
 We also get tests on the random effects (as described in this [article](https://doi.org/10.1093/biomet/ast038). The hypothesis of no variation
-is rejected for both the run and the position. This is consistent
+is rejected for the school but not for the class. This is consistent
 with earlier findings.
 
 We can get an estimate of the operator and error SD:
@@ -393,7 +434,7 @@ in substantially different results. Given the problems of parameters on
 the boundary present in this example, the bootstrap results appear more
 trustworthy.
 
-The random effect estimates for the fields can be found with:
+The fixed and random effect estimates can be found with:
 
 ```{r}
 coef(gmod)
@@ -407,49 +448,35 @@ construct the GAM model without fitting and then use
 the `ginla()` function to perform the computation.
 
 ```{r}
-gmod = gam(wear ~ material + s(run,bs="re") + s(position,bs="re"),
-           data=abrasion, fit = FALSE)
+gmod = gam(math ~ craven + social+s(school,bs="re")+s(classch,bs="re"),
+           data=jspr, fit = FALSE)
 gimod = ginla(gmod)
 ```
 
 We get the posterior density for the intercept as:
 
-```{r abraginlaint}
-plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="yield",ylab="wear")
+```{r jspginlaint}
+plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="math",ylab="density")
 ```
 
-and for the material effects as:
+We get the posterior density for the raven effect as:
 
-```{r abraginlalmat}
-xmat = t(gimod$beta[2:4,])
-ymat = t(gimod$density[2:4,])
-matplot(xmat, ymat,type="l",xlab="wear",ylab="density")
-legend("right",paste0("Material",LETTERS[2:4]),col=1:3,lty=1:3)
+```{r jspginlaraven}
+plot(gimod$beta[2,],gimod$density[2,],type="l",xlab="math per raven",ylab="density")
 ```
 
-We can see some overlap between the effects but clear separation from zero.
+and for the social effects as:
 
-The run effects are:
-
-```{r abraginlalrun}
-xmat = t(gimod$beta[5:8,])
-ymat = t(gimod$density[5:8,])
-matplot(xmat, ymat,type="l",xlab="wear",ylab="density")
-legend("right",paste0("run",1:4),col=1:4,lty=1:4)
+```{r jspginlalsoc}
+xmat = t(gimod$beta[3:10,])
+ymat = t(gimod$density[3:10,])
+matplot(xmat, ymat,type="l",xlab="math",ylab="density")
+legend("left",paste0("social",2:9),col=1:8,lty=1:8)
 ```
 
-All the run effects overlap with zero but runs 3 and 4 are more distinct than 1 and 2.
+We can see some overlap between the effects, but strong evidence of a negative outcome
+relative to social class 1 for some classes.
 
-The position effects are:
-
-```{r abraginlalpos}
-xmat = t(gimod$beta[9:12,])
-ymat = t(gimod$density[9:12,])
-matplot(xmat, ymat,type="l",xlab="wear",ylab="density")
-legend("right",paste0("position",1:4),col=1:4,lty=1:4)
-```
-
-Here positions 1 and 2 are more distinct in their effects.
 
 It is not straightforward to obtain the posterior densities of
 the hyperparameters. 
@@ -459,15 +486,16 @@ the hyperparameters.
 See the [Discussion of the single random effect model](pulp.md#Discussion) for
 general comments. 
 
-- All but the INLA analysis have some ambiguity about whether there is much difference in the
-run and position effects. In the mixed effect model, the effects are just statistically significant
-while the Bayesian analyses also suggest these effects have some impact while still expressing
-some chance that they do not. The INLA analysis does not give any weight to the no effect claim.
+- As with the previous analyses, sometimes the INLA posteriors for the hyperparameters have densities
+which do not give weight to close-to-zero values where other analyses suggest this might be reasonable.
 
-- None of the analysis had any problem with the crossed effects.
+- There is relatively little disagreement between the methods and much similarity.
 
 - There were no major computational issue with the analyses (in contrast with some of
 the other examples)
+
+- The `mgcv` analyses took a little longer than previous analyses because the sample size
+is larger (but still were quite fast). 
 
 # Package version info
 

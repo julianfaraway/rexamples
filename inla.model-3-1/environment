@@ -1,7 +1,0 @@
-export INLA_OS='mac'
-export INLA_PATH='/Library/Frameworks/R.framework/Versions/4.2/Resources/library/INLA/bin'
-export INLA_RHOME='/Library/Frameworks/R.framework/Resources'
-export INLA_RVERSION='4.2'
-export INLA_VECLIB_PATH=''
-export INLA_VERSION='22.06.20-2'
-export PARDISOLICMESSAGE='1'
