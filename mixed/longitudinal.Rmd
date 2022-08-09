@@ -1,0 +1,431 @@
+---
+title: Longitudinal
+author: "[Julian Faraway](https://julianfaraway.github.io/)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  github_document:
+    toc: true
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(comment=NA, 
+                      echo = TRUE,
+                      fig.path="figs/",
+                      dev = 'svglite',  
+                      fig.ext = ".svg",
+                      warning=FALSE, 
+                      message=FALSE)
+knitr::opts_knit$set(global.par = TRUE)
+```
+
+```{r graphopts, include=FALSE}
+par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
+ggplot2::theme_set(ggplot2::theme_bw())
+```
+
+See the [introduction](index.md) for an overview. 
+
+This example is discussed in more detail in my book
+[Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
+
+Required libraries:
+
+```{r}
+library(faraway)
+library(ggplot2)
+library(lme4)
+library(pbkrtest)
+library(RLRsim)
+library(INLA)
+library(knitr)
+library(rstan, quietly=TRUE)
+library(brms)
+library(mgcv)
+```
+
+# Data
+
+The Panel Study of Income Dynamics (PSID), begun in 1968, is a
+longitudinal study of a representative sample of U.S. individuals.
+The study is conducted at the Survey Research
+Center, Institute for Social Research, University of Michigan, and is
+still continuing. There are currently 8700 households in the study
+and many variables are measured. We chose to analyze a random subset
+of this data, consisting of 85 heads of household who were aged
+ 25--39 in 1968 and had complete data for at least 11 of the
+years between 1968 and 1990. The variables included were annual
+income, gender, years of education and age in 1968:
+
+Load in the data:
+
+```{r}
+data(psid, package="faraway")
+head(psid)
+summary(psid)
+psid$cyear <- psid$year-78
+```
+
+We have centered the time variable year. Some plots of just 20 of the subjects:
+
+```{r psidplot}
+psid20 <- dplyr::filter(psid, person <= 20)
+ggplot(psid20, aes(x=year, y=income))+geom_line()+facet_wrap(~ person)
+ggplot(psid20, aes(x=year, y=income+100, group=person)) +geom_line()+facet_wrap(~ sex)+scale_y_log10()
+```
+
+
+# Mixed Effect Model
+
+Suppose that the income change over time can be partly predicted by
+the subject's age, sex and educational level. The variation may be partitioned into two components.
+Clearly there are other factors that will affect a subject's income.
+These factors may cause the income to be generally higher or lower or
+they may cause the income to grow at a faster or slower rate. We can
+model this variation with a random intercept and slope, respectively,
+for each subject.  We also expect that there will be some year-to-year
+variation within each subject. For simplicity, let us initially assume
+that this error is homogeneous and uncorrelated. We also center the year to aid interpretation.
+We may express these notions in the model:
+
+```{r}
+mmod <- lmer(log(income) ~ cyear*sex +age+educ+(1 | person) + (0 + cyear | person), psid)
+faraway::sumary(mmod, digits=3)
+```
+
+This model can be written as: 
+$$
+\begin{aligned}
+\mathrm{\log(income)}_{ij} &= \mu + \beta_{y} \mathrm{year}_i + \beta_s \mathrm{sex}_j + \beta_{ys} \mathrm{sex}_j \times \mathrm{year}_i + \beta_e \mathrm{educ}_j + \beta_a \mathrm{age}_j \\ &+ \gamma^0_j + \gamma^1_j \mathrm{year}_i + \epsilon_{ij}
+\end{aligned}
+$$
+where $i$ indexes the year and $j$ indexes the individual. We have: 
+$$\left(
+  \begin{array}{c}
+    \gamma^0_k \\
+    \gamma^1_k
+  \end{array}
+  \right) \sim
+  N(0,\sigma^2 D)$$
+
+We have chosen not to have an interaction between the intercept and the slope random effects
+and so $D$ is a diagonal matrix. It is possible to have such an interaction in
+`lmer()` models but not in some of the models below. As it happens, if you do fit
+a model with such an interaction, you find that it is not significant. Hence dropping
+it does not make much difference in this instance.
+
+We can test the interaction term in the fixed effect part of the model:
+
+```{r}
+mmod <- lmer(log(income) ~ cyear*sex +age+educ+(1 | person) + (0 + cyear | person),psid, REML=FALSE)
+mmodr <- lmer(log(income) ~ cyear + sex +age+educ+(1 | person) + (0 + cyear | person),psid, REML=FALSE)
+KRmodcomp(mmod,mmodr)
+```
+
+We find that the interaction is statistically significant. We can also compute
+bootstrap confidence intervals:
+
+```{r psidboot, cache=TRUE}
+confint(mmod, method="boot", oldNames=FALSE)
+```
+
+We see that all the standard deviations are clearly well above zero. The age
+effect does not look significant.
+
+
+# INLA
+
+Integrated nested Laplace approximation is a method of Bayesian computation
+which uses approximation rather than simulation. More can be found
+on this topic in [Bayesian Regression Modeling with INLA](http://julianfaraway.github.io/brinla/) and the 
+[chapter on GLMMs](https://julianfaraway.github.io/brinlabook/chaglmm.html)
+
+Use the most recent computational methodology:
+
+
+```{r}
+inla.setOption(inla.mode="experimental")
+inla.setOption("short.summary",TRUE)
+```
+
+We need to create a duplicate of the person variable because this variable appears
+in two random effect terms and INLA requires these be distinct. We fit the default
+INLA model:
+
+```{r psidinladef, cache=TRUE}
+psid$slperson <- psid$person
+formula <- log(income) ~ cyear*sex+age+educ + f(person, model="iid") + f(slperson, cyear , model="iid")
+result <- inla(formula, family="gaussian", data=psid)
+summary(result)
+```
+
+In this case, the default priors appear to produce believable results for the precisions.
+
+```{r sumstats}
+sigmaint <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[2]])
+sigmaslope <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[3]])
+sigmaepsilon <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[1]])
+restab=sapply(result$marginals.fixed, function(x) inla.zmarginal(x,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmaint,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmaslope,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmaepsilon,silent=TRUE))
+mm <- model.matrix(~ cyear*sex+age+educ,psid)
+colnames(restab) = c("Intercept",colnames(mm)[-1],"intSD","slopeSD","epsilon")
+data.frame(restab) |> kable()
+```
+
+Also construct a plot the SD posteriors:
+
+```{r plotsdspsid}
+ddf <- data.frame(rbind(sigmaint,sigmaslope,sigmaepsilon),errterm=gl(3,nrow(sigmaint),labels = c("intercept","slope","epsilon")))
+ggplot(ddf, aes(x,y))+geom_line()+xlab("log(income)")+ylab("density") + 
+  facet_wrap(~ errterm, scales = "free")
+```
+
+Posteriors look OK. 
+
+# STAN
+
+[STAN](https://mc-stan.org/) performs Bayesian inference using
+MCMC.
+Set up STAN to use multiple cores. Set the random number seed for reproducibility.
+
+```{r}
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+set.seed(123)
+```
+
+Fit the model. Requires use of STAN command file [longitudinal.stan](../stancode/longitudinal.stan). We view the code here:
+
+```{r}
+writeLines(readLines("../stancode/longitudinal.stan"))
+```
+
+We have used uninformative priors.
+
+Set up the data as a list:
+
+```{r}
+lmod <- lm(log(income) ~ cyear*sex +age+educ, psid)
+x <- model.matrix(lmod)
+psiddat <- list(Nobs = nrow(psid),
+                Npreds = ncol(x),
+                Ngroups = length(unique(psid$person)),
+                y = log(psid$income),
+                x = x,
+                timevar = psid$cyear,
+                group = psid$person)
+```
+
+Break the fitting of the model into three steps. 
+
+```{r psidstancomp, cache=TRUE}
+rt <- stanc("../stancode/longitudinal.stan")
+sm <- stan_model(stanc_ret = rt, verbose=FALSE)
+set.seed(123)
+system.time(fit <- sampling(sm, data=psiddat))
+```
+
+## Diagnostics
+
+For the error SD:
+
+```{r psidsigmaeps}
+muc <- rstan::extract(fit, pars="sigmaeps",  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+Looks OK. For the intercept SD
+
+```{r psidsigmaint}
+pname <- "sigmaint"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+Looks OK. For the slope SD.
+
+```{r psidsigmaslope}
+pname <- "sigmaslope"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+Again satisfactory.
+
+
+## Output Summary
+
+Examine the main parameters of interest:
+
+```{r}
+print(fit,par=c("beta","sigmaint","sigmaslope","sigmaeps"))
+```
+
+Remember that the beta correspond to the following parameters:
+
+```{r}
+colnames(x)
+```
+
+## Posterior Distributions
+
+First the random effect parameters:
+
+```{r psidpostsig}
+postsig <- rstan::extract(fit, pars=c("sigmaint","sigmaslope","sigmaeps"))
+ref <- reshape2::melt(postsig)
+colnames(ref)[2:3] <- c("logincome","parameter")
+ggplot(data=ref,aes(x=logincome))+geom_density()+facet_wrap(~parameter,scales="free")
+```
+
+The slope parameter is not on the same scale.
+
+```{r psidpostbeta}
+ref <- reshape2::melt(rstan::extract(fit, pars="beta")$beta)
+colnames(ref)[2:3] <- c("parameter","logincome")
+ref$parameter <- factor(colnames(x)[ref$parameter])
+ggplot(ref, aes(x=logincome))+geom_density()+geom_vline(xintercept=0)+facet_wrap(~parameter,scales="free")
+```
+
+We see that age and possibly the year:sex interaction are the only terms which may not contribute much,
+
+# BRMS
+
+[BRMS](https://paul-buerkner.github.io/brms/) stands for Bayesian Regression Models with STAN. It provides a convenient wrapper to STAN functionality. We specify the model as in `lmer()` above.
+
+
+```{r psidbrmfit, cache=TRUE}
+suppressMessages(bmod <- brm(log(income) ~ cyear*sex +age+educ+(1 | person) + (0 + cyear | person),data=psid, cores=4))
+```
+
+We can obtain some posterior densities and diagnostics with:
+
+```{r psidbrmsdiag}
+plot(bmod, variable = "^s", regex=TRUE)
+```
+
+We have chosen only the random effect hyperparameters since this is
+where problems will appear first. Looks OK. 
+
+We can look at the STAN code that `brms` used with:
+
+```{r}
+stancode(bmod)
+```
+
+We see that `brms` is using student t distributions with 3 degrees of
+freedom for the priors. For the error SDs, this will be truncated at
+zero to form half-t distributions. You can get a more explicit description
+of the priors with `prior_summary(bmod)`. 
+We examine the fit:
+
+```{r}
+summary(bmod)
+```
+
+The results are consistent with those seen previously.
+
+# MGCV
+
+It is possible to fit some GLMMs within the GAM framework of the `mgcv`
+package. An explanation of this can be found in this 
+[blog](https://fromthebottomoftheheap.net/2021/02/02/random-effects-in-gams/). The
+`s()` function requires `person` to be a factor to achieve the expected outcome.
+
+
+```{r}
+psid$person = factor(psid$person)
+gmod = gam(log(income) ~ cyear*sex + age + educ + 
+             s(person, bs = 're') + s(person, cyear, bs = 're'), data=psid, method="REML")
+```
+
+and look at the summary output:
+
+```{r}
+summary(gmod)
+```
+
+We get the fixed effect estimates.
+We also get tests on the random effects (as described in this [article](https://doi.org/10.1093/biomet/ast038). The hypothesis of no variation
+is rejected in both cases. This is consistent
+with earlier findings.
+
+We can get an estimate of the operator and error SD:
+
+```{r}
+gam.vcomp(gmod)
+```
+
+The point estimates are the same as the REML estimates from `lmer` earlier.
+The confidence intervals are slightly different. A bootstrap method was used for
+the `lmer` fit whereas `gam` is using an asymptotic approximation resulting
+in slightly different results. 
+
+The fixed and random effect estimates can be found with:
+
+```{r}
+head(coef(gmod),20)
+```
+
+We have not printed them all out because they are too many in number to appreciate.
+
+# GINLA
+
+In [Wood (2019)](https://doi.org/10.1093/biomet/asz044), a
+simplified version of INLA is proposed. The first
+construct the GAM model without fitting and then use
+the `ginla()` function to perform the computation.
+
+```{r psidginlaest, cache=TRUE}
+gmod = gam(log(income) ~ cyear*sex + age + educ + 
+             s(person, bs = 're') + s(person, cyear, bs = 're'), data=psid, fit = FALSE)
+gimod = ginla(gmod)
+```
+
+We get the posterior density for the intercept as:
+
+```{r psidginlaint}
+plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="log(income)",ylab="density")
+```
+
+and for the age fixed effects as:
+
+```{r psidginlaage}
+plot(gimod$beta[4,],gimod$density[4,],type="l",xlab="log(income) per age",ylab="density")
+abline(v=0)
+```
+
+We see that the posterior for the age effect substantially overlaps zero.
+
+
+It is not straightforward to obtain the posterior densities of
+the hyperparameters. 
+
+# Discussion
+
+See the [Discussion of the single random effect model](pulp.md#Discussion) for
+general comments. 
+
+- INLA and mgcv were unable to fit a model with an interaction between the random
+effects. STAN, brms and lme4 can do this.
+
+- There is relatively little disagreement between the methods and much similarity.
+
+- There were no major computational issue with the analyses (in contrast with some of
+the other examples)
+
+- The `mgcv` analyses took a little longer than previous analyses because the sample size
+is larger (but still were quite fast). 
+
+# Package version info
+
+```{r}
+sessionInfo()
+```
+
+
+
