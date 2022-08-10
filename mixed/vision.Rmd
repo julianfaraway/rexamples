@@ -1,0 +1,490 @@
+---
+title: Repeated Measures
+author: "[Julian Faraway](https://julianfaraway.github.io/)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  github_document:
+    toc: true
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(comment=NA, 
+                      echo = TRUE,
+                      fig.path="figs/",
+                      dev = 'svglite',  
+                      fig.ext = ".svg",
+                      warning=FALSE, 
+                      message=FALSE)
+knitr::opts_knit$set(global.par = TRUE)
+```
+
+```{r graphopts, include=FALSE}
+par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
+ggplot2::theme_set(ggplot2::theme_bw())
+```
+
+See the [introduction](index.md) for an overview. 
+
+This example is discussed in more detail in my book
+[Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
+
+Required libraries:
+
+```{r}
+library(faraway)
+library(ggplot2)
+library(lme4)
+library(pbkrtest)
+library(RLRsim)
+library(INLA)
+library(knitr)
+library(rstan, quietly=TRUE)
+library(brms)
+library(mgcv)
+```
+
+# Data
+
+The acuity of vision for seven subjects was tested. The response
+is the lag in milliseconds between a light flash and a response in
+the cortex of the eye. Each eye is tested at four different powers of lens.
+An object at the distance of the second number appears to be at distance
+of the first number.
+
+Load in and look at the data:
+
+```{r}
+data(vision, package="faraway")
+ftable(xtabs(acuity ~ eye + subject + power, data=vision))
+```
+
+We create a numeric version of the power to make a plot:
+
+```{r visplot}
+vision$npower <- rep(1:4,14)
+ggplot(vision, aes(y=acuity, x=npower, linetype=eye)) + geom_line() + facet_wrap(~ subject, ncol=4) + scale_x_continuous("Power",breaks=1:4,labels=c("6/6","6/18","6/36","6/60"))
+```
+
+# Mixed Effect Model
+
+The power is a fixed effect. In the model below, we have treated it as a nominal factor,
+but we could try fitting it in a quantitative manner. The subjects
+should be treated as random effects. Since we do not believe there is
+any consistent right-left eye difference between individuals, we should
+treat the eye factor as nested within subjects. We fit this
+model:
+
+
+```{r}
+mmod <- lmer(acuity~power + (1|subject) + (1|subject:eye),vision)
+faraway::sumary(mmod)
+```
+
+This model can be written as: 
+$$
+y_{ijk} = \mu + p_j + s_i + e_{ik} + \epsilon_{ijk}
+$$
+where $i=1, \dots ,7$ runs over individuals, $j=1, \dots ,4$ runs over
+power and $k=1,2$ runs over eyes. The $p_j$ term is a fixed effect, but
+the remaining terms are random. Let $s_i \sim N(0,\sigma^2_s)$,
+$e_{ik} \sim N(0,\sigma^2_e)$ and $\epsilon_{ijk} \sim N(0,\sigma^2\Sigma)$ where we take $\Sigma=I$.
+
+We can check for a power effect using a Kenward-Roger adjusted $F$-test:
+
+```{r}
+mmod <- lmer(acuity~power+(1|subject)+(1|subject:eye),vision,REML=FALSE)
+nmod <- lmer(acuity~1+(1|subject)+(1|subject:eye),vision,REML=FALSE)
+KRmodcomp(mmod, nmod)
+```
+
+The power just fails to meet the 5% level of significance (although note that there
+is a clear outlier in the data which deserves some consideration).
+We can also compute bootstrap confidence intervals:
+
+```{r visboot, cache=TRUE}
+set.seed(123)
+print(confint(mmod, method="boot", oldNames=FALSE, nsim=1000),digits=3)
+```
+
+We see that lower ends of the CIs for random effect SDs are zero or close to it. 
+
+# INLA
+
+Integrated nested Laplace approximation is a method of Bayesian computation
+which uses approximation rather than simulation. More can be found
+on this topic in [Bayesian Regression Modeling with INLA](http://julianfaraway.github.io/brinla/) and the 
+[chapter on GLMMs](https://julianfaraway.github.io/brinlabook/chaglmm.html)
+
+Use the most recent computational methodology:
+
+
+```{r}
+inla.setOption(inla.mode="experimental")
+inla.setOption("short.summary",TRUE)
+```
+
+We fit the default
+INLA model. We need to created a combined eye and subject factor.
+
+```{r visinladef, cache=TRUE}
+vision$eyesub <- paste0(vision$eye,vision$subject)
+formula <- acuity ~ power + f(subject, model="iid") + f(eyesub, model="iid")
+result <- inla(formula, family="gaussian", data=vision)
+summary(result)
+```
+
+The precisions for the random effects are relatively high. We should try some
+more informative priors.
+
+
+
+# Informative Gamma priors on the precisions
+
+Now try more informative gamma priors for the precisions. Define it so
+the mean value of gamma prior is set to the inverse of the variance of
+the residuals of the fixed-effects only model. We expect the error
+variances to be lower than this variance so this is an overestimate.
+
+```{r visinlaig, cache=TRUE}
+apar <- 0.5
+lmod <- lm(acuity ~ power, vision)
+bpar <- apar*var(residuals(lmod))
+lgprior <- list(prec = list(prior="loggamma", param = c(apar,bpar)))
+formula = acuity ~ power+f(subject, model="iid", hyper = lgprior)+f(eyesub, model="iid", hyper = lgprior)
+result <- inla(formula, family="gaussian", data=vision)
+summary(result)
+```
+
+Compute the transforms to an SD scale for the random effect terms. Make a table of summary statistics for the posteriors:
+
+```{r sumstats}
+sigmasubject <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[2]])
+sigmaeye <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[3]])
+sigmaepsilon <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[1]])
+restab=sapply(result$marginals.fixed, function(x) inla.zmarginal(x,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmasubject,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmaeye,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmaepsilon,silent=TRUE))
+colnames(restab) = c("mu",names(lmod$coef)[-1],"subject","eyesub","epsilon")
+data.frame(restab) |> kable()
+```
+
+Also construct a plot the SD posteriors:
+
+```{r plotsdsvis}
+ddf <- data.frame(rbind(sigmasubject,sigmaeye,sigmaepsilon),errterm=gl(3,nrow(sigmaepsilon),labels = c("subject","eye","epsilon")))
+ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("acuity")+ylab("density")+xlim(0,15)
+```
+
+Posteriors for the subject and eye give no weight to values close to zero.
+
+# Penalized Complexity Prior
+
+In [Simpson et al (2015)](http://arxiv.org/abs/1403.4630v3), penalized complexity priors are proposed. This
+requires that we specify a scaling for the SDs of the random effects. We use the SD of the residuals
+of the fixed effects only model (what might be called the base model in the paper) to provide this scaling.
+
+```{r visinlapc}
+lmod <- lm(acuity ~ power, vision)
+sdres <- sd(residuals(lmod))
+pcprior <- list(prec = list(prior="pc.prec", param = c(3*sdres,0.01)))
+formula = acuity ~ power+f(subject, model="iid", hyper = pcprior)+f(eyesub, model="iid", hyper = pcprior)
+result <- inla(formula, family="gaussian", data=vision)
+summary(result)
+```
+
+Compute the summaries as before:
+
+```{r ref.label="sumstats"}
+```
+
+Make the plots:
+
+```{r vispc, ref.label="plotsdsvis"}
+```
+
+Posteriors for eye and subject come closer to zero compared to the inverse gamma prior.
+
+
+# STAN
+
+[STAN](https://mc-stan.org/) performs Bayesian inference using
+MCMC.
+Set up STAN to use multiple cores. Set the random number seed for reproducibility.
+
+```{r}
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+set.seed(123)
+```
+
+Fit the model. Requires use of STAN command file
+[multilevel.stan](../stancode/multilevel.stan). 
+
+We view the code here:
+
+```{r}
+writeLines(readLines("../stancode/multilevel.stan"))
+```
+
+We have used uninformative priors
+for the treatment effects but slightly informative half-cauchy priors
+for the three variances. The fixed effects have been collected
+into a single design matrix. We are using the same STAN command file
+as for the [Junior Schools project](jspmultilevel.md) multilevel example because
+we have the same two levels of nesting.
+
+
+```{r}
+lmod <- lm(acuity ~ power, vision)
+sdscal <- sd(residuals(lmod))
+Xmatrix <- model.matrix(lmod)
+vision$subjeye <- factor(paste(vision$subject,vision$eye,sep="."))
+visdat <- list(Nobs=nrow(vision),
+               Npreds=ncol(Xmatrix),
+               Nlev1=length(unique(vision$subject)),
+               Nlev2=length(unique(vision$subjeye)),
+               y=vision$acuity,
+               x=Xmatrix,
+               levind1=as.numeric(vision$subject),
+               levind2=as.numeric(vision$subjeye),
+               sdscal=sdscal)
+```
+
+Break the fitting of the model into three steps.
+
+```{r visstancomp, cache=TRUE}
+rt <- stanc("../stancode/multilevel.stan")
+sm <- stan_model(stanc_ret = rt, verbose=FALSE)
+set.seed(123)
+system.time(fit <- sampling(sm, data=visdat))
+```
+
+## Diagnostics
+
+
+For the error SD:
+
+```{r visdiagsigma}
+pname <- "sigmaeps"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+For the Subject SD
+
+```{r visdiaglev1}
+pname <- "sigmalev1"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+For the Subject by Eye SD
+
+```{r visdiaglev2}
+pname <- "sigmalev2"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+All these are satisfactory.
+
+## Output Summary
+
+Examine the main parameters of interest:
+
+```{r}
+print(fit,pars=c("beta","sigmalev1","sigmalev2","sigmaeps"))
+```
+
+Remember that the beta correspond to the following parameters:
+
+```{r}
+colnames(Xmatrix)
+```
+
+The results are comparable to the maximum likelihood fit. The effective sample sizes are sufficient.
+
+## Posterior Distributions
+
+We can use extract to get at various components of the STAN fit. First consider the SDs for random components:
+
+```{r vispdsig}
+postsig <- rstan::extract(fit, pars=c("sigmaeps","sigmalev1","sigmalev2"))
+ref <- reshape2::melt(postsig,value.name="acuity")
+ggplot(data=ref,aes(x=acuity, color=L1))+geom_density()+guides(color=guide_legend(title="SD"))
+```
+
+As usual the error SD distribution is  more concentrated. The subject SD is more diffuse and smaller whereas the eye SD is smaller
+still. Now the treatment effects:
+
+
+```{r vispdtrt}
+ref <- reshape2::melt(rstan::extract(fit, pars="beta"),value.name="acuity",varnames=c("iterations","beta"))
+ref$beta <- colnames(Xmatrix)[ref$beta]
+ref %>% dplyr::filter(grepl("power", beta)) %>% ggplot(aes(x=acuity, color=beta))+geom_density()
+```
+
+Now just the intercept parameter:
+
+```{r vispdint}
+ref %>% dplyr::filter(grepl("Intercept", beta)) %>% ggplot(aes(x=acuity))+geom_density()
+```
+
+Now for the subjects:
+
+```{r vispdsub}
+postsig <- rstan::extract(fit, pars="ran1")
+ref <- reshape2::melt(postsig,value.name="acuity",variable.name="subject")
+colnames(ref)[2:3] <- c("subject","acuity")
+ref$subject <- factor(unique(vision$subject)[ref$subject])
+ggplot(ref,aes(x=acuity,color=subject))+geom_density()
+```
+
+We can see the variation between subjects.
+
+
+# BRMS
+
+[BRMS](https://paul-buerkner.github.io/brms/) stands for Bayesian Regression Models with STAN. It provides a convenient wrapper to STAN functionality. We specify the model as in `lmer()` above.
+
+
+```{r visbrmfit, cache=TRUE}
+suppressMessages(bmod <- brm(acuity~power + (1|subject) + (1|subject:eye),data=vision, cores=4))
+```
+
+We can obtain some posterior densities and diagnostics with:
+
+```{r visbrmsdiag}
+plot(bmod, variable = "^s", regex=TRUE)
+```
+
+We have chosen only the random effect hyperparameters since this is
+where problems will appear first. Looks OK. 
+
+We can look at the STAN code that `brms` used with:
+
+```{r}
+stancode(bmod)
+```
+
+We see that `brms` is using student t distributions with 3 degrees of
+freedom for the priors. For the error SDs, this will be truncated at
+zero to form half-t distributions. You can get a more explicit description
+of the priors with `prior_summary(bmod)`. 
+We examine the fit:
+
+```{r}
+summary(bmod)
+```
+
+The results are consistent with those seen previously.
+
+# MGCV
+
+It is possible to fit some GLMMs within the GAM framework of the `mgcv`
+package. An explanation of this can be found in this 
+[blog](https://fromthebottomoftheheap.net/2021/02/02/random-effects-in-gams/). The
+`s()` function requires `person` to be a factor to achieve the expected outcome.
+
+
+```{r}
+gmod = gam(acuity~power + 
+             s(subject, bs = 're') + s(subject, eye, bs = 're'), data=vision, method="REML")
+```
+
+and look at the summary output:
+
+```{r}
+summary(gmod)
+```
+
+We get the fixed effect estimates.
+We also get tests on the random effects (as described in this [article](https://doi.org/10.1093/biomet/ast038)). The hypothesis of no variation
+is rejected for the subjects but not for the eyes. This is somewhat consistent
+with earlier findings.
+
+We can get an estimate of the subject, eye and error SD:
+
+```{r}
+gam.vcomp(gmod)
+```
+
+The point estimates are the same as the REML estimates from `lmer` earlier.
+The confidence intervals are different. A bootstrap method was used for
+the `lmer` fit whereas `gam` is using an asymptotic approximation resulting
+in different results. 
+
+The fixed and random effect estimates can be found with:
+
+```{r}
+coef(gmod)
+```
+
+# GINLA
+
+In [Wood (2019)](https://doi.org/10.1093/biomet/asz044), a
+simplified version of INLA is proposed. The first
+construct the GAM model without fitting and then use
+the `ginla()` function to perform the computation.
+
+```{r visginlaest, cache=TRUE}
+gmod = gam(acuity~power + 
+             s(subject, bs = 're') + s(subject, eye, bs = 're'), data=vision,fit = FALSE)
+gimod = ginla(gmod)
+```
+
+We get the posterior density for the intercept as:
+
+```{r visginlaint}
+plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="acuity",ylab="density")
+```
+
+and for the power effects as:
+
+```{r visginlapower}
+xmat = t(gimod$beta[2:4,])
+ymat = t(gimod$density[2:4,])
+matplot(xmat, ymat,type="l",xlab="math",ylab="density")
+legend("left",levels(vision$power)[-1],col=1:3,lty=1:3)
+```
+
+We see the highest power has very little overlap with zero.
+
+```{r visginlasubs}
+xmat = t(gimod$beta[5:11,])
+ymat = t(gimod$density[5:11,])
+matplot(xmat, ymat,type="l",xlab="math",ylab="density")
+legend("left",paste0("subject",1:7),col=1:7,lty=1:7)
+```
+
+In contrast to the STAN posteriors, these posterior densities appear to have
+the same variation.
+
+It is not straightforward to obtain the posterior densities of
+the hyperparameters. 
+
+# Discussion
+
+See the [Discussion of the single random effect model](pulp.md#Discussion) for
+general comments. 
+
+- There is relatively little disagreement between the methods and much similarity.
+
+- There were no major computational issue with the analyses (in contrast with some of
+the other examples)
+
+- The INLA posteriors for the hyperparameters did not put as much weight on values
+close to zero as might be expected.
+
+# Package version info
+
+```{r}
+sessionInfo()
+```
+
+
+

@@ -182,7 +182,7 @@ data.frame(restab) |> kable()
 
 Also construct a plot the SD posteriors:
 
-```{r plotsdsab}
+```{r jsppostsd}
 ddf <- data.frame(rbind(sigmasch,sigmacla,sigmaepsilon),errterm=gl(3,nrow(sigmasch),labels = c("school","class","epsilon")))
 ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("wear")+ylab("density")
 ```
@@ -211,8 +211,11 @@ Compute the summaries as before:
 
 Make the plots:
 
-```{r abrapc, ref.label="plotsdsab"}
+```{r jsppostsdpc}
+ddf <- data.frame(rbind(sigmasch,sigmacla,sigmaepsilon),errterm=gl(3,nrow(sigmasch),labels = c("school","class","epsilon")))
+ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("wear")+ylab("density")
 ```
+
 
 Posteriors put more weight on lower values compared to gamma prior.
 
@@ -228,10 +231,10 @@ options(mc.cores = parallel::detectCores())
 set.seed(123)
 ```
 
-Fit the model. Requires use of STAN command file [jspmultilevel.stan](../stancode/jspmultilevel.stan). We view the code here:
+Fit the model. Requires use of STAN command file [multilevel.stan](../stancode/multilevel.stan). We view the code here:
 
 ```{r}
-writeLines(readLines("../stancode/jspmultilevel.stan"))
+writeLines(readLines("../stancode/multilevel.stan"))
 ```
 
 We have used uninformative priors
@@ -263,7 +266,7 @@ Break the fitting of the model into three steps. We use 5x the default number
 of iterations to ensure sufficient sample size for the later estimations.
 
 ```{r jspstancomp, cache=TRUE}
-rt <- stanc("../stancode/jspmultilevel.stan")
+rt <- stanc("../stancode/multilevel.stan")
 sm <- stan_model(stanc_ret = rt, verbose=FALSE)
 set.seed(123)
 system.time(fit <- sampling(sm, data=jspdat, iter=10000))

@@ -1,7 +1,7 @@
 Multilevel Design
 ================
 [Julian Faraway](https://julianfaraway.github.io/)
-09 August 2022
+10 August 2022
 
 -   <a href="#data" id="toc-data">Data</a>
 -   <a href="#mixed-effect-model" id="toc-mixed-effect-model">Mixed Effect
@@ -135,7 +135,7 @@ exactRLRT(mmodc, mmod, mmods)
         (p-value based on 10000 simulated values)
 
     data:  
-    RLRT = 1.85, p-value = 0.082
+    RLRT = 1.85, p-value = 0.078
 
 ``` r
 exactRLRT(mmods, mmod, mmodc)
@@ -147,7 +147,7 @@ exactRLRT(mmods, mmod, mmodc)
         (p-value based on 10000 simulated values)
 
     data:  
-    RLRT = 7.64, p-value = 0.0036
+    RLRT = 7.64, p-value = 0.0024
 
 The first test is for the class effect which just fails to meet the 5%
 significance level. The second test is for the school effect and shows
@@ -311,7 +311,7 @@ ddf <- data.frame(rbind(sigmasch,sigmacla,sigmaepsilon),errterm=gl(3,nrow(sigmas
 ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("wear")+ylab("density")
 ```
 
-![](figs/plotsdsab-1..svg)<!-- -->
+![](figs/jsppostsd-1..svg)<!-- -->
 
 Posteriors look OK although no weight given to smaller values.
 
@@ -384,7 +384,7 @@ ddf <- data.frame(rbind(sigmasch,sigmacla,sigmaepsilon),errterm=gl(3,nrow(sigmas
 ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("wear")+ylab("density")
 ```
 
-![](figs/abrapc-1..svg)<!-- -->
+![](figs/jsppostsdpc-1..svg)<!-- -->
 
 Posteriors put more weight on lower values compared to gamma prior.
 
@@ -401,11 +401,10 @@ set.seed(123)
 ```
 
 Fit the model. Requires use of STAN command file
-[jspmultilevel.stan](../stancode/jspmultilevel.stan). We view the code
-here:
+[multilevel.stan](../stancode/multilevel.stan). We view the code here:
 
 ``` r
-writeLines(readLines("../stancode/jspmultilevel.stan"))
+writeLines(readLines("../stancode/multilevel.stan"))
 ```
 
     data {
@@ -478,14 +477,14 @@ number of iterations to ensure sufficient sample size for the later
 estimations.
 
 ``` r
-rt <- stanc("../stancode/jspmultilevel.stan")
+rt <- stanc("../stancode/multilevel.stan")
 sm <- stan_model(stanc_ret = rt, verbose=FALSE)
 set.seed(123)
 system.time(fit <- sampling(sm, data=jspdat, iter=10000))
 ```
 
        user  system elapsed 
-    135.359   7.234  57.931 
+    135.507   7.363  58.611 
 
 ## Diagnostics
 
@@ -532,7 +531,7 @@ Examine the main parameters of interest:
 print(fit,pars=c("beta","sigmalev1","sigmalev2","sigmaeps"))
 ```
 
-    Inference for Stan model: jspmultilevel.
+    Inference for Stan model: multilevel.
     4 chains, each with iter=10000; warmup=5000; thin=1; 
     post-warmup draws per chain=5000, total post-warmup draws=20000.
 
@@ -551,7 +550,7 @@ print(fit,pars=c("beta","sigmalev1","sigmalev2","sigmaeps"))
     sigmalev2  1.00    0.01 0.49  0.08  0.65  1.01  1.35  1.98  1901    1
     sigmaeps   5.26    0.00 0.13  5.02  5.17  5.26  5.35  5.51 26651    1
 
-    Samples were drawn using NUTS(diag_e) at Tue Aug  9 09:50:13 2022.
+    Samples were drawn using NUTS(diag_e) at Wed Aug 10 11:38:04 2022.
     For each parameter, n_eff is a crude measure of effective sample size,
     and Rhat is the potential scale reduction factor on split chains (at 
     convergence, Rhat=1).

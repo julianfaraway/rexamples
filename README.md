@@ -8,8 +8,8 @@
 - [Nested Effects](mixed/eggs.md) - the `eggs` data
 - [Crossed Effects](mixed/abrasion/md) - the `abrasion` data
 - [Multilevel Models](mixed/jspmultilevel.md) - the `jsp` data
+- [Longitudinal Models](mixed/longitudinal.md) - the `psid` data
+- [Repeated Measures](mixed/repeated.md) - the `vision` data
 <!---
-- [Longitudinal Models](longitudinal.html) - the `psid` data
-- [Repeated Measures](repeated.html) - the `vision` data
 - [Multiple Response Models](multiple.html) - the `jsp` data
 -->
