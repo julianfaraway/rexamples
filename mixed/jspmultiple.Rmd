@@ -95,11 +95,11 @@ faraway::sumary(mmod)
 The model being fit for school $i$, class $j$, student $k$ in
 subject $l$ is:
 $$
-\begin{eqnarray*}
+\begin{aligned}
   score_{ijkl} =& subject_l + gender_k + raven_k + social_k +
   (subject \times gender)_{lk} +  \\ & (raven \times subject)_{lk} +
   school_i + class_j + student_k + \epsilon_{ijkl}
-\end{eqnarray*}
+\end{aligned}
 $$
 where the Raven score has been mean centered and school, class and
 student are random effects with the other terms, apart from $\epsilon$,

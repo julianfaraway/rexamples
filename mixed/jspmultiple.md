@@ -131,15 +131,15 @@ in subject
 ![l](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;l "l")
 is:
 
-![\begin{eqnarray\*}
+![\begin{aligned}
   score\_{ijkl} =& subject_l + gender_k + raven_k + social_k +
   (subject \times gender)\_{lk} +  \\\\ & (raven \times subject)\_{lk} +
   school_i + class_j + student_k + \epsilon\_{ijkl}
-\end{eqnarray\*}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Cbegin%7Beqnarray%2A%7D%0A%20%20score_%7Bijkl%7D%20%3D%26%20subject_l%20%2B%20gender_k%20%2B%20raven_k%20%2B%20social_k%20%2B%0A%20%20%28subject%20%5Ctimes%20gender%29_%7Blk%7D%20%2B%20%20%5C%5C%20%26%20%28raven%20%5Ctimes%20subject%29_%7Blk%7D%20%2B%0A%20%20school_i%20%2B%20class_j%20%2B%20student_k%20%2B%20%5Cepsilon_%7Bijkl%7D%0A%5Cend%7Beqnarray%2A%7D "\begin{eqnarray*}
+\end{aligned}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Cbegin%7Baligned%7D%0A%20%20score_%7Bijkl%7D%20%3D%26%20subject_l%20%2B%20gender_k%20%2B%20raven_k%20%2B%20social_k%20%2B%0A%20%20%28subject%20%5Ctimes%20gender%29_%7Blk%7D%20%2B%20%20%5C%5C%20%26%20%28raven%20%5Ctimes%20subject%29_%7Blk%7D%20%2B%0A%20%20school_i%20%2B%20class_j%20%2B%20student_k%20%2B%20%5Cepsilon_%7Bijkl%7D%0A%5Cend%7Baligned%7D "\begin{aligned}
   score_{ijkl} =& subject_l + gender_k + raven_k + social_k +
   (subject \times gender)_{lk} +  \\ & (raven \times subject)_{lk} +
   school_i + class_j + student_k + \epsilon_{ijkl}
-\end{eqnarray*}")
+\end{aligned}")
 
 where the Raven score has been mean centered and school, class and
 student are random effects with the other terms, apart from
