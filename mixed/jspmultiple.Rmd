@@ -1,0 +1,529 @@
+---
+title: Multilevel Design
+author: "[Julian Faraway](https://julianfaraway.github.io/)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  github_document:
+    toc: true
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(comment=NA, 
+                      echo = TRUE,
+                      fig.path="figs/",
+                      dev = 'svglite',  
+                      fig.ext = ".svg",
+                      warning=FALSE, 
+                      message=FALSE)
+knitr::opts_knit$set(global.par = TRUE)
+```
+
+```{r graphopts, include=FALSE}
+par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
+ggplot2::theme_set(ggplot2::theme_bw())
+```
+
+See the [introduction](index.md) for an overview. 
+
+This example is discussed in more detail in my book
+[Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
+
+Required libraries:
+
+```{r}
+library(faraway)
+library(ggplot2)
+library(lme4)
+library(pbkrtest)
+library(RLRsim)
+library(INLA)
+library(knitr)
+library(rstan, quietly=TRUE)
+library(brms)
+library(mgcv)
+```
+
+# Data
+
+[Read](jspmultilevel.md) about our analysis of some data from the Junior
+Schools Project.  In addition to a math test, students also
+took a test in English. Although it would be possible to analyze the
+English test results in the same way that we analyzed the math
+scores, additional information may be obtained from analyzing them
+simultaneously. Hence we view the data as having a bivariate response
+with English and math scores for each student. The student is a
+nested factor within the class which is in turn nested within the
+school. We express the multivariate response for each individual
+by introducing an additional level of nesting at the individual
+level. So we might view this as just another nested model except
+that there is a fixed subject effect associated with this lowest
+level of nesting.
+
+We set up the data in a format with one test score per line
+with an indicator `subject` identifying which type of test was
+taken. We scale the English and math test scores by their
+maximum possible values, 40 and 100, respectively, to aid comparison:
+
+
+```{r}
+data(jsp, package="faraway")
+jspr <- jsp[jsp$year==2,]
+mjspr <- data.frame(rbind(jspr[,1:6],jspr[,1:6]),
+                    subject=factor(rep(c("english","math"),c(953,953))),  
+                    score=c(jspr$english/100,jspr$math/40))
+```
+
+We can plot the data
+
+```{r jspmplot}
+ggplot(mjspr, aes(x=raven, y=score))+geom_jitter(alpha=0.25)+facet_grid(gender ~ subject)
+```
+
+# Mixed Effect Model
+
+We now fit a  model for the data that includes
+all the variables of interest that incorporates some of
+the interactions that we suspect might be present.
+See [Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/),
+
+```{r}
+mjspr$craven <- mjspr$raven-mean(mjspr$raven)
+mmod <- lmer(score ~ subject*gender + craven*subject + social + (1|school) + (1|school:class) + (1|school:class:id),mjspr)
+faraway::sumary(mmod)
+```
+
+The model being fit for school $i$, class $j$, student $k$ in
+subject $l$ is:
+$$
+\begin{eqnarray*}
+  score_{ijkl} =& subject_l + gender_k + raven_k + social_k +
+  (subject \times gender)_{lk} +  \\ & (raven \times subject)_{lk} +
+  school_i + class_j + student_k + \epsilon_{ijkl}
+\end{eqnarray*}
+$$
+where the Raven score has been mean centered and school, class and
+student are random effects with the other terms, apart from $\epsilon$,
+being fixed effects.
+
+We can test some fixed effects:
+
+```{r}
+mmod <- lmer(score ~ subject*gender+craven*subject+social+  (1|school)+(1|school:class)+(1|school:class:id),mjspr, REML=FALSE)
+mmodr <- lmer(score ~ subject*gender+craven+subject+social+(1|school)+(1|school:class)+(1|school:class:id),mjspr, REML=FALSE)
+KRmodcomp(mmod, mmodr)
+```
+
+We are testing for a subject by gender interaction. We can see that this effect
+is strongly statistically  significant.
+
+We can compute confidence intervals for the parameters:
+
+```{r jspmconfint, cache=TRUE}
+set.seed(123)
+confint(mmod, method="boot", oldNames=FALSE)
+```
+
+The lower end of the class confidence interval is zero while the school random effect
+is clearly larger. There is some variation associated with individuals.
+
+
+# INLA
+
+Integrated nested Laplace approximation is a method of Bayesian computation
+which uses approximation rather than simulation. More can be found
+on this topic in [Bayesian Regression Modeling with INLA](http://julianfaraway.github.io/brinla/) and the 
+[chapter on GLMMs](https://julianfaraway.github.io/brinlabook/chaglmm.html)
+
+Use the most recent computational methodology:
+
+
+```{r}
+inla.setOption(inla.mode="experimental")
+inla.setOption("short.summary",TRUE)
+```
+
+Need to construct unique labels for nested factor levels of class and student:
+
+
+```{r}
+mjspr$school <- factor(mjspr$school)
+mjspr$classch <- factor(paste(mjspr$school,mjspr$class,sep="."))
+mjspr$classchid <- factor(paste(mjspr$school,mjspr$class,mjspr$id,sep="."))
+```
+
+```{r jspminladef, cache=TRUE}
+formula <- score ~ subject*gender+craven*subject+social + f(school, model="iid") + f(classch, model="iid") + f(classchid, model="iid")
+result <- inla(formula, family="gaussian", data=mjspr)
+summary(result)
+```
+
+Maybe OK but let's try some more informative priors.
+
+
+## Informative Gamma priors on the precisions
+
+Now try more informative gamma priors for the precisions. Define it so
+the mean value of gamma prior is set to the inverse of the variance of
+the residuals of the fixed-effects only model. We expect the error
+variances to be lower than this variance so this is an overestimate.
+The variance of the gamma prior (for the precision) is controlled by
+the `apar` parameter.
+
+```{r jspminlaig,cache=TRUE}
+apar <- 0.5
+lmod <- lm(score ~ subject*gender+craven*subject+social,mjspr)
+bpar <- apar*var(residuals(lmod))
+lgprior <- list(prec = list(prior="loggamma", param = c(apar,bpar)))
+formula = score ~ subject*gender+craven*subject+social+f(school, model="iid", hyper = lgprior)+f(classch, model="iid", hyper = lgprior)+f(classchid, model="iid", hyper = lgprior)
+result <- inla(formula, family="gaussian", data=mjspr)
+summary(result)
+```
+
+Compute the transforms to an SD scale for the field and error. Make a table of summary statistics for the posteriors:
+
+```{r sumstats}
+sigmaschool <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[2]])
+sigmaclass <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[3]])
+sigmaid <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[4]])
+sigmaepsilon <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[1]])
+restab=sapply(result$marginals.fixed, function(x) inla.zmarginal(x,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmaschool,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmaclass,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmaid,silent=TRUE))
+restab=cbind(restab, inla.zmarginal(sigmaepsilon,silent=TRUE))
+colnames(restab) = c(names(lmod$coef),"school","class","id","epsilon")
+data.frame(restab)
+```
+
+Also construct a plot of the SD posteriors:
+
+```{r plotsdsmjspm}
+ddf <- data.frame(rbind(sigmaschool,sigmaclass,sigmaid,sigmaepsilon),
+                  errterm=gl(4,nrow(sigmaepsilon),
+                             labels = c("school","class","id","epsilon")))
+ggplot(ddf, aes(x,y, linetype=errterm, color=errterm))+geom_line()+xlab("score")+ylab("density")+xlim(0,0.15)
+```
+
+Posteriors for the school and class assign no weight to values close to zero.
+
+## Penalized Complexity Prior
+
+In [Simpson et al (2015)](http://arxiv.org/abs/1403.4630v3), penalized complexity priors are proposed. This
+requires that we specify a scaling for the SDs of the random effects. We use the SD of the residuals
+of the fixed effects only model (what might be called the base model in the paper) to provide this scaling.
+
+```{r jspminlapc, cache=TRUE}
+lmod <- lm(score ~ subject*gender+craven*subject+social,mjspr)
+sdres <- sd(residuals(lmod))
+pcprior <- list(prec = list(prior="pc.prec", param = c(3*sdres,0.01)))
+formula = score ~ subject*gender+craven*subject+social+f(school, model="iid", hyper = pcprior)+f(classch, model="iid", hyper = pcprior)+f(classchid, model="iid", hyper = pcprior)
+result <- inla(formula, family="gaussian", data=mjspr)
+summary(result)
+```
+
+Compute the summaries as before:
+
+```{r ref.label="sumstats"}
+```
+
+Make the plots:
+
+
+```{r plotsdsmjspmpc}
+ddf <- data.frame(rbind(sigmaschool,sigmaclass,sigmaid,sigmaepsilon),
+                  errterm=gl(4,nrow(sigmaepsilon),
+                             labels = c("school","class","id","epsilon")))
+ggplot(ddf, aes(x,y, linetype=errterm, color=errterm))+geom_line()+xlab("score")+ylab("density")+xlim(0,0.15)
+```
+
+Class variation is quite small compared to the other sources.
+
+# STAN
+
+[STAN](https://mc-stan.org/) performs Bayesian inference using
+MCMC.
+Set up STAN to use multiple cores. Set the random number seed for reproducibility.
+
+```{r}
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+```
+
+Fit the model. Requires use of STAN command file [multiple.stan](../stancode/multiple.stan). We view the code here:
+
+```{r}
+writeLines(readLines("../stancode/multiple.stan"))
+```
+
+We have used uninformative priors
+for the treatment effects but slightly informative half-cauchy priors
+for the variances. All the fixed effects have been collected
+into a single design matrix.
+The school and class variables need to
+be renumbered into consecutive positive integers. Somewhat
+inconvenient since the schools are numbered up to 50 but have no data
+for two schools so only 48 schools are actually used.
+
+```{r}
+mjspr$craven <- mjspr$raven-mean(mjspr$raven)
+lmod <- lm(score ~ subject*gender+craven*subject+social,mjspr)
+sdscal <- sd(residuals(lmod))
+Xmatrix <- model.matrix(lmod)
+mjspr$school <- factor(mjspr$school)
+mjspr$classch <- factor(paste(mjspr$school,mjspr$class,sep="."))
+mjspr$classchid <- factor(paste(mjspr$school,mjspr$class,mjspr$id,sep="."))
+jspdat <- list(Nobs=nrow(mjspr),
+               Npreds=ncol(Xmatrix),
+               Nlev1=length(unique(mjspr$school)),
+               Nlev2=length(unique(mjspr$classch)),
+               Nlev3=length(unique(mjspr$classchid)),
+               y=mjspr$score,
+               x=Xmatrix,
+               levind1=as.numeric(mjspr$school),
+               levind2=as.numeric(mjspr$classch),
+               levind3=as.numeric(mjspr$classchid),
+               sdscal=sdscal)
+```
+
+Break the fitting of the model into three steps. We use 5x the default number
+of iterations to ensure sufficient sample size for the later estimations.
+
+```{r jspmstancomp, cache=TRUE}
+rt <- stanc("../stancode/multiple.stan")
+sm <- stan_model(stanc_ret = rt, verbose=FALSE)
+set.seed(123)
+system.time(fit <- sampling(sm, data=jspdat, iter=10000))
+```
+
+## Diagnostics
+
+For the error SD:
+
+```{r jspmstaneps}
+pname <- "sigmaeps"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+For the school SD
+
+```{r jspmstansch}
+pname <- "sigmalev1"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+For the class SD
+
+```{r jspmstanclass}
+pname <- "sigmalev2"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+For the id SD
+
+```{r jspmstanid}
+pname <- "sigmalev3"
+muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
+mdf <- reshape2::melt(muc)
+ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```
+
+All these are satisfactory.
+
+## Output Summary
+
+Examine the main parameters of interest:
+
+```{r}
+print(fit,pars=c("beta","sigmalev1","sigmalev2","sigmalev2","sigmaeps"))
+```
+
+Remember that the beta correspond to the following parameters:
+
+```{r}
+colnames(Xmatrix)
+```
+
+The results are comparable to the REML fit. The effective sample sizes are sufficient.
+
+## Posterior Distributions
+
+We can use extract to get at various components of the STAN fit. First consider the SDs for random components:
+
+```{r jspmpdsig}
+postsig <- rstan::extract(fit, pars=c("sigmaeps","sigmalev1","sigmalev2","sigmalev3"))
+ref <- reshape2::melt(postsig,value.name="score")
+ref$L1 = factor(ref$L1)
+levels(ref$L1) = c("epsilon","school","class","id")
+ggplot(data=ref,aes(x=score, color=L1))+geom_density()+guides(color=guide_legend(title="SD"))
+```
+
+As usual the error SD distribution is  more concentrated. The class SD is more diffuse, smaller and gives some weight to values close to zero. Now the treatment effects:
+
+
+```{r jspmpdbeta}
+ref <- reshape2::melt(rstan::extract(fit, pars="beta"))
+colnames(ref)[2:3] <- c("parameter","score")
+ref$parameter <- factor(colnames(Xmatrix)[ref$parameter])
+ggplot(ref, aes(x=score))+geom_density()+geom_vline(xintercept = 0) + facet_wrap(~parameter,scales="free")
+```
+
+# BRMS
+
+[BRMS](https://paul-buerkner.github.io/brms/) stands for Bayesian Regression Models with STAN. It provides a convenient wrapper to STAN functionality. We specify the model as in `lmer()` above.
+I have used more than the standard number of iterations because this reduces some problems
+and does not cost much computationally.
+
+
+```{r jspmbrmfit, cache=TRUE}
+suppressMessages(bmod <- brm(score ~ subject*gender + craven*subject + social + (1|school) + (1|school:class) + (1|school:class:id),data=mjspr,iter=10000, cores=4))
+```
+
+We get some minor warnings. We can obtain some posterior densities and diagnostics with:
+
+```{r jspmbrmsdiag}
+plot(bmod, variable = "^s", regex=TRUE)
+```
+
+We have chosen only the random effect hyperparameters since this is
+where problems will appear first. Looks OK. We can see some weight
+is given to values of the class effect SD close to zero.
+
+We can look at the STAN code that `brms` used with:
+
+```{r}
+stancode(bmod)
+```
+
+We see that `brms` is using student t distributions with 3 degrees of
+freedom for the priors. For the three error SDs, this will be truncated at
+zero to form half-t distributions. You can get a more explicit description
+of the priors with `prior_summary(bmod)`. These are qualitatively similar to the
+the PC prior used in the INLA fit. 
+
+We examine the fit:
+
+```{r}
+summary(bmod)
+```
+
+The results are consistent with those seen previously.
+
+# MGCV
+
+It is possible to fit some GLMMs within the GAM framework of the `mgcv`
+package. An explanation of this can be found in this 
+[blog](https://fromthebottomoftheheap.net/2021/02/02/random-effects-in-gams/)
+
+
+```{r jspmgam, cache=TRUE}
+gmod = gam(score ~ subject*gender + craven*subject + social +
+            s(school,bs="re") + 
+            s(classch,bs="re") + 
+            s(classchid,bs="re"),
+            data=mjspr, method="REML")
+```
+
+and look at the summary output:
+
+```{r jspmgamsum, cache=TRUE}
+summary(gmod)
+```
+
+We get the fixed effect estimates.
+We also get tests on the random effects (as described in this [article](https://doi.org/10.1093/biomet/ast038). The hypothesis of no variation
+is rejected for the school and id but not for the class. This is consistent
+with earlier findings.
+
+We can get an estimate of the operator and error SD:
+
+```{r}
+gam.vcomp(gmod)
+```
+
+The point estimates are the same as the REML estimates from `lmer` earlier.
+The confidence intervals are different. A bootstrap method was used for
+the `lmer` fit whereas `gam` is using an asymptotic approximation resulting
+in substantially different results. Given the problems of parameters on
+the boundary present in this example, the bootstrap results appear more
+trustworthy.
+
+The fixed effect estimates can be found with:
+
+```{r}
+coef(gmod)[1:14]
+```
+
+The remaining random effects are too numerous to print.
+
+# GINLA
+
+In [Wood (2019)](https://doi.org/10.1093/biomet/asz044), a
+simplified version of INLA is proposed. The first
+construct the GAM model without fitting and then use
+the `ginla()` function to perform the computation.
+
+```{r jspmginlacomp, cache=TRUE}
+gmod = gam(score ~ subject*gender + craven*subject + social +
+            s(school,bs="re") + 
+            s(classch,bs="re") + 
+            s(classchid,bs="re"),
+            data=mjspr, fit = FALSE)
+gimod = ginla(gmod)
+```
+
+We get the posterior density for the intercept as:
+
+```{r jspmginlaint}
+plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="score",ylab="density")
+```
+
+We get the posterior density for the  math effect as:
+
+```{r jspmginlaraven}
+plot(gimod$beta[2,],gimod$density[2,],type="l",xlab="score",ylab="density")
+```
+
+and for the social effects as:
+
+```{r jspgminlalsoc}
+xmat = t(gimod$beta[5:12,])
+ymat = t(gimod$density[5:12,])
+matplot(xmat, ymat,type="l",xlab="score",ylab="density")
+legend("left",paste0("social",2:9),col=1:8,lty=1:8)
+```
+
+We can see some overlap between the effects, but strong evidence of a negative outcome
+relative to social class 1 for some classes.
+
+It is not straightforward to obtain the posterior densities of
+the hyperparameters. 
+
+# Discussion
+
+See the [Discussion of the single random effect model](pulp.md#Discussion) for
+general comments. 
+
+- As with the previous analyses, sometimes the INLA posteriors for the hyperparameters have densities
+which do not give weight to close-to-zero values where other analyses suggest this might be reasonable.
+
+- There is relatively little disagreement between the methods and much similarity.
+
+- There were no major computational issue with the analyses (in contrast with some of
+the other examples)
+
+- The `mgcv` analyses (both standard and ginla) took much longer than previous analyses because the sample size is larger and there are a large number of random effects --- slower than any of the other analyses.
+
+# Package version info
+
+```{r}
+sessionInfo()
+```
+
+
+

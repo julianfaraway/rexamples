@@ -10,6 +10,4 @@
 - [Multilevel Models](mixed/jspmultilevel.md) - the `jsp` data
 - [Longitudinal Models](mixed/longitudinal.md) - the `psid` data
 - [Repeated Measures](mixed/repeated.md) - the `vision` data
-<!---
-- [Multiple Response Models](multiple.html) - the `jsp` data
--->
+- [Multiple Response Models](mixed/jspmultiple.md) - the `jsp` data
