@@ -2,6 +2,16 @@
 
 ## Mixed effect models
 
+These are all the mixed effect model examples from two chapters of my book
+[Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/).
+Each model is fit using several different methods:
+
+- [lme4](https://github.com/lme4/lme4)
+- [INLA](https://www.r-inla.org/)
+- [STAN](https://mc-stan.org/)
+- [BRMS](https://paul-buerkner.github.io/brms/)
+- [MGCV](https://www.maths.ed.ac.uk/~swood34/mgcv/)
+
 - [Single Random Effect](mixed/pulp.md) - the `pulp` data
 - [Randomized Block Design](mixed/penicillin.md) - the `penicillin` data
 - [Split Plot Design](mixed/irrigation.md) - the `irrigation` data
