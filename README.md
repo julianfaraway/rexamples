@@ -12,6 +12,8 @@ Each model is fit using several different methods:
 - [BRMS](https://paul-buerkner.github.io/brms/)
 - [MGCV](https://www.maths.ed.ac.uk/~swood34/mgcv/)
 
+### Examples
+
 - [Single Random Effect](mixed/pulp.md) - the `pulp` data
 - [Randomized Block Design](mixed/penicillin.md) - the `penicillin` data
 - [Split Plot Design](mixed/irrigation.md) - the `irrigation` data
