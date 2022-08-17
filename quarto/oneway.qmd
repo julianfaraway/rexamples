@@ -22,7 +22,7 @@ ggplot2::theme_set(ggplot2::theme_bw())
 ```
 
 :::{.callout-note}
-See the [introduction](index.md) for an overview. 
+See the [introduction](README.md) for an overview. 
 :::
 
 This example is discussed in more detail in my book
