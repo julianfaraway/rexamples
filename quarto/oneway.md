@@ -7,7 +7,7 @@ One Way Anova with a random effect
 
 > **Note**
 >
-> See the [introduction](index.md) for an overview.
+> See the [introduction](../README.md) for an overview.
 
 </div>
 
