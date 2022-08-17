@@ -3,7 +3,13 @@ One Way Anova with a random effect
 [Julian Faraway](https://julianfaraway.github.io/)
 17 August 2022
 
-See the [introduction](../index.md) for an overview.
+<div>
+
+> **Note**
+>
+> See the [introduction](index.md) for an overview.
+
+</div>
 
 This example is discussed in more detail in my book [Extending the
 Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)

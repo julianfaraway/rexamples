@@ -21,8 +21,9 @@ par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
 ggplot2::theme_set(ggplot2::theme_bw())
 ```
 
-
-See the [introduction](../index.md) for an overview. 
+:::{.callout-note}
+See the [introduction](index.md) for an overview. 
+:::
 
 This example is discussed in more detail in my book
 [Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
