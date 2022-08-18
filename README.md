@@ -12,6 +12,9 @@ Each model is fit using several different methods:
 - [BRMS](https://paul-buerkner.github.io/brms/)
 - [MGCV](https://www.maths.ed.ac.uk/~swood34/mgcv/)
 
+I have focused on the computation rather than the interpretation
+of the models.
+
 ### Examples
 
 - [Single Random Effect](mixed/pulp.md) - the `pulp` data
