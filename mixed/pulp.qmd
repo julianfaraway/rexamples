@@ -2,7 +2,7 @@
 title: One Way Anova with a random effect
 author: "[Julian Faraway](https://julianfaraway.github.io/)"
 date: "`r format(Sys.time(), '%d %B %Y')`"
-output: 
+format: 
   gfm:
     toc: true
 ---
