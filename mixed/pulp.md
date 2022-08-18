@@ -43,7 +43,7 @@ See the [introduction](../index.md) for an overview.
 This example is discussed in more detail in my book [Extending the
 Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
 
-Required libraries:
+Libraries used:
 
 ``` r
 library(faraway)
@@ -163,6 +163,10 @@ We have answered the fourth question stated above. We could make some
 speculations on the first three questions (what can be said about
 operators in general) but our analysis was not designed to do this.
 
+The `aov()` function has been available in R and S before that i.e. at
+least 30 years. I do not believe it has changed in a long time. It can
+handle some simple models but it is has very limited functionality.
+
 # Likelihood inference
 
 We use a model of the form:
@@ -239,10 +243,11 @@ data.frame(lrtstat, pvalue)
 
 Superficially, the p-value greater than 0.05 suggests no strong evidence
 against that hypothesis that there is no variation among the operators.
-But there is good reason to doubt the chi-squared null distribution when
-testing parameter on the boundary of the space (as we do here at zero).
-A parametric bootstrap can be used where we generate samples from the
-null and compute the test statistic repeatedly:
+But there is good reason to doubt the accuracy of the standard
+approximation of the chi-squared null distribution when testing a
+parameter on the boundary of the space (as we do here at zero). A
+parametric bootstrap can be used where we generate samples from the null
+and compute the test statistic repeatedly:
 
 ``` r
 lrstat <- numeric(1000)
@@ -333,7 +338,19 @@ found on this topic in [Bayesian Regression Modeling with
 INLA](http://julianfaraway.github.io/brinla/) and the [chapter on
 GLMMs](https://julianfaraway.github.io/brinlabook/chaglmm.html)
 
-Use the most recent computational methodology:
+At the time of writing, INLA is undergoing some changes that have some
+impact on the fitting of mixed effect models. Previously, the model
+fitting proceeded in two stages - the first step computed the posteriors
+for most of the parameters while a second step makes a refinement to
+compute posteriors for the hyperparameters (the variances of the random
+terms in this case). This is termed *classic* mode. Now the idea to
+compute all the posteriors in one stage called *experimental* mode
+below. We would have preferred to stick with classic mode for continuity
+reasons but this mode is no longer functional in the most recent version
+of INLA. You can see an [older
+analyis](http://julianfaraway.github.io/brinla/examples/oneway.html) of
+the same data using the previous methodology. We use the most recent
+computational methodology and also opt for a shorter output summary:
 
 ``` r
 inla.setOption(inla.mode="experimental")
@@ -677,7 +694,7 @@ options(mc.cores = parallel::detectCores())
 set.seed(123)
 ```
 
-We need the STAN command file `pulp.stan` which we view here:
+We need a STAN command file `pulp.stan` which we view here:
 
 ``` r
 writeLines(readLines("../stancode/pulp.stan"))
@@ -1160,8 +1177,7 @@ comparisons across the whole set because the models, assumptions and
 even statistical philosophies are not the same. We cannot hope to claim
 one method is objectively better than another. Even so, the researcher,
 who wants to know the nature of the difference between the operators,
-must decide between them and so a qualitative comparison is entirely
-reasonable.
+must decide between them and so a qualitative comparison is worthwhile.
 
 Let us assume the perspective of researcher who is not statistician.
 Although such researchers are usually tolerant of complexity and
@@ -1203,15 +1219,16 @@ computations.
     reservations about the use of such tests but for a long time, they
     were routinely used in these circumstances. After all, there are
     many tests used now which we know to be approximations but feel
-    comfortable with accepting. No one wants to open a can of worms. But
-    eventually the evidence built up against these particular tests and
-    the functionality was abruptly withdrawn from `lme4`. Having used
-    these tests in the first edition of *Extending the Linear Models
-    with R*, I was perturbed. I had recommended a procedure that was
-    wrong. Many others who had published results were also discomfited.
-    But getting it right is more important than any embarassment. The
-    episode illustrated the uncomfortable fact that not all statistical
-    procedures can be regarded as incontrovertibly correct for all time.
+    comfortable with accepting. No one wants to open that can of worms.
+    But eventually the evidence built up against these particular tests
+    and the functionality was abruptly withdrawn from `lme4`. Having
+    used these tests in the first edition of *Extending the Linear
+    Models with R*, I was perturbed. I had recommended a procedure that
+    was wrong. Many others who had published results were also
+    discomfited. But getting it right is more important than any
+    embarassment. The episode illustrated the uncomfortable fact that
+    not all statistical procedures can be regarded as incontrovertibly
+    correct for all time.
 
 4.  I used a parametric bootstrap procedure here which requires some
     undesirable complication to use from the perspective of the
@@ -1242,12 +1259,20 @@ computations.
     undergraduates to get INLA or STAN up and running, I would consign
     myself to many hours of dealing with frustrated emails involving
     computer problems that I have only the vaguest ideas about solving.
-    Of course, it would be more practical to ask them to use a central
-    server where everything is installed but this results in other
-    problems regarding access and usage. After several decades of
+    It would be more practical to ask them to use a central server where
+    everything is installed but this results in other problems regarding
+    access and usage. In this example, STAN outputs a slew of obscure
+    compiler warnings and even some errors. Some googling reveals that
+    some other people receive much the same set of warnings as me. But
+    many more do not because otherwise the developers would have fixed
+    it. The errors and warnings are probably due to the specific
+    configuration of my computer. I never did discover the source of the
+    problem - suggestions on the internet required uninstalling and
+    reinstalling large pieces of software. Fortunately, I could see that
+    the errors and warnings could be ignored. After several decades of
     fiddling with computers to get software to work, I (mostly) possess
-    the patience and experience to get these things to work. That’s far
-    from true for many potential users.
+    the patience and experience to deal with this sort of problem.
+    That’s far from true for many potential users.
 
 7.  Both STAN and INLA are being actively developed. Of course, it’s
     good to know that functionality and performance are being improved.
@@ -1319,23 +1344,23 @@ sessionInfo()
 
     loaded via a namespace (and not attached):
       [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2       ggridges_0.5.3       markdown_1.1        
-      [6] base64enc_0.1-3      rstudioapi_0.13      Deriv_4.1.3          farver_2.1.1         MatrixModels_0.5-0  
-     [11] DT_0.24              fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18    
-     [16] splines_4.2.1        shinythemes_1.2.0    bayesplot_1.9.0      jsonlite_1.8.0       nloptr_2.0.3        
-     [21] shiny_1.7.2          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0       
-     [26] cli_3.3.0            later_1.3.0          htmltools_0.5.3      prettyunits_1.1.1    tools_4.2.1         
-     [31] igraph_1.3.4         coda_0.19-4          gtable_0.3.0         glue_1.6.2           reshape2_1.4.4      
-     [36] dplyr_1.0.9          posterior_1.3.0      V8_4.2.1             vctrs_0.4.1          svglite_2.1.0       
-     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.32            stringr_1.4.0       
-     [46] ps_1.7.1             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.1      gtools_3.9.3        
-     [51] MASS_7.3-58.1        zoo_1.8-10           scales_1.2.0         colourpicker_1.1.1   promises_1.2.0.1    
-     [56] Brobdingnag_1.2-7    inline_0.3.19        shinystan_2.6.0      yaml_2.3.5           curl_4.3.2          
-     [61] gridExtra_2.3        loo_2.5.1            stringi_1.7.8        highr_0.9            dygraphs_1.1.1.6    
-     [66] checkmate_2.1.0      boot_1.3-28          pkgbuild_1.3.1       rlang_1.0.4          pkgconfig_2.0.3     
-     [71] systemfonts_1.0.4    matrixStats_0.62.0   distributional_0.3.0 evaluate_0.16        lattice_0.20-45     
-     [76] purrr_0.3.4          rstantools_2.2.0     htmlwidgets_1.5.4    labeling_0.4.2       processx_3.7.0      
-     [81] tidyselect_1.1.2     plyr_1.8.7           magrittr_2.0.3       R6_2.5.1             generics_0.1.3      
-     [86] DBI_1.1.3            pillar_1.8.0         withr_2.5.0          xts_0.12.1           abind_1.4-5         
-     [91] tibble_3.1.8         crayon_1.5.1         utf8_1.2.2           rmarkdown_2.15       grid_4.2.1          
-     [96] callr_3.7.1          threejs_0.3.3        digest_0.6.29        xtable_1.8-4         httpuv_1.6.5        
-    [101] RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       
+      [6] base64enc_0.1-3      rstudioapi_0.13      Deriv_4.1.3          farver_2.1.1         DT_0.24             
+     [11] fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18     splines_4.2.1       
+     [16] shinythemes_1.2.0    bayesplot_1.9.0      jsonlite_1.8.0       nloptr_2.0.3         shiny_1.7.2         
+     [21] compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0        cli_3.3.0           
+     [26] later_1.3.0          htmltools_0.5.3      prettyunits_1.1.1    tools_4.2.1          igraph_1.3.4        
+     [31] coda_0.19-4          gtable_0.3.0         glue_1.6.2           reshape2_1.4.4       dplyr_1.0.9         
+     [36] posterior_1.3.0      V8_4.2.1             vctrs_0.4.1          svglite_2.1.0        iterators_1.0.14    
+     [41] crosstalk_1.2.0      tensorA_0.36.2       xfun_0.32            stringr_1.4.0        ps_1.7.1            
+     [46] mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.1      gtools_3.9.3         MASS_7.3-58.1       
+     [51] zoo_1.8-10           scales_1.2.0         colourpicker_1.1.1   promises_1.2.0.1     Brobdingnag_1.2-7   
+     [56] inline_0.3.19        shinystan_2.6.0      yaml_2.3.5           curl_4.3.2           gridExtra_2.3       
+     [61] loo_2.5.1            stringi_1.7.8        highr_0.9            dygraphs_1.1.1.6     checkmate_2.1.0     
+     [66] boot_1.3-28          pkgbuild_1.3.1       rlang_1.0.4          pkgconfig_2.0.3      systemfonts_1.0.4   
+     [71] matrixStats_0.62.0   distributional_0.3.0 evaluate_0.16        lattice_0.20-45      purrr_0.3.4         
+     [76] rstantools_2.2.0     htmlwidgets_1.5.4    labeling_0.4.2       processx_3.7.0       tidyselect_1.1.2    
+     [81] plyr_1.8.7           magrittr_2.0.3       R6_2.5.1             generics_0.1.3       DBI_1.1.3           
+     [86] pillar_1.8.0         withr_2.5.0          xts_0.12.1           abind_1.4-5          tibble_3.1.8        
+     [91] crayon_1.5.1         utf8_1.2.2           rmarkdown_2.15       grid_4.2.1           callr_3.7.1         
+     [96] threejs_0.3.3        digest_0.6.29        xtable_1.8-4         httpuv_1.6.5         RcppParallel_5.1.5  
+    [101] stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       

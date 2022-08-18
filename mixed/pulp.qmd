@@ -29,7 +29,7 @@ See the [introduction](../index.md) for an overview.
 This example is discussed in more detail in my book
 [Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
 
-Required libraries:
+Libraries used:
 
 ```{r}
 library(faraway)
@@ -111,6 +111,10 @@ We have answered the fourth question stated above. We could make some
 speculations on the first three questions (what can be said about operators
 in general) but our analysis was not designed to do this.
 
+The `aov()` function has been available in R and S before that i.e. at least
+30 years. I do not believe it has changed in a long time. It can handle
+some simple models but it is has very limited functionality.
+
 
 # Likelihood inference
 
@@ -158,8 +162,8 @@ data.frame(lrtstat, pvalue)
 
 Superficially, the p-value greater than 0.05 suggests no strong evidence
 against that hypothesis that there is no variation among the operators. But
-there is good reason to doubt the chi-squared null distribution when
-testing parameter on the boundary of the space (as we do here at zero). A
+there is good reason to doubt the accuracy of the standard approximation of the chi-squared null distribution when
+testing a parameter on the boundary of the space (as we do here at zero). A
 parametric bootstrap can be used where we generate samples from the null
 and compute the test statistic repeatedly:
 
@@ -232,7 +236,19 @@ which uses approximation rather than simulation. More can be found
 on this topic in [Bayesian Regression Modeling with INLA](http://julianfaraway.github.io/brinla/) and the 
 [chapter on GLMMs](https://julianfaraway.github.io/brinlabook/chaglmm.html)
 
-Use the most recent computational methodology:
+At the time of writing, INLA is undergoing some changes that
+have some impact on the fitting of mixed effect models. Previously,
+the model fitting proceeded in two stages - the first step computed
+the posteriors for most of the parameters while a second step makes
+a refinement to compute posteriors for the hyperparameters (the variances
+of the random terms in this case). This is termed *classic* mode. Now
+the idea to compute all the posteriors in one stage called *experimental*
+mode below. We would have preferred to stick with classic mode for
+continuity reasons but this mode is no longer functional in the most
+recent version of INLA. You can see an [older analyis](http://julianfaraway.github.io/brinla/examples/oneway.html) of
+the same data using the previous methodology.
+We use the most recent computational methodology
+and also opt for a shorter output summary:
 
 
 ```{r}
@@ -486,7 +502,7 @@ options(mc.cores = parallel::detectCores())
 set.seed(123)
 ```
 
-We need the STAN command file `pulp.stan` which we view here:
+We need a STAN command file `pulp.stan` which we view here:
 
 ```{r}
 writeLines(readLines("../stancode/pulp.stan"))
@@ -776,7 +792,7 @@ comparisons across the whole set because the models, assumptions and
 even statistical philosophies are not the same. We cannot hope to claim
 one method is objectively better than another. Even so, the researcher,
 who wants to know the nature of the difference between the operators, must
-decide between them and so a qualitative comparison is entirely reasonable.
+decide between them and so a qualitative comparison is worthwhile.
 
 Let us assume the perspective of researcher who is not statistician. Although
 such researchers are usually tolerant of complexity and ambiguity in research
@@ -809,7 +825,7 @@ Testing for the operator effect is more complicated than we might like.
 3. Many years ago, `lme4` would produce a likelihood ratio test that was not correct for
 this class of models (more precisely, the null distribution was wrong). Some statisticians might have had reservations about the use of such tests but for a long time, they were routinely used in these 
 circumstances. After all, there are many tests used now which we know to be
-approximations but feel comfortable with accepting. No one wants to open a can of worms. But eventually the
+approximations but feel comfortable with accepting. No one wants to open that can of worms. But eventually the
 evidence built up against these particular tests and the functionality was
 abruptly withdrawn from `lme4`.  Having used these tests in the first edition
 of *Extending the Linear Models with R*, I was perturbed. I had recommended
@@ -843,12 +859,17 @@ Installing INLA or STAN involves various difficulties that may or may not arise
 depending on the operating system and other software on your computer. If I were
 to ask a class of 100 undergraduates to get INLA or STAN up and running, I would
 consign myself to many hours of dealing with frustrated emails involving computer
-problems that I have only the vaguest ideas about solving. Of course, it would be 
+problems that I have only the vaguest ideas about solving. It would be 
 more practical to ask them to use a central server where everything is installed 
-but this results in other problems regarding access and usage. After several
-decades of fiddling with computers to get software to work, I (mostly) possess
-the patience and experience to get these things to work. That's far from true
-for many potential users.
+but this results in other problems regarding access and usage. In this example,
+STAN outputs a slew of obscure compiler warnings and even some errors. Some
+googling reveals that some other people receive much the same set of warnings
+as me. But many more do not because otherwise the developers would have fixed it.
+The errors and warnings are probably due to the specific configuration of
+my computer. I never did discover the source of the problem - suggestions
+on the internet required uninstalling and reinstalling large pieces of software. 
+Fortunately, I could see that the errors and warnings could be ignored.
+After several decades of fiddling with computers to get software to work, I (mostly) possess the patience and experience to deal with this sort of problem. That's far from true for many potential users. 
 
 7. Both STAN and INLA are being actively developed. Of course, it's good to know
 that functionality and performance are being improved. In both cases, I installed
