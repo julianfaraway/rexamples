@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.0.8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Julian Faraway">
+<meta name="dcterms.date" content="2022-08-18">
+
+<title>One Way Anova with a random effect</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="pulp_files/libs/clipboard/clipboard.min.js"></script>
+<script src="pulp_files/libs/quarto-html/quarto.js"></script>
+<script src="pulp_files/libs/quarto-html/popper.min.js"></script>
+<script src="pulp_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="pulp_files/libs/quarto-html/anchor.min.js"></script>
+<link href="pulp_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="pulp_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="pulp_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="pulp_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="pulp_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">One Way Anova with a random effect</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p><a href="https://julianfaraway.github.io/">Julian Faraway</a> </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">August 18, 2022</p>
+    </div>
+  </div>
+    
+  </div>
+  
+
+</header>
+
+<p>See the <a href="../index.md">introduction</a> for an overview.</p>
+<p>This example is discussed in more detail in my book <a href="https://julianfaraway.github.io/faraway/ELM/">Extending the Linear Model with R</a></p>
+<p>Required libraries:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(faraway)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lme4)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(INLA)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rstan, <span class="at">quietly=</span><span class="cn">TRUE</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(brms)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(mgcv)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="data" class="level1">
+<h1>Data</h1>
+<p>Load up and look at the data, which concerns the brightness of paper which may vary between operators of the production machinery.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(pulp, <span class="at">package=</span><span class="st">"faraway"</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(pulp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     bright     operator
+ Min.   :59.8   a:5     
+ 1st Qu.:60.0   b:5     
+ Median :60.5   c:5     
+ Mean   :60.4   d:5     
+ 3rd Qu.:60.7           
+ Max.   :61.0           </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(pulp, <span class="fu">aes</span>(<span class="at">x=</span>operator, <span class="at">y=</span>bright))<span class="sc">+</span><span class="fu">geom_point</span>(<span class="at">position =</span> <span class="fu">position_jitter</span>(<span class="at">width=</span><span class="fl">0.1</span>, <span class="at">height=</span><span class="fl">0.0</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="figs/pulpdat-1..svg" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>You can read more about the data by typing <code>help(pulp)</code> at the R prompt.</p>
+<p>In this example, there are only five replicates per level. There is no strong reason to reject the normality assumption. We don’t care about the specific operators, who are named a, b, c and d, but we do want to know how they vary.</p>
+</section>
+<section id="questions" class="level1">
+<h1>Questions</h1>
+<ol type="1">
+<li>Is there a difference between operators in general?</li>
+<li>How much is the difference between operators in general?</li>
+<li>How does the variation between operators compare to the variation within operators?</li>
+<li>What is the difference between these four operators?</li>
+</ol>
+<p>We are mostly interested in the first three questions.</p>
+</section>
+<section id="linear-model-with-fixed-effects" class="level1">
+<h1>Linear model with fixed effects</h1>
+<p>We start with the simplest analysis although it is not correct. It will be useful for comparisons. We treat the operator as a fixed effect meaning that the analysis refers to these four operators and not to other possible operators. Since we probably don’t care about these particular four operators, this would not be the best choice.</p>
+<p>You can use the <code>lm()</code> or <code>aov()</code> functions:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>amod <span class="ot">=</span> <span class="fu">aov</span>(bright <span class="sc">~</span> operator, pulp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now test for a difference between operators:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">anova</span>(amod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Analysis of Variance Table
+
+Response: bright
+          Df Sum Sq Mean Sq F value Pr(&gt;F)
+operator   3   1.34   0.447     4.2  0.023
+Residuals 16   1.70   0.106               </code></pre>
+</div>
+</div>
+<p>We find a statistically significant difference. We can estimate the coefficients:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">coef</span>(amod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>(Intercept)   operatorb   operatorc   operatord 
+      60.24       -0.18        0.38        0.44 </code></pre>
+</div>
+</div>
+<p>The treatment coding sets operator a as the reference level. The intercept is the mean for operator a and the other estimates are differences in the mean from operator a. We can also test for a difference between pairs of operators:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">TukeyHSD</span>(amod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  Tukey multiple comparisons of means
+    95% family-wise confidence level
+
+Fit: aov(formula = bright ~ operator, data = pulp)
+
+$operator
+     diff       lwr     upr   p adj
+b-a -0.18 -0.769814 0.40981 0.81854
+c-a  0.38 -0.209814 0.96981 0.29030
+d-a  0.44 -0.149814 1.02981 0.18448
+c-b  0.56 -0.029814 1.14981 0.06579
+d-b  0.62  0.030186 1.20981 0.03767
+d-c  0.06 -0.529814 0.64981 0.99108</code></pre>
+</div>
+</div>
+<p>Only the d to b difference is found significant.</p>
+<p>We have answered the fourth question stated above. We could make some speculations on the first three questions (what can be said about operators in general) but our analysis was not designed to do this.</p>
+</section>
+<section id="likelihood-inference" class="level1">
+<h1>Likelihood inference</h1>
+<p>We use a model of the form:</p>
+<p><span class="math display">\[
+y_{ij} = \mu + \alpha_i + \epsilon_{ij} \qquad i=1,\dots ,a
+  \qquad j=1,\dots ,n_i,
+\]</span></p>
+<p>where the <span class="math inline">\(\alpha_i\)</span> and <span class="math inline">\(\epsilon_{ij}\)</span>s are normal with mean zero, but variances <span class="math inline">\(\sigma_\alpha^2\)</span> and <span class="math inline">\(\sigma^2_\epsilon\)</span>, respectively.</p>
+<p>The default fit uses the REML estimation method:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>mmod <span class="ot">&lt;-</span> <span class="fu">lmer</span>(bright <span class="sc">~</span> <span class="dv">1</span><span class="sc">+</span>(<span class="dv">1</span><span class="sc">|</span>operator), pulp)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>faraway<span class="sc">::</span><span class="fu">sumary</span>(mmod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Fixed Effects:
+coef.est  coef.se 
+   60.40     0.15 
+
+Random Effects:
+ Groups   Name        Std.Dev.
+ operator (Intercept) 0.26    
+ Residual             0.33    
+---
+number of obs: 20, groups: operator, 4
+AIC = 24.6, DIC = 14.4
+deviance = 16.5 </code></pre>
+</div>
+</div>
+<p>We see slightly less variation within operators (SD=0.261) than between operators (SD=0.326).</p>
+<section id="hypothesis-testing" class="level2">
+<h2 class="anchored" data-anchor-id="hypothesis-testing">Hypothesis testing</h2>
+<p>We can also use the ML method:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>smod <span class="ot">&lt;-</span> <span class="fu">lmer</span>(bright <span class="sc">~</span> <span class="dv">1</span><span class="sc">+</span>(<span class="dv">1</span><span class="sc">|</span>operator), pulp, <span class="at">REML =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>faraway<span class="sc">::</span><span class="fu">sumary</span>(smod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Fixed Effects:
+coef.est  coef.se 
+   60.40     0.13 
+
+Random Effects:
+ Groups   Name        Std.Dev.
+ operator (Intercept) 0.21    
+ Residual             0.33    
+---
+number of obs: 20, groups: operator, 4
+AIC = 22.5, DIC = 16.5
+deviance = 16.5 </code></pre>
+</div>
+</div>
+<p>The REML method is preferred for estimation but we must use the ML method if we wish to make hypothesis tests comparing models.</p>
+<p>If we want to test for variation between operators, we fit a null model containing no operator, compute the likelihood ratio statistic and corresponding p-value:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>nullmod <span class="ot">&lt;-</span> <span class="fu">lm</span>(bright <span class="sc">~</span> <span class="dv">1</span>, pulp)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>lrtstat <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="dv">2</span><span class="sc">*</span>(<span class="fu">logLik</span>(smod)<span class="sc">-</span><span class="fu">logLik</span>(nullmod)))</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>pvalue <span class="ot">&lt;-</span> <span class="fu">pchisq</span>(lrtstat,<span class="dv">1</span>,<span class="at">lower=</span><span class="cn">FALSE</span>)</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(lrtstat, pvalue)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  lrtstat  pvalue
+1  2.5684 0.10902</code></pre>
+</div>
+</div>
+<p>Superficially, the p-value greater than 0.05 suggests no strong evidence against that hypothesis that there is no variation among the operators. But there is good reason to doubt the chi-squared null distribution when testing parameter on the boundary of the space (as we do here at zero). A parametric bootstrap can be used where we generate samples from the null and compute the test statistic repeatedly:</p>
+<div class="cell" data-hash="pulp_cache/html/pulpparaboot_5ce0b27049275038faff1dd522a0e019">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>lrstat <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="dv">1000</span>)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">1000</span>){</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>   y <span class="ot">&lt;-</span> <span class="fu">unlist</span>(<span class="fu">simulate</span>(nullmod))</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>   bnull <span class="ot">&lt;-</span> <span class="fu">lm</span>(y <span class="sc">~</span> <span class="dv">1</span>)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>   balt <span class="ot">&lt;-</span> <span class="fu">lmer</span>(y <span class="sc">~</span> <span class="dv">1</span> <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>operator), pulp, <span class="at">REML=</span><span class="cn">FALSE</span>)</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>   lrstat[i] <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="dv">2</span><span class="sc">*</span>(<span class="fu">logLik</span>(balt)<span class="sc">-</span><span class="fu">logLik</span>(bnull)))</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>  }</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Check the proportion of simulated test statistics that are close to zero:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(lrstat <span class="sc">&lt;</span> <span class="fl">0.00001</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.703</code></pre>
+</div>
+</div>
+<p>Clearly, the test statistic does not have a chi-squared distribution under the null. We can compute the proportion that exceed the observed test statistic of 2.5684:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(lrstat <span class="sc">&gt;</span> <span class="fl">2.5684</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.019</code></pre>
+</div>
+</div>
+<p>This is a more reliable p-value for our hypothesis test which suggest there is good reason to reject the null hypothesis of no variation between operators.</p>
+<p>More sophisticated methods of inference are discussed in <a href="https://julianfaraway.github.io/faraway/ELM/">Extending the Linear Model with R</a></p>
+</section>
+<section id="confidence-intervals" class="level2">
+<h2 class="anchored" data-anchor-id="confidence-intervals">Confidence intervals</h2>
+<p>We can use bootstrap again to compute confidence intervals for the parameters of interest:</p>
+<div class="cell" data-hash="pulp_cache/html/pulpboot_213865cab613f082262bce9543591c37">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confint</span>(mmod, <span class="at">method=</span><span class="st">"boot"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>               2.5 %   97.5 %
+.sig01       0.00000  0.51451
+.sigma       0.21084  0.43020
+(Intercept) 60.11213 60.69244</code></pre>
+</div>
+</div>
+<p>We see that the lower end of the confidence interval for the operator SD extends to zero.</p>
+</section>
+<section id="random-effects" class="level2">
+<h2 class="anchored" data-anchor-id="random-effects">Random effects</h2>
+<p>Even though we are most interested in the variation between operators, we can still estimate their individual effects:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ranef</span>(mmod)<span class="sc">$</span>operator</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  (Intercept)
+a    -0.12194
+b    -0.25912
+c     0.16767
+d     0.21340</code></pre>
+</div>
+</div>
+<p>Approximate 95% confidence intervals can be displayed with:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>dd <span class="ot">=</span> <span class="fu">as.data.frame</span>(<span class="fu">ranef</span>(mmod))</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(dd, <span class="fu">aes</span>(<span class="at">y=</span>grp,<span class="at">x=</span>condval)) <span class="sc">+</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>        <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">geom_errorbarh</span>(<span class="fu">aes</span>(<span class="at">xmin=</span>condval <span class="sc">-</span><span class="dv">2</span><span class="sc">*</span>condsd,</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>                           <span class="at">xmax=</span>condval <span class="sc">+</span><span class="dv">2</span><span class="sc">*</span>condsd), <span class="at">height=</span><span class="dv">0</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="figs/pulpebar-1..svg" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+</section>
+<section id="inla" class="level1">
+<h1>INLA</h1>
+<p>Integrated nested Laplace approximation is a method of Bayesian computation which uses approximation rather than simulation. More can be found on this topic in <a href="http://julianfaraway.github.io/brinla/">Bayesian Regression Modeling with INLA</a> and the <a href="https://julianfaraway.github.io/brinlabook/chaglmm.html">chapter on GLMMs</a></p>
+<p>Use the most recent computational methodology:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">inla.setOption</span>(<span class="at">inla.mode=</span><span class="st">"experimental"</span>)</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="fu">inla.setOption</span>(<span class="st">"short.summary"</span>,<span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Run the INLA model with default priors:</p>
+<div class="cell" data-hash="pulp_cache/html/pulpinladefault_72bbc4fdb3542b798dbade95d538f260">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>imod <span class="ot">&lt;-</span> <span class="fu">inla</span>(bright <span class="sc">~</span> <span class="fu">f</span>(operator, <span class="at">model=</span><span class="st">"iid"</span>),</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>             <span class="at">family=</span><span class="st">"gaussian"</span>,</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>             <span class="at">data=</span>pulp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The summary of the posterior distribution for the fixed effects (which is only the intercept in this example):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>imod<span class="sc">$</span>summary.fixed <span class="sc">|&gt;</span> <span class="fu">kable</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<table class="table table-sm table-striped">
+<colgroup>
+<col style="width: 18%">
+<col style="width: 7%">
+<col style="width: 12%">
+<col style="width: 16%">
+<col style="width: 13%">
+<col style="width: 16%">
+<col style="width: 7%">
+<col style="width: 6%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;"></th>
+<th style="text-align: right;">mean</th>
+<th style="text-align: right;">sd</th>
+<th style="text-align: right;">0.025quant</th>
+<th style="text-align: right;">0.5quant</th>
+<th style="text-align: right;">0.975quant</th>
+<th style="text-align: right;">mode</th>
+<th style="text-align: right;">kld</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">(Intercept)</td>
+<td style="text-align: right;">60.4</td>
+<td style="text-align: right;">0.08783</td>
+<td style="text-align: right;">60.226</td>
+<td style="text-align: right;">60.4</td>
+<td style="text-align: right;">60.574</td>
+<td style="text-align: right;">60.4</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>The posterior mean is the same as the (RE)ML estimate. The posterior distribution of the hyperparameters (precision of the error and operator terms)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>imod<span class="sc">$</span>summary.hyperpar <span class="sc">|&gt;</span> <span class="fu">kable</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<table class="table table-sm table-striped">
+<colgroup>
+<col style="width: 38%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 9%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;"></th>
+<th style="text-align: right;">mean</th>
+<th style="text-align: right;">sd</th>
+<th style="text-align: right;">0.025quant</th>
+<th style="text-align: right;">0.5quant</th>
+<th style="text-align: right;">0.975quant</th>
+<th style="text-align: right;">mode</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Precision for the Gaussian observations</td>
+<td style="text-align: right;">6.9086</td>
+<td style="text-align: right;">2.1294</td>
+<td style="text-align: right;">3.4791</td>
+<td style="text-align: right;">6.6648</td>
+<td style="text-align: right;">11.779</td>
+<td style="text-align: right;">6.2005</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Precision for operator</td>
+<td style="text-align: right;">19036.5994</td>
+<td style="text-align: right;">19078.2582</td>
+<td style="text-align: right;">1253.5751</td>
+<td style="text-align: right;">13267.1888</td>
+<td style="text-align: right;">69860.496</td>
+<td style="text-align: right;">3412.8841</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Precision for the operator term is unreasonably high. This implies a strong belief that there is no variation between the operators which we would find hard to believe. This is due to the default diffuse gamma prior on the precisions which put almost all the weight on the error variation and not nearly enough on the operator variation. We need to change the prior.</p>
+<section id="halfnormal-prior-on-the-sds" class="level2">
+<h2 class="anchored" data-anchor-id="halfnormal-prior-on-the-sds">Halfnormal prior on the SDs</h2>
+<p>We try a halfnormal prior with low precision instead. A precision of 0.01 corresponds to an SD of 10. (It is possible to vary the mean but we have set this to zero to achieve a halfnormal distribution). This is substantially larger than the SD of the response so the information supplied is very weak.</p>
+<div class="cell" data-hash="pulp_cache/html/pulpinlatn_43509aaf83a99dc53f51c887d37ec695">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>tnprior <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">prec =</span> <span class="fu">list</span>(<span class="at">prior=</span><span class="st">"logtnormal"</span>, <span class="at">param =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="fl">0.01</span>)))</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>imod <span class="ot">&lt;-</span> <span class="fu">inla</span>(bright <span class="sc">~</span> <span class="fu">f</span>(operator, <span class="at">model=</span><span class="st">"iid"</span>, <span class="at">hyper =</span> tnprior),</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>               <span class="at">family=</span><span class="st">"gaussian"</span>, </span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>               <span class="at">data=</span>pulp)</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(imod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Fixed effects:
+            mean    sd 0.025quant 0.5quant 0.975quant mode   kld
+(Intercept) 60.4 0.307     59.773     60.4     61.027 60.4 0.059
+
+Model hyperparameters:
+                                         mean    sd 0.025quant 0.5quant 0.975quant mode
+Precision for the Gaussian observations 10.62  3.53       5.12    10.15      18.87 9.25
+Precision for operator                  12.78 20.75       0.48     6.53      63.64 1.15
+
+ is computed </code></pre>
+</div>
+</div>
+<p>The results appear more plausible. Transform to the SD scale</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>sigmaalpha <span class="ot">&lt;-</span> <span class="fu">inla.tmarginal</span>(<span class="cf">function</span>(x)<span class="dv">1</span><span class="sc">/</span><span class="fu">sqrt</span>(<span class="fu">exp</span>(x)),</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>                             imod<span class="sc">$</span>internal.marginals.hyperpar[[<span class="dv">2</span>]])</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>sigmaepsilon <span class="ot">&lt;-</span> <span class="fu">inla.tmarginal</span>(<span class="cf">function</span>(x)<span class="dv">1</span><span class="sc">/</span><span class="fu">sqrt</span>(<span class="fu">exp</span>(x)),</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>                                imod<span class="sc">$</span>internal.marginals.hyperpar[[<span class="dv">1</span>]])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>and output the summary statistics (note that transforming the summary statistics on the precision scale only works for the quantiles)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>sigalpha <span class="ot">=</span> <span class="fu">c</span>(<span class="fu">inla.zmarginal</span>(sigmaalpha, <span class="at">silent =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>            <span class="at">mode=</span><span class="fu">inla.mmarginal</span>(sigmaalpha))</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>sigepsilon <span class="ot">=</span> <span class="fu">c</span>(<span class="fu">inla.zmarginal</span>(sigmaepsilon, <span class="at">silent =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>              <span class="at">mode=</span><span class="fu">inla.mmarginal</span>(sigmaepsilon))</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(sigalpha, sigepsilon) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>           mean    sd       quant0.025 quant0.25 quant0.5 quant0.75 quant0.975 mode   
+sigalpha   0.48827 0.3485   0.12553    0.25978   0.38975  0.6026    1.4274     0.26468
+sigepsilon 0.31962 0.053491 0.23083    0.28137   0.31367  0.35175   0.44027    0.3013 </code></pre>
+</div>
+</div>
+<p>The posterior mode is most comparable with the (RE)ML estimates computed above. In this respect, the results are similar.</p>
+<p>We can also get summary statistics on the random effects:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>imod<span class="sc">$</span>summary.random<span class="sc">$</span>operator <span class="sc">|&gt;</span> <span class="fu">kable</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<table class="table table-sm table-striped">
+<colgroup>
+<col style="width: 4%">
+<col style="width: 13%">
+<col style="width: 11%">
+<col style="width: 16%">
+<col style="width: 13%">
+<col style="width: 16%">
+<col style="width: 13%">
+<col style="width: 11%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">ID</th>
+<th style="text-align: right;">mean</th>
+<th style="text-align: right;">sd</th>
+<th style="text-align: right;">0.025quant</th>
+<th style="text-align: right;">0.5quant</th>
+<th style="text-align: right;">0.975quant</th>
+<th style="text-align: right;">mode</th>
+<th style="text-align: right;">kld</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">a</td>
+<td style="text-align: right;">-0.13044</td>
+<td style="text-align: right;">0.32092</td>
+<td style="text-align: right;">-0.80141</td>
+<td style="text-align: right;">-0.11932</td>
+<td style="text-align: right;">0.49696</td>
+<td style="text-align: right;">-0.08730</td>
+<td style="text-align: right;">0.04987</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">b</td>
+<td style="text-align: right;">-0.27707</td>
+<td style="text-align: right;">0.32587</td>
+<td style="text-align: right;">-0.97389</td>
+<td style="text-align: right;">-0.26064</td>
+<td style="text-align: right;">0.32715</td>
+<td style="text-align: right;">-0.23269</td>
+<td style="text-align: right;">0.04714</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">c</td>
+<td style="text-align: right;">0.17932</td>
+<td style="text-align: right;">0.32225</td>
+<td style="text-align: right;">-0.44038</td>
+<td style="text-align: right;">0.16589</td>
+<td style="text-align: right;">0.85892</td>
+<td style="text-align: right;">0.13365</td>
+<td style="text-align: right;">0.04906</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">d</td>
+<td style="text-align: right;">0.22814</td>
+<td style="text-align: right;">0.32377</td>
+<td style="text-align: right;">-0.38353</td>
+<td style="text-align: right;">0.21282</td>
+<td style="text-align: right;">0.91615</td>
+<td style="text-align: right;">0.18500</td>
+<td style="text-align: right;">0.04834</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Plot the posterior densities for the two SD terms:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>ddf <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">rbind</span>(sigmaalpha,sigmaepsilon),</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>                  <span class="at">errterm=</span><span class="fu">gl</span>(<span class="dv">2</span>,<span class="fu">dim</span>(sigmaalpha)[<span class="dv">1</span>],<span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"alpha"</span>,<span class="st">"epsilon"</span>)))</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(ddf, <span class="fu">aes</span>(x,y, <span class="at">linetype=</span>errterm))<span class="sc">+</span></span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>()<span class="sc">+</span><span class="fu">xlab</span>(<span class="st">"bright"</span>)<span class="sc">+</span><span class="fu">ylab</span>(<span class="st">"density"</span>)<span class="sc">+</span><span class="fu">xlim</span>(<span class="dv">0</span>,<span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="figs/plotsdspulp-1..svg" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>We see that the operator SD less precisely known than the error SD. Although the mode for the operator is smaller, there is a substantial chance it could be much higher than the error SD.</p>
+<p>Is there any variation between operators? We framed this question as an hypothesis test previously but that is not sensible in this framework. We might ask the probability that the operator SD is zero. Since we have posited a continuous prior that places no discrete mass on zero, the posterior probability will be zero, regardless of the data. Instead we might ask the probability that the operator SD is small. Given the response is measured to one decimal place, 0.1 is a reasonable representation of <em>small</em> if we take this to mean the smallest amount we care about.</p>
+<p>We can compute the probability that the operator SD is smaller than 0.1:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">inla.pmarginal</span>(<span class="fl">0.1</span>, sigmaalpha)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.0086498</code></pre>
+</div>
+</div>
+<p>The probability is small but not entirely negligible.</p>
+</section>
+<section id="informative-gamma-priors-on-the-precisions" class="level2">
+<h2 class="anchored" data-anchor-id="informative-gamma-priors-on-the-precisions">Informative gamma priors on the precisions</h2>
+<p>Now try more informative gamma priors for the precisions. Define it so the mean value of gamma prior is set to the inverse of the variance of the response. We expect the two error variances to be lower than the response variance so this is an overestimate. The variance of the gamma prior (for the precision) is controlled by the <code>apar</code> shape parameter in the code. <code>apar=1</code> is the exponential distribution. Shape values less than one result in densities that have a mode at zero and decrease monotonely. These have greater variance and hence less informative.</p>
+<div class="cell" data-hash="pulp_cache/html/pulpinlaig_a5cccee030e20d6d89ce162af6a989c6">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>apar <span class="ot">&lt;-</span> <span class="fl">0.5</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>bpar <span class="ot">&lt;-</span> <span class="fu">var</span>(pulp<span class="sc">$</span>bright)<span class="sc">*</span>apar</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>lgprior <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">prec =</span> <span class="fu">list</span>(<span class="at">prior=</span><span class="st">"loggamma"</span>, <span class="at">param =</span> <span class="fu">c</span>(apar,bpar)))</span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>imod <span class="ot">&lt;-</span> <span class="fu">inla</span>(bright <span class="sc">~</span> <span class="fu">f</span>(operator, <span class="at">model=</span><span class="st">"iid"</span>, <span class="at">hyper =</span> lgprior),</span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>               <span class="at">family=</span><span class="st">"gaussian"</span>, </span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>               <span class="at">data=</span>pulp)</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(imod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Fixed effects:
+            mean    sd 0.025quant 0.5quant 0.975quant mode   kld
+(Intercept) 60.4 0.209      59.98     60.4      60.82 60.4 0.002
+
+Model hyperparameters:
+                                         mean   sd 0.025quant 0.5quant 0.975quant mode
+Precision for the Gaussian observations 10.62 3.52       5.11    10.15      18.84 9.27
+Precision for operator                  11.13 9.25       1.58     8.62      35.52 4.39
+
+ is computed </code></pre>
+</div>
+</div>
+<p>Compute the summaries as before:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>sigmaalpha <span class="ot">&lt;-</span> <span class="fu">inla.tmarginal</span>(<span class="cf">function</span>(x)<span class="dv">1</span><span class="sc">/</span><span class="fu">sqrt</span>(<span class="fu">exp</span>(x)),</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>                             imod<span class="sc">$</span>internal.marginals.hyperpar[[<span class="dv">2</span>]])</span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>sigmaepsilon <span class="ot">&lt;-</span> <span class="fu">inla.tmarginal</span>(<span class="cf">function</span>(x)<span class="dv">1</span><span class="sc">/</span><span class="fu">sqrt</span>(<span class="fu">exp</span>(x)),</span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>                            imod<span class="sc">$</span>internal.marginals.hyperpar[[<span class="dv">1</span>]])</span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>sigalpha <span class="ot">=</span> <span class="fu">c</span>(<span class="fu">inla.zmarginal</span>(sigmaalpha, <span class="at">silent =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">mode=</span><span class="fu">inla.mmarginal</span>(sigmaalpha))</span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>sigepsilon <span class="ot">=</span> <span class="fu">c</span>(<span class="fu">inla.zmarginal</span>(sigmaepsilon, <span class="at">silent =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>              <span class="at">mode=</span><span class="fu">inla.mmarginal</span>(sigmaepsilon))</span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(sigalpha, sigepsilon) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>           mean    sd       quant0.025 quant0.25 quant0.5 quant0.75 quant0.975 mode   
+sigalpha   0.37612 0.16115  0.1685     0.26303   0.3395   0.44953   0.78908    0.2801 
+sigepsilon 0.31964 0.053586 0.23102    0.2813    0.31355  0.35173   0.44079    0.30082</code></pre>
+</div>
+</div>
+<p>Slightly different outcome.</p>
+<p>Make the plots:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>ddf <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">rbind</span>(sigmaalpha,sigmaepsilon),</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>                  <span class="at">errterm=</span><span class="fu">gl</span>(<span class="dv">2</span>,<span class="fu">dim</span>(sigmaalpha)[<span class="dv">1</span>],<span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"alpha"</span>,<span class="st">"epsilon"</span>)))</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(ddf, <span class="fu">aes</span>(x,y, <span class="at">linetype=</span>errterm))<span class="sc">+</span></span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>()<span class="sc">+</span><span class="fu">xlab</span>(<span class="st">"bright"</span>)<span class="sc">+</span><span class="fu">ylab</span>(<span class="st">"density"</span>)<span class="sc">+</span><span class="fu">xlim</span>(<span class="dv">0</span>,<span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="figs/plotsdspulpig-1..svg" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>The posterior for the error SD is quite similar to that seen previously but the operator SD is larger and bounded away from zero and less dispersed.</p>
+<p>We can compute the probability that the operator SD is smaller than 0.1:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">inla.pmarginal</span>(<span class="fl">0.1</span>, sigmaalpha)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 3.2528e-05</code></pre>
+</div>
+</div>
+<p>The probability is very small. The choice of prior may be unsuitable in that no density is placed on an SD=0 (or infinite precision). We also have very little prior weight on low SD/high precision values. This leads to a posterior for the operator with very little density assigned to small values of the SD. But we can see from looking at the data or from prior analyses of the data that there is some possibility that the operator SD is very small.</p>
+</section>
+<section id="penalized-complexity-prior" class="level2">
+<h2 class="anchored" data-anchor-id="penalized-complexity-prior">Penalized Complexity Prior</h2>
+<p>In <a href="https://doi.org/10.1214/16-STS576">Simpson (2017)</a>, penalized complexity priors are proposed. This requires that we specify a scaling for the SDs of the random effects. We use the SD of the residuals of the fixed effects only model (what might be called the base model in the paper) to provide this scaling.</p>
+<div class="cell" data-hash="pulp_cache/html/pulpinlapc_4a920f5b288d8ac37941e27c46df5e74">
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>sdres <span class="ot">&lt;-</span> <span class="fu">sd</span>(pulp<span class="sc">$</span>bright)</span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>pcprior <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">prec =</span> <span class="fu">list</span>(<span class="at">prior=</span><span class="st">"pc.prec"</span>, <span class="at">param =</span> <span class="fu">c</span>(<span class="dv">3</span><span class="sc">*</span>sdres,<span class="fl">0.01</span>)))</span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>imod <span class="ot">&lt;-</span> <span class="fu">inla</span>(bright <span class="sc">~</span> <span class="fu">f</span>(operator, <span class="at">model=</span><span class="st">"iid"</span>, <span class="at">hyper =</span> pcprior),</span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>               <span class="at">family=</span><span class="st">"gaussian"</span>, </span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>               <span class="at">data=</span>pulp)</span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(imod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Fixed effects:
+            mean   sd 0.025quant 0.5quant 0.975quant mode kld
+(Intercept) 60.4 0.17     60.056     60.4     60.744 60.4   0
+
+Model hyperparameters:
+                                         mean    sd 0.025quant 0.5quant 0.975quant mode
+Precision for the Gaussian observations 10.55  3.52       5.04    10.09      18.76 9.21
+Precision for operator                  24.81 32.37       2.24    15.12     107.06 5.84
+
+ is computed </code></pre>
+</div>
+</div>
+<p>Compute the summaries as before:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>sigmaalpha <span class="ot">&lt;-</span> <span class="fu">inla.tmarginal</span>(<span class="cf">function</span>(x)<span class="dv">1</span><span class="sc">/</span><span class="fu">sqrt</span>(<span class="fu">exp</span>(x)),</span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>                             imod<span class="sc">$</span>internal.marginals.hyperpar[[<span class="dv">2</span>]])</span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a>sigmaepsilon <span class="ot">&lt;-</span> <span class="fu">inla.tmarginal</span>(<span class="cf">function</span>(x)<span class="dv">1</span><span class="sc">/</span><span class="fu">sqrt</span>(<span class="fu">exp</span>(x)),</span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>                            imod<span class="sc">$</span>internal.marginals.hyperpar[[<span class="dv">1</span>]])</span>
+<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a>sigalpha <span class="ot">=</span> <span class="fu">c</span>(<span class="fu">inla.zmarginal</span>(sigmaalpha, <span class="at">silent =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb50-6"><a href="#cb50-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">mode=</span><span class="fu">inla.mmarginal</span>(sigmaalpha))</span>
+<span id="cb50-7"><a href="#cb50-7" aria-hidden="true" tabindex="-1"></a>sigepsilon <span class="ot">=</span> <span class="fu">c</span>(<span class="fu">inla.zmarginal</span>(sigmaepsilon, <span class="at">silent =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb50-8"><a href="#cb50-8" aria-hidden="true" tabindex="-1"></a>              <span class="at">mode=</span><span class="fu">inla.mmarginal</span>(sigmaepsilon))</span>
+<span id="cb50-9"><a href="#cb50-9" aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(sigalpha, sigepsilon) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>           mean    sd       quant0.025 quant0.25 quant0.5 quant0.75 quant0.975 mode   
+sigalpha   0.28854 0.14726  0.097076   0.18404   0.25697  0.35714   0.66278    0.20198
+sigepsilon 0.3208  0.054271 0.23146    0.28195   0.31448  0.35319   0.44388    0.30117</code></pre>
+</div>
+</div>
+<p>We get a similar result to the truncated normal prior used earlier although the operator SD is generally smaller.</p>
+<p>Make the plots:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>ddf <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">rbind</span>(sigmaalpha,sigmaepsilon),</span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>                  <span class="at">errterm=</span><span class="fu">gl</span>(<span class="dv">2</span>,<span class="fu">dim</span>(sigmaalpha)[<span class="dv">1</span>],<span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"alpha"</span>,<span class="st">"epsilon"</span>)))</span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(ddf, <span class="fu">aes</span>(x,y, <span class="at">linetype=</span>errterm))<span class="sc">+</span></span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>()<span class="sc">+</span><span class="fu">xlab</span>(<span class="st">"bright"</span>)<span class="sc">+</span><span class="fu">ylab</span>(<span class="st">"density"</span>)<span class="sc">+</span><span class="fu">xlim</span>(<span class="dv">0</span>,<span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="figs/plotsdspulppc-1..svg" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>We can compute the probability that the operator SD is smaller than 0.1:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="fu">inla.pmarginal</span>(<span class="fl">0.1</span>, sigmaalpha)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.02872</code></pre>
+</div>
+</div>
+<p>The probability is small but not insubstantial.</p>
+<p>We can plot the posterior density of <span class="math inline">\(\mu\)</span> along with a 95% credibility interval:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(imod<span class="sc">$</span>marginals.fixed[[<span class="dv">1</span>]])</span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>cbound <span class="ot">=</span> <span class="fu">inla.qmarginal</span>(<span class="fu">c</span>(<span class="fl">0.025</span>,<span class="fl">0.975</span>),mu)</span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(mu, <span class="fu">aes</span>(x,y)) <span class="sc">+</span> <span class="fu">geom_line</span>() <span class="sc">+</span> </span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> cbound) <span class="sc">+</span></span>
+<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"brightness"</span>)<span class="sc">+</span><span class="fu">ylab</span>(<span class="st">"density"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="figs/pulpmargfix-1..svg" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>We can plot the posterior marginals of the random effects:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>nlevels <span class="ot">=</span> <span class="fu">length</span>(<span class="fu">unique</span>(pulp<span class="sc">$</span>operator))</span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a>rdf <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="fu">do.call</span>(rbind,imod<span class="sc">$</span>marginals.random<span class="sc">$</span>operator))</span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a>rdf<span class="sc">$</span>operator <span class="ot">=</span> <span class="fu">gl</span>(nlevels,<span class="fu">nrow</span>(rdf)<span class="sc">/</span>nlevels,<span class="at">labels=</span><span class="dv">1</span><span class="sc">:</span>nlevels)</span>
+<span id="cb56-4"><a href="#cb56-4" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(rdf,<span class="fu">aes</span>(<span class="at">x=</span>x,<span class="at">y=</span>y,<span class="at">group=</span>operator, <span class="at">color=</span>operator)) <span class="sc">+</span> </span>
+<span id="cb56-5"><a href="#cb56-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb56-6"><a href="#cb56-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">""</span>) <span class="sc">+</span> <span class="fu">ylab</span>(<span class="st">"Density"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="figs/pulprandeffpden-1..svg" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>We see that operators 1 and 2 tend to be lower than 3 and 4. There is substantial overlap so we would hesitate to declare any difference between a pair of operators.</p>
+</section>
+</section>
+<section id="stan" class="level1">
+<h1>STAN</h1>
+<p><a href="https://mc-stan.org/">STAN</a> performs Bayesian inference using MCMC.</p>
+<p>Set up STAN to use multiple cores. Set the random number seed for reproducibility.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rstan_options</span>(<span class="at">auto_write =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">mc.cores =</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>())</span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We need the STAN command file <code>pulp.stan</code> which we view here:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="fu">writeLines</span>(<span class="fu">readLines</span>(<span class="st">"../stancode/pulp.stan"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>data {
+  int&lt;lower=0&gt; N;
+  int&lt;lower=0&gt; J;
+  int&lt;lower=1,upper=J&gt; predictor[N];
+  vector[N] response;
+}
+parameters {
+  vector[J] eta;
+  real mu;
+  real&lt;lower=0&gt; sigmaalpha;
+  real&lt;lower=0&gt; sigmaepsilon;
+}
+transformed parameters {
+  vector[J] a;
+  vector[N] yhat;
+
+  a = mu + sigmaalpha * eta;
+
+  for (i in 1:N)
+    yhat[i] = a[predictor[i]];
+}
+model {
+  eta ~ normal(0, 1);
+
+  response ~ normal(yhat, sigmaepsilon);
+}</code></pre>
+</div>
+</div>
+<p>We have used uninformative priors for the overall mean and the two variances. Prepare data in a format consistent with the command file. Needs to be a list. Can’t use the word <code>operator</code> since this is reserved for system use in STAN.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a>pulpdat <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">N=</span><span class="fu">nrow</span>(pulp),</span>
+<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a>                <span class="at">J=</span><span class="fu">length</span>(<span class="fu">unique</span>(pulp<span class="sc">$</span>operator)),</span>
+<span id="cb60-3"><a href="#cb60-3" aria-hidden="true" tabindex="-1"></a>                <span class="at">response=</span>pulp<span class="sc">$</span>bright,</span>
+<span id="cb60-4"><a href="#cb60-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">predictor=</span><span class="fu">as.numeric</span>(pulp<span class="sc">$</span>operator))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Break the fitting process into three steps:</p>
+<div class="cell" data-hash="pulp_cache/html/pulpstancomp_6b18d01096ceb976750f50a42a21eee8">
+<div class="sourceCode cell-code" id="cb61"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a>rt <span class="ot">&lt;-</span> <span class="fu">stanc</span>(<span class="at">file=</span><span class="st">"../stancode/pulp.stan"</span>)</span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a><span class="fu">suppressMessages</span>(sm <span class="ot">&lt;-</span> <span class="fu">stan_model</span>(<span class="at">stanc_ret =</span> rt, <span class="at">verbose=</span><span class="cn">FALSE</span>))</span>
+<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a><span class="fu">system.time</span>(fit <span class="ot">&lt;-</span> <span class="fu">sampling</span>(sm, <span class="at">data=</span>pulpdat))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   user  system elapsed 
+  3.992   0.238   1.600 </code></pre>
+</div>
+</div>
+<p>By default, we use 2000 iterations but repeated with independent starts 4 times giving 4 chains. We can thin but do not by default. The warmup period is half the number of observations (which is very conservative in this instance).</p>
+<p>We get warning messages about the fit. Since the default number of 2000 iterations runs in seconds, we can simply run a lot more iterations. This is rather lazy and would not be viable for more expensive computations, but sometimes CPU effort is preferred to mental effort.</p>
+<div class="cell" data-hash="pulp_cache/html/pulpstanbigiter_03753a921bf2b47e87a0b03fc6936cdc">
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="fu">system.time</span>(fit <span class="ot">&lt;-</span> <span class="fu">sampling</span>(sm, <span class="at">data=</span>pulpdat, <span class="at">iter=</span><span class="dv">100000</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   user  system elapsed 
+ 37.593   2.657  17.731 </code></pre>
+</div>
+</div>
+<p>The same underlying problems remain but the inference will now be more reliable.</p>
+<section id="diagnostics" class="level2">
+<h2 class="anchored" data-anchor-id="diagnostics">Diagnostics</h2>
+<p>Diagnostics to check the convergence are worthwhile. We plot the sampled <span class="math inline">\(\mu\)</span> in the four chains, choosing only every 100th observation (the plot becomes very dense if we show everything). The warm-up period is excluded.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a>pname <span class="ot">&lt;-</span> <span class="st">"mu"</span></span>
+<span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a>muc <span class="ot">&lt;-</span> rstan<span class="sc">::</span><span class="fu">extract</span>(fit, <span class="at">pars=</span>pname,  <span class="at">permuted=</span><span class="cn">FALSE</span>, <span class="at">inc_warmup=</span><span class="cn">FALSE</span>)</span>
+<span id="cb65-3"><a href="#cb65-3" aria-hidden="true" tabindex="-1"></a>mdf <span class="ot">&lt;-</span> reshape2<span class="sc">::</span><span class="fu">melt</span>(muc)</span>
+<span id="cb65-4"><a href="#cb65-4" aria-hidden="true" tabindex="-1"></a>mdf <span class="sc">|&gt;</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(iterations <span class="sc">%%</span> <span class="dv">100</span> <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb65-5"><a href="#cb65-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x=</span>iterations,<span class="at">y=</span>value,<span class="at">color=</span>chains)) <span class="sc">+</span> <span class="fu">geom_line</span>() <span class="sc">+</span> <span class="fu">ylab</span>(mdf<span class="sc">$</span>parameters[<span class="dv">1</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="figs/pulpmudiag-1..svg" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>We see the traces of the four chains overlaid in different colors. The chains appear roughly stationary although there are some occasional larger excursions (which is why we needed more iterations).</p>
+<p>The similar plots can be produced for the two variance terms although note that STAN uses the standard deviations (which we also prefer). Here is the group (operator) SD:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a>pname <span class="ot">&lt;-</span> <span class="st">"sigmaalpha"</span></span>
+<span id="cb66-2"><a href="#cb66-2" aria-hidden="true" tabindex="-1"></a>muc <span class="ot">&lt;-</span> rstan<span class="sc">::</span><span class="fu">extract</span>(fit, <span class="at">pars=</span>pname,  <span class="at">permuted=</span><span class="cn">FALSE</span>, <span class="at">inc_warmup=</span><span class="cn">FALSE</span>)</span>
+<span id="cb66-3"><a href="#cb66-3" aria-hidden="true" tabindex="-1"></a>mdf <span class="ot">&lt;-</span> reshape2<span class="sc">::</span><span class="fu">melt</span>(muc)</span>
+<span id="cb66-4"><a href="#cb66-4" aria-hidden="true" tabindex="-1"></a>mdf <span class="sc">|&gt;</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(iterations <span class="sc">%%</span> <span class="dv">100</span> <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb66-5"><a href="#cb66-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x=</span>iterations,<span class="at">y=</span>value,<span class="at">color=</span>chains)) <span class="sc">+</span> </span>
+<span id="cb66-6"><a href="#cb66-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span> <span class="fu">ylab</span>(mdf<span class="sc">$</span>parameters[<span class="dv">1</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="figs/pulpalphadiag-1..svg" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>This looks acceptable. We expect that the distribution will be asymmetric so this is no concern. The chains stay away from zero (or close to it). Here’s the same plot for the error SD.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a>pname <span class="ot">&lt;-</span> <span class="st">"sigmaepsilon"</span></span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a>muc <span class="ot">&lt;-</span> rstan<span class="sc">::</span><span class="fu">extract</span>(fit, <span class="at">pars=</span>pname,  <span class="at">permuted=</span><span class="cn">FALSE</span>, <span class="at">inc_warmup=</span><span class="cn">FALSE</span>)</span>
+<span id="cb67-3"><a href="#cb67-3" aria-hidden="true" tabindex="-1"></a>mdf <span class="ot">&lt;-</span> reshape2<span class="sc">::</span><span class="fu">melt</span>(muc)</span>
+<span id="cb67-4"><a href="#cb67-4" aria-hidden="true" tabindex="-1"></a>mdf <span class="sc">|&gt;</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(iterations <span class="sc">%%</span> <span class="dv">100</span> <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb67-5"><a href="#cb67-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x=</span>iterations,<span class="at">y=</span>value,<span class="at">color=</span>chains)) <span class="sc">+</span> </span>
+<span id="cb67-6"><a href="#cb67-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span> <span class="fu">ylab</span>(mdf<span class="sc">$</span>parameters[<span class="dv">1</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="figs/pulpepsdiag-1..svg" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Again this looks satisfactory.</p>
+</section>
+<section id="output-summaries" class="level2">
+<h2 class="anchored" data-anchor-id="output-summaries">Output summaries</h2>
+<p>We consider only the parameters of immediate interest:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb68"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(fit, <span class="at">pars=</span><span class="fu">c</span>(<span class="st">"mu"</span>,<span class="st">"sigmaalpha"</span>,<span class="st">"sigmaepsilon"</span>,<span class="st">"a"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Inference for Stan model: pulp.
+4 chains, each with iter=1e+05; warmup=50000; thin=1; 
+post-warmup draws per chain=50000, total post-warmup draws=2e+05.
+
+              mean se_mean   sd  2.5%   25%   50%   75% 97.5%  n_eff Rhat
+mu           60.40       0 0.27 59.83 60.27 60.40 60.53 61.00   7427    1
+sigmaalpha    0.47       0 0.37  0.06  0.23  0.36  0.58  1.51   7102    1
+sigmaepsilon  0.36       0 0.07  0.25  0.31  0.35  0.40  0.53  55513    1
+a[1]         60.28       0 0.15 59.97 60.18 60.28 60.38 60.57 131584    1
+a[2]         60.14       0 0.17 59.82 60.03 60.14 60.25 60.47  78181    1
+a[3]         60.57       0 0.15 60.27 60.47 60.57 60.67 60.87 115742    1
+a[4]         60.61       0 0.16 60.30 60.51 60.61 60.72 60.93 104986    1
+
+Samples were drawn using NUTS(diag_e) at Thu Aug 18 11:58:53 2022.
+For each parameter, n_eff is a crude measure of effective sample size,
+and Rhat is the potential scale reduction factor on split chains (at 
+convergence, Rhat=1).</code></pre>
+</div>
+</div>
+<p>We see the posterior mean, SE and SD of the samples. We see some quantiles from which we could construct a 95% credible interval (for example). The <code>n_eff</code> is a rough measure of the sample size taking into account the correlation in the samples. The effective sample sizes for the mean and operator SD primary parameters is not large (considering the number of iterations) although adequate enough for most purposes. The Rhat statistic is known as the potential scale reduction factor. Values much greater than one indicate that additional samples would significantly improve the inference. In this case, the factors are all one so we feel no inclination to draw more samples.</p>
+<p>We can also get the posterior means alone.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb70"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a>(<span class="fu">get_posterior_mean</span>(fit, <span class="at">pars=</span><span class="fu">c</span>(<span class="st">"mu"</span>,<span class="st">"sigmaalpha"</span>,<span class="st">"sigmaepsilon"</span>,<span class="st">"a"</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>             mean-chain:1 mean-chain:2 mean-chain:3 mean-chain:4 mean-all chains
+mu               60.40358     60.40883     60.39329     60.40545        60.40279
+sigmaalpha        0.48095      0.45193      0.45943      0.47472         0.46676
+sigmaepsilon      0.35915      0.35833      0.35936      0.35982         0.35917
+a[1]             60.27689     60.27644     60.27768     60.27623        60.27681
+a[2]             60.13874     60.13906     60.13953     60.13985        60.13930
+a[3]             60.56881     60.56912     60.56754     60.56921        60.56867
+a[4]             60.61337     60.61283     60.61370     60.61463        60.61363</code></pre>
+</div>
+</div>
+<p>We see that we get this information for each chain as well as overall. This gives a sense of why running more than one chain might be helpful in assessing the uncertainty in the posterior inference.</p>
+</section>
+<section id="posterior-distributions" class="level2">
+<h2 class="anchored" data-anchor-id="posterior-distributions">Posterior Distributions</h2>
+<p>We can use <code>extract</code> to get at various components of the STAN fit. We plot the posterior densities for the SDs:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb72"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a>postsig <span class="ot">&lt;-</span> rstan<span class="sc">::</span><span class="fu">extract</span>(fit, <span class="at">pars=</span><span class="fu">c</span>(<span class="st">"sigmaalpha"</span>,<span class="st">"sigmaepsilon"</span>))</span>
+<span id="cb72-2"><a href="#cb72-2" aria-hidden="true" tabindex="-1"></a>ref <span class="ot">&lt;-</span> reshape2<span class="sc">::</span><span class="fu">melt</span>(postsig,<span class="at">value.name=</span><span class="st">"bright"</span>)</span>
+<span id="cb72-3"><a href="#cb72-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(ref,<span class="fu">aes</span>(<span class="at">x=</span>bright, <span class="at">color=</span>L1))<span class="sc">+</span></span>
+<span id="cb72-4"><a href="#cb72-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_density</span>()<span class="sc">+</span></span>
+<span id="cb72-5"><a href="#cb72-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlim</span>(<span class="dv">0</span>,<span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb72-6"><a href="#cb72-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color=</span><span class="fu">guide_legend</span>(<span class="at">title=</span><span class="st">"SD"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="figs/pulppdae-1..svg" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>We see that the error SD can be localized much more than the operator SD. We can also look at the operator random effects:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb73"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a>opre <span class="ot">&lt;-</span> rstan<span class="sc">::</span><span class="fu">extract</span>(fit, <span class="at">pars=</span><span class="st">"a"</span>)</span>
+<span id="cb73-2"><a href="#cb73-2" aria-hidden="true" tabindex="-1"></a>ref <span class="ot">&lt;-</span> reshape2<span class="sc">::</span><span class="fu">melt</span>(opre, <span class="at">value.name=</span><span class="st">"bright"</span>)</span>
+<span id="cb73-3"><a href="#cb73-3" aria-hidden="true" tabindex="-1"></a>ref[,<span class="dv">2</span>] <span class="ot">&lt;-</span> (LETTERS[<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>])[ref[,<span class="dv">2</span>]]</span>
+<span id="cb73-4"><a href="#cb73-4" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data=</span>ref,<span class="fu">aes</span>(<span class="at">x=</span>bright, <span class="at">color=</span>Var2))<span class="sc">+</span><span class="fu">geom_density</span>()<span class="sc">+</span><span class="fu">guides</span>(<span class="at">color=</span><span class="fu">guide_legend</span>(<span class="at">title=</span><span class="st">"operator"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="figs/pulpstanre-1..svg" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>We see that the four operator distributions overlap.</p>
+</section>
+<section id="tail-probability" class="level2">
+<h2 class="anchored" data-anchor-id="tail-probability">Tail probability</h2>
+<p>Previously, we took an interest in whether there is any variation between operators and answered this question with a computation of the probability that the operator SD is less than 0.1. We computed the proportion of sampled values less than 0.1.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a>muc <span class="ot">&lt;-</span> rstan<span class="sc">::</span><span class="fu">extract</span>(fit, <span class="at">pars=</span><span class="st">"sigmaalpha"</span>,  <span class="at">permuted=</span><span class="cn">FALSE</span>, <span class="at">inc_warmup=</span><span class="cn">FALSE</span>)</span>
+<span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a>mdf <span class="ot">&lt;-</span> reshape2<span class="sc">::</span><span class="fu">melt</span>(muc)</span>
+<span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(mdf<span class="sc">$</span>value <span class="sc">&lt;</span> <span class="fl">0.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.053485</code></pre>
+</div>
+</div>
+<p>This is a somewhat larger probability than seen previously. The value obtained is sensitive to the choice of prior on the error SD. This can be changed within STAN but it is easier to experiment with this using BRMS.</p>
+</section>
+</section>
+<section id="brms" class="level1">
+<h1>BRMS</h1>
+<p><a href="https://paul-buerkner.github.io/brms/">BRMS</a> stands for Bayesian Regression Models with STAN. It provides a convenient wrapper to STAN functionality.</p>
+<p>Fitting the model is very similar to <code>lmer</code> as seen above:</p>
+<div class="cell" data-hash="pulp_cache/html/brmfit_708f138ecc1fa2777ec4c3fb438931dc">
+<div class="sourceCode cell-code" id="cb76"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a><span class="fu">suppressMessages</span>(bmod <span class="ot">&lt;-</span> <span class="fu">brm</span>(bright <span class="sc">~</span> <span class="dv">1</span><span class="sc">+</span>(<span class="dv">1</span><span class="sc">|</span>operator), pulp))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We get some warnings but not as severe as seen with our STAN fit above. We can obtain some posterior densities and diagnostics with:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(bmod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="figs/pulpbrmsdiag-1..svg" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>We can look at the STAN code that <code>brms</code> used with:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb78"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a><span class="fu">stancode</span>(bmod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>// generated with brms 2.17.0
+functions {
+}
+data {
+  int&lt;lower=1&gt; N;  // total number of observations
+  vector[N] Y;  // response variable
+  // data for group-level effects of ID 1
+  int&lt;lower=1&gt; N_1;  // number of grouping levels
+  int&lt;lower=1&gt; M_1;  // number of coefficients per level
+  int&lt;lower=1&gt; J_1[N];  // grouping indicator per observation
+  // group-level predictor values
+  vector[N] Z_1_1;
+  int prior_only;  // should the likelihood be ignored?
+}
+transformed data {
+}
+parameters {
+  real Intercept;  // temporary intercept for centered predictors
+  real&lt;lower=0&gt; sigma;  // dispersion parameter
+  vector&lt;lower=0&gt;[M_1] sd_1;  // group-level standard deviations
+  vector[N_1] z_1[M_1];  // standardized group-level effects
+}
+transformed parameters {
+  vector[N_1] r_1_1;  // actual group-level effects
+  real lprior = 0;  // prior contributions to the log posterior
+  r_1_1 = (sd_1[1] * (z_1[1]));
+  lprior += student_t_lpdf(Intercept | 3, 60.5, 2.5);
+  lprior += student_t_lpdf(sigma | 3, 0, 2.5)
+    - 1 * student_t_lccdf(0 | 3, 0, 2.5);
+  lprior += student_t_lpdf(sd_1 | 3, 0, 2.5)
+    - 1 * student_t_lccdf(0 | 3, 0, 2.5);
+}
+model {
+  // likelihood including constants
+  if (!prior_only) {
+    // initialize linear predictor term
+    vector[N] mu = Intercept + rep_vector(0.0, N);
+    for (n in 1:N) {
+      // add more terms to the linear predictor
+      mu[n] += r_1_1[J_1[n]] * Z_1_1[n];
+    }
+    target += normal_lpdf(Y | mu, sigma);
+  }
+  // priors including constants
+  target += lprior;
+  target += std_normal_lpdf(z_1[1]);
+}
+generated quantities {
+  // actual population-level intercept
+  real b_Intercept = Intercept;
+}</code></pre>
+</div>
+</div>
+<p>We see that <code>brms</code> is using student t distributions with 3 degrees of freedom for the priors. For the two error SDs, this will be truncated at zero to form half-t distributions. You can get a more explicit description of the priors with <code>prior_summary(bmod)</code>. These are qualitatively similar to the half-normal and the PC prior used in the INLA fit. This explains why we encountered fewer problems in the fit because we are supplying more informative priors. Nevertheless, we do need to increase the number of iterations for more accurate estimation of tail probabilities.</p>
+<div class="cell" data-hash="pulp_cache/html/pulpbrmsmore_d62efb618cd34b1ba0430f01c5e1b895">
+<div class="sourceCode cell-code" id="cb80"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true" tabindex="-1"></a>bmod <span class="ot">&lt;-</span> <span class="fu">brm</span>(bright <span class="sc">~</span> <span class="dv">1</span><span class="sc">+</span>(<span class="dv">1</span><span class="sc">|</span>operator), pulp, <span class="at">iter=</span><span class="dv">10000</span>, <span class="at">cores =</span> <span class="dv">4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Because the STAN programme was compiled earlier, this takes much less time overall even though we are doing 5 times as many iterations as the default number of 2000. We examine the fit:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb81"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(bmod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> Family: gaussian 
+  Links: mu = identity; sigma = identity 
+Formula: bright ~ 1 + (1 | operator) 
+   Data: pulp (Number of observations: 20) 
+  Draws: 4 chains, each with iter = 10000; warmup = 5000; thin = 1;
+         total post-warmup draws = 20000
+
+Group-Level Effects: 
+~operator (Number of levels: 4) 
+              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Intercept)     0.45      0.35     0.06     1.45 1.00     2211     1433
+
+Population-Level Effects: 
+          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept    60.40      0.25    59.85    60.94 1.00     2362     1682
+
+Family Specific Parameters: 
+      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sigma     0.36      0.07     0.25     0.53 1.00     6689     9017
+
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+and Tail_ESS are effective sample size measures, and Rhat is the potential
+scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
+</div>
+</div>
+<p>We now have better effective sample sizes. We can estimate the tail probability as before</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb83"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a>bps <span class="ot">=</span> <span class="fu">posterior_samples</span>(bmod)</span>
+<span id="cb83-2"><a href="#cb83-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(bps<span class="sc">$</span>sd_operator__Intercept <span class="sc">&lt;</span> <span class="fl">0.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.0527</code></pre>
+</div>
+</div>
+<p>A somewhat higher value than seen previously. The priors used here put greater weight on smaller values of the SD.</p>
+</section>
+<section id="mgcv" class="level1">
+<h1>MGCV</h1>
+<p>It is possible to fit some GLMMs within the GAM framework of the <code>mgcv</code> package. An explanation of this can be found in this <a href="https://fromthebottomoftheheap.net/2021/02/02/random-effects-in-gams/">blog</a></p>
+<p>The <code>operator</code> term must be a factor for this to work:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb85"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a>gmod <span class="ot">=</span> <span class="fu">gam</span>(bright <span class="sc">~</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fu">s</span>(operator, <span class="at">bs =</span> <span class="st">'re'</span>), <span class="at">data=</span>pulp, <span class="at">method=</span><span class="st">"REML"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>and look at the summary output:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb86"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(gmod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Family: gaussian 
+Link function: identity 
+
+Formula:
+bright ~ 1 + s(operator, bs = "re")
+
+Parametric coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)
+(Intercept)   60.400      0.149     404   &lt;2e-16
+
+Approximate significance of smooth terms:
+             edf Ref.df   F p-value
+s(operator) 2.29      3 3.2   0.021
+
+R-sq.(adj) =  0.336   Deviance explained = 41.6%
+-REML = 9.3131  Scale est. = 0.10625   n = 20</code></pre>
+</div>
+</div>
+<p>We get the estimate and SE for the fixed effect (intercept in this example). We also get a test on the random effect (as described in this <a href="https://doi.org/10.1093/biomet/ast038">article</a>. The hypothesis of no variation between the operators is rejected.</p>
+<p>We can get an estimate of the operator and error SD:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb88"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb88-1"><a href="#cb88-1" aria-hidden="true" tabindex="-1"></a><span class="fu">gam.vcomp</span>(gmod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Standard deviations and 0.95 confidence intervals:
+
+            std.dev    lower   upper
+s(operator) 0.26093 0.090812 0.74971
+scale       0.32596 0.230511 0.46093
+
+Rank: 2/2</code></pre>
+</div>
+</div>
+<p>which is the same as the REML estimate from <code>lmer</code> earlier.</p>
+<p>The random effect estimates for the four operators can be found with:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb90"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a><span class="fu">coef</span>(gmod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  (Intercept) s(operator).1 s(operator).2 s(operator).3 s(operator).4 
+     60.40000      -0.12194      -0.25912       0.16767       0.21340 </code></pre>
+</div>
+</div>
+<p>which is again the same as before.</p>
+<section id="ginla" class="level2">
+<h2 class="anchored" data-anchor-id="ginla">GINLA</h2>
+<p>In <a href="https://doi.org/10.1093/biomet/asz044">Wood (2019)</a>, a simplified version of INLA is proposed. The first construct the GAM model without fitting and then use the <code>ginla()</code> function to perform the computation.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a>gmod <span class="ot">=</span> <span class="fu">gam</span>(bright <span class="sc">~</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fu">s</span>(operator, <span class="at">bs =</span> <span class="st">'re'</span>), <span class="at">data=</span>pulp, <span class="at">fit =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb92-2"><a href="#cb92-2" aria-hidden="true" tabindex="-1"></a>gimod <span class="ot">=</span> <span class="fu">ginla</span>(gmod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We get the posterior density for the intercept as:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb93"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb93-1"><a href="#cb93-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(gimod<span class="sc">$</span>beta[<span class="dv">1</span>,],gimod<span class="sc">$</span>density[<span class="dv">1</span>,],<span class="at">type=</span><span class="st">"l"</span>,<span class="at">xlab=</span><span class="st">"brightness"</span>,<span class="at">ylab=</span><span class="st">"density"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="figs/pulpginlaint-1..svg" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>and for the fixed effects as:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb94"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(gimod<span class="sc">$</span>beta[<span class="dv">2</span>,],gimod<span class="sc">$</span>density[<span class="dv">2</span>,],<span class="at">type=</span><span class="st">"l"</span>,<span class="at">xlim=</span><span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.8</span>,<span class="fl">0.6</span>),</span>
+<span id="cb94-2"><a href="#cb94-2" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab=</span><span class="st">"brightness"</span>,<span class="at">ylab=</span><span class="st">"density"</span>)</span>
+<span id="cb94-3"><a href="#cb94-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">3</span><span class="sc">:</span><span class="dv">5</span>){</span>
+<span id="cb94-4"><a href="#cb94-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lines</span>(gimod<span class="sc">$</span>beta[i,],gimod<span class="sc">$</span>density[i,],<span class="at">lty=</span>i<span class="dv">-1</span>)</span>
+<span id="cb94-5"><a href="#cb94-5" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="figs/pulpginlareff-1..svg" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>It is not straightforward to obtain the posterior densities of the hyperparameters.</p>
+</section>
+</section>
+<section id="discussion" class="level1">
+<h1>Discussion</h1>
+<p>It is interesting to compare these methods. We cannot make numerical comparisons across the whole set because the models, assumptions and even statistical philosophies are not the same. We cannot hope to claim one method is objectively better than another. Even so, the researcher, who wants to know the nature of the difference between the operators, must decide between them and so a qualitative comparison is entirely reasonable.</p>
+<p>Let us assume the perspective of researcher who is not statistician. Although such researchers are usually tolerant of complexity and ambiguity in research questions, they are far less willing to wade into theoretical and computational marshes of statistics. They would like to submit a manuscript for publication where questions won’t be raised over their choice of statistical methodology. They want to software that is easy to use and does not require opaque, complex and finicky computations.</p>
+<blockquote class="blockquote">
+<p>All the software discussed here has been provided free. Researchers have gone beyond the call of duty to provide this. Academic research articles require only text and perhaps some demonstration of software. The production of functional software requires immensely more effort and is usually not rewarded in a career or financial sense. The efforts of these producers has advanced science immeasurably beyond what would have been achieved by purely commercial statistical software. Any criticism below should be measured against these huge achievements.</p>
+</blockquote>
+<ol type="1">
+<li><p>The fixed effect linear model solution is by far the easiest to implement. The methodology has been established for decades and the manner in which such results should be presented is well understood and accepted. It requires only the installation of base R and runs almost instantly. The only problem is that it does not properly answer the main questions of interest.</p></li>
+<li><p>The likelihood-based analysis using <code>lme4</code> is relatively straightforward. We need to install only one well-established R package: <code>lme4</code>. This package has been used and installed so many times that we are unlikely to encounter any unexpected problems. We do need to understand the difference between ML and REML estimation. Testing for the operator effect is more complicated than we might like.</p></li>
+<li><p>Many years ago, <code>lme4</code> would produce a likelihood ratio test that was not correct for this class of models (more precisely, the null distribution was wrong). Some statisticians might have had reservations about the use of such tests but for a long time, they were routinely used in these circumstances. After all, there are many tests used now which we know to be approximations but feel comfortable with accepting. No one wants to open a can of worms. But eventually the evidence built up against these particular tests and the functionality was abruptly withdrawn from <code>lme4</code>. Having used these tests in the first edition of <em>Extending the Linear Models with R</em>, I was perturbed. I had recommended a procedure that was wrong. Many others who had published results were also discomfited. But getting it right is more important than any embarassment. The episode illustrated the uncomfortable fact that not all statistical procedures can be regarded as incontrovertibly correct for all time.</p></li>
+<li><p>I used a parametric bootstrap procedure here which requires some undesirable complication to use from the perspective of the non-statistician. There are R packages which provide other good tests but also require more advanced understanding. All this is a nuisance for the non-statistician writing up results for publication in a non-statistics journal. The referees may well not be familiar with these tests and trouble may result. The fixed effects analysis would not be questioned in this way.</p></li>
+<li><p>The Bayesian approaches introduce additional aspects of complexity into the analysis. Our non-statistician researcher will have to decide whether to brave the possible complications of submitting a Bayesian analysis to an academic journal. It’s fine for me to extol the virtues of a Bayesian analysis but no good if the article gets rejected as a result. Putting that aside, we must specify priors. In some cases, the priors do not make much difference to the conclusions. In this example, the priors make a large difference to the chance that the operator variation is negligible. This reflects the small size of the data and that we have information on only four operators. Although this is the reality, it does contrast with the definitive answers provided by the previous analyses.</p></li>
+<li><p>The Bayesian approaches also entail practical and computational complications. Installing INLA or STAN involves various difficulties that may or may not arise depending on the operating system and other software on your computer. If I were to ask a class of 100 undergraduates to get INLA or STAN up and running, I would consign myself to many hours of dealing with frustrated emails involving computer problems that I have only the vaguest ideas about solving. Of course, it would be more practical to ask them to use a central server where everything is installed but this results in other problems regarding access and usage. After several decades of fiddling with computers to get software to work, I (mostly) possess the patience and experience to get these things to work. That’s far from true for many potential users.</p></li>
+<li><p>Both STAN and INLA are being actively developed. Of course, it’s good to know that functionality and performance are being improved. In both cases, I installed the release version and encountered problems. I fared better with the development versions although in the case of INLA, I had to use an “experimental” mode. It’s not unusual to complete an analysis, come back to it a year later and find that the results are different in some important way or that the code does not run at all. Again I can ride along with this but less experienced users find this problematic. At some point, they may ask “How do I know if this is the right answer?” and the reassurance is not entirely convincing. In contrast, it is not unusual to feed S vintage code into base R and have it give the same results as it did 30 years ago.</p></li>
+<li><p>Specifying and fitting Bayesian models is inherently more complicated than standard linear models or those fit by <code>lme4</code>. We expect to work harder but surely there is some scope for a notational advance in model specification. The extended Wilkinson-Rogers model notation and the grammar of graphics ideas seen in <code>ggplot2</code> are examples where notation has helped advance understanding beyond simple convenience. STAN requires us to learn a new language merely to specify the model. Fortunately, <code>brms</code> (and <code>rstanarm</code>) allow less advanced users to skip these complications.</p></li>
+<li><p>Fitting Bayesian models is more likely to go wrong than GLMM models. For our STAN model, there were insufficient iterations. We did get a warning that suggested the solution of more iterations. Some warnings remained but we knew that is was safe to ignore them. With the INLA model, the default prior led to some unbelievable results. It took some knowledge to know the solution was to use a more informative prior (and this would have been another solution to the STAN fitting problem.) There were less problems in using <code>lme4</code> although the bootstrapping does throw large numbers of warnings when the parameter estimate falls on the boundary. Again we had to know it was safe to let this pass. All this requires some expertise and may confuse the non-statistician.</p></li>
+</ol>
+</section>
+<section id="package-version-info" class="level1">
+<h1>Package version info</h1>
+<p>These analyses required a shockingly large number of packages. One worries that a small change in just one of these packages might cause the analysis above to fail or change in some unexpected manner. Not all of the attached packages are actually used but it is hard to know what we could do without.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb95"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb95-1"><a href="#cb95-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>R version 4.2.1 (2022-06-23)
+Platform: x86_64-apple-darwin17.0 (64-bit)
+Running under: macOS Big Sur ... 10.16
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRblas.0.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRlapack.dylib
+
+locale:
+[1] en_GB.UTF-8/en_GB.UTF-8/en_GB.UTF-8/C/en_GB.UTF-8/en_GB.UTF-8
+
+attached base packages:
+[1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] mgcv_1.8-40         nlme_3.1-159        brms_2.17.0         Rcpp_1.0.9          rstan_2.26.13      
+ [6] StanHeaders_2.26.13 knitr_1.39          INLA_22.07.23       sp_1.5-0            foreach_1.5.2      
+[11] lme4_1.1-30         Matrix_1.4-1        ggplot2_3.3.6       faraway_1.0.8      
+
+loaded via a namespace (and not attached):
+  [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2       ggridges_0.5.3       markdown_1.1        
+  [6] base64enc_0.1-3      rstudioapi_0.13      Deriv_4.1.3          farver_2.1.1         MatrixModels_0.5-0  
+ [11] DT_0.24              fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18    
+ [16] splines_4.2.1        shinythemes_1.2.0    bayesplot_1.9.0      jsonlite_1.8.0       nloptr_2.0.3        
+ [21] shiny_1.7.2          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0       
+ [26] cli_3.3.0            later_1.3.0          htmltools_0.5.3      prettyunits_1.1.1    tools_4.2.1         
+ [31] igraph_1.3.4         coda_0.19-4          gtable_0.3.0         glue_1.6.2           reshape2_1.4.4      
+ [36] dplyr_1.0.9          posterior_1.3.0      V8_4.2.1             vctrs_0.4.1          svglite_2.1.0       
+ [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.32            stringr_1.4.0       
+ [46] ps_1.7.1             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.1      gtools_3.9.3        
+ [51] MASS_7.3-58.1        zoo_1.8-10           scales_1.2.0         colourpicker_1.1.1   promises_1.2.0.1    
+ [56] Brobdingnag_1.2-7    inline_0.3.19        shinystan_2.6.0      yaml_2.3.5           curl_4.3.2          
+ [61] gridExtra_2.3        loo_2.5.1            stringi_1.7.8        highr_0.9            dygraphs_1.1.1.6    
+ [66] checkmate_2.1.0      boot_1.3-28          pkgbuild_1.3.1       rlang_1.0.4          pkgconfig_2.0.3     
+ [71] systemfonts_1.0.4    matrixStats_0.62.0   distributional_0.3.0 evaluate_0.16        lattice_0.20-45     
+ [76] purrr_0.3.4          rstantools_2.2.0     htmlwidgets_1.5.4    labeling_0.4.2       processx_3.7.0      
+ [81] tidyselect_1.1.2     plyr_1.8.7           magrittr_2.0.3       R6_2.5.1             generics_0.1.3      
+ [86] DBI_1.1.3            pillar_1.8.0         withr_2.5.0          xts_0.12.1           abind_1.4-5         
+ [91] tibble_3.1.8         crayon_1.5.1         utf8_1.2.2           rmarkdown_2.15       grid_4.2.1          
+ [96] callr_3.7.1          threejs_0.3.3        digest_0.6.29        xtable_1.8-4         httpuv_1.6.5        
+[101] RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       </code></pre>
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    setTimeout(function() {
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      let href = ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
+      });
+      return popup.innerHTML;
+    });
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

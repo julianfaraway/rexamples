@@ -3,7 +3,7 @@ title: One Way Anova with a random effect
 author: "[Julian Faraway](https://julianfaraway.github.io/)"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 
-  github_document:
+  gfm:
     toc: true
 ---
 
@@ -115,8 +115,11 @@ in general) but our analysis was not designed to do this.
 # Likelihood inference
 
 We use a model of the form:
-$$y_{ij} = \mu + \alpha_i + \epsilon_{ij} \qquad i=1,\dots ,a
-  \qquad j=1,\dots ,n_i,$$ where the $\alpha_i$ and $\epsilon_{ij}$s are normal
+$$
+y_{ij} = \mu + \alpha_i + \epsilon_{ij} \qquad i=1,\dots ,a
+  \qquad j=1,\dots ,n_i,
+$$
+where the $\alpha_i$ and $\epsilon_{ij}$s are normal
 with mean zero, but variances $\sigma_\alpha^2$ and $\sigma^2_\epsilon$,
 respectively. 
 
