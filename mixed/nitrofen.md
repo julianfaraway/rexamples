@@ -157,6 +157,30 @@ estimated at $0.302$ which is noticeably smaller than the estimates
 above, indicating that the brood and concentration effects outweigh the
 individual variation.
 
+We can make a plot of the mean predicted response as concentration and
+brood vary. I have arbitrarily picked the first ID but we could pick any
+or average across these.
+
+``` r
+predf = data.frame(conc=rep(c(0,80,160,235,310),each=3),brood=rep(1:3,5),id=1)
+predf$live = exp(predict(glmod, newdata=predf))
+predf$brood = factor(predf$brood)
+ggplot(predf, aes(x=conc,y=live,group=brood,color=brood)) + 
+  geom_line() + xlab("Concentration")
+```
+
+<figure>
+<img src="figs/fig-prednitro-1..svg" id="fig-prednitro"
+alt="Figure 2: Predicted number of live offspring" />
+<figcaption aria-hidden="true">Figure 2: Predicted number of live
+offspring</figcaption>
+</figure>
+
+We see that if only the first brood were considered, the herbicide does
+not have much effect. In the second and third broods, the (negative)
+effect of the herbicide becomes more apparent with fewer live offspring
+being produced as the concentration rises.
+
 # INLA
 
 Integrated nested Laplace approximation is a method of Bayesian
@@ -203,8 +227,8 @@ par(mfrow=c(1,1))
 
 <figure>
 <img src="figs/fig-nitrofpd-1..svg" id="fig-nitrofpd"
-alt="Figure 2: Posterior densities of the fixed effects model for the Nitrofen data." />
-<figcaption aria-hidden="true">Figure 2: Posterior densities of the
+alt="Figure 3: Posterior densities of the fixed effects model for the Nitrofen data." />
+<figcaption aria-hidden="true">Figure 3: Posterior densities of the
 fixed effects model for the Nitrofen data.</figcaption>
 </figure>
 
@@ -233,8 +257,8 @@ plot(hpd,type="l",xlab="linear predictor",ylab="density")
 
 <figure>
 <img src="figs/fig-nitrohyppd-1..svg" id="fig-nitrohyppd"
-alt="Figure 3: Posterior density of the SD of id" />
-<figcaption aria-hidden="true">Figure 3: Posterior density of the SD of
+alt="Figure 4: Posterior density of the SD of id" />
+<figcaption aria-hidden="true">Figure 4: Posterior density of the SD of
 id</figcaption>
 </figure>
 
@@ -488,6 +512,13 @@ The results are consistent with previous results.
 
 # MGCV
 
+It is possible to fit some GLMMs within the GAM framework of the `mgcv`
+package. An explanation of this can be found in this
+[blog](https://fromthebottomoftheheap.net/2021/02/02/random-effects-in-gams/)
+
+We need to make a factor version of id otherwise it gets treated as a
+numerical variable.
+
 ``` r
 lnitrofen$fid = factor(lnitrofen$id)
 gmod = gam(live ~ I(conc/300)*brood + s(fid,bs="re"), 
@@ -523,7 +554,7 @@ summary(gmod)
 
 We get the fixed effect estimates. We also get a test on the random
 effect (as described in this
-[article](https://doi.org/10.1093/biomet/ast038). The hypothesis of no
+[article](https://doi.org/10.1093/biomet/ast038)). The hypothesis of no
 variation between the ids is rejected.
 
 We can get an estimate of the id SD:
@@ -592,8 +623,8 @@ par(mfrow=c(1,1))
 
 <figure>
 <img src="figs/fig-nitroginlareff-1..svg" id="fig-nitroginlareff"
-alt="Figure 4: Posteriors of the fixed effects" />
-<figcaption aria-hidden="true">Figure 4: Posteriors of the fixed
+alt="Figure 5: Posteriors of the fixed effects" />
+<figcaption aria-hidden="true">Figure 5: Posteriors of the fixed
 effects</figcaption>
 </figure>
 
@@ -602,7 +633,7 @@ hyperparameters.
 
 # Discussion
 
--   No strong differences in the results
+-   No strong differences in the results between the different methods.
 
 -   LME4, MGCV and GINLA were very fast. INLA was fast. BRMS was
     slowest. But this is a small dataset and a simple model so we cannot
