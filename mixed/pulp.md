@@ -1,7 +1,7 @@
 One Way Anova with a random effect
 ================
 [Julian Faraway](https://julianfaraway.github.io/)
-18 August 2022
+19 August 2022
 
 -   <a href="#data" id="toc-data">Data</a>
 -   <a href="#questions" id="toc-questions">Questions</a>
@@ -176,7 +176,7 @@ y_{ij} = \mu + \alpha_i + \epsilon_{ij} \qquad i=1,\dots ,a
   \qquad j=1,\dots ,n_i,
 $$
 
-where the $\alpha_i$ and $\epsilon_{ij}$s are normal with mean zero, but
+where the $\alpha_i$ and $\epsilon_{ij}$ are normal with mean zero, but
 variances $\sigma_\alpha^2$ and $\sigma^2_\epsilon$, respectively.
 
 The default fit uses the REML estimation method:
@@ -199,8 +199,8 @@ faraway::sumary(mmod)
     AIC = 24.6, DIC = 14.4
     deviance = 16.5 
 
-We see slightly less variation within operators (SD=0.261) than between
-operators (SD=0.326).
+We see slightly less variation between operators ($\hat\sigma_a=0.261$)
+than within operators ($\sigma_\epsilon=0.326$).
 
 ## Hypothesis testing
 

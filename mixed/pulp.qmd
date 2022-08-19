@@ -123,7 +123,7 @@ $$
 y_{ij} = \mu + \alpha_i + \epsilon_{ij} \qquad i=1,\dots ,a
   \qquad j=1,\dots ,n_i,
 $$
-where the $\alpha_i$ and $\epsilon_{ij}$s are normal
+where the $\alpha_i$ and $\epsilon_{ij}$  are normal
 with mean zero, but variances $\sigma_\alpha^2$ and $\sigma^2_\epsilon$,
 respectively. 
 
