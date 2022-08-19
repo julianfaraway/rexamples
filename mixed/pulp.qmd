@@ -134,8 +134,8 @@ mmod <- lmer(bright ~ 1+(1|operator), pulp)
 faraway::sumary(mmod)
 ```
 
-We see slightly less variation between operators ($\hat\sigma_a=0.261$) than within
-operators ($\sigma_\epsilon=0.326$). 
+We see slightly less variation between operators ( $\hat\sigma_a=0.261$ ) than within
+operators ( $\sigma_\epsilon=0.326$ ). 
 
 ## Hypothesis testing
 

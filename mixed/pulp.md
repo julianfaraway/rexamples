@@ -199,8 +199,8 @@ faraway::sumary(mmod)
     AIC = 24.6, DIC = 14.4
     deviance = 16.5 
 
-We see slightly less variation between operators ($\hat\sigma_a=0.261$)
-than within operators ($\sigma_\epsilon=0.326$).
+We see slightly less variation between operators ( $\hat\sigma_a=0.261$
+) than within operators ( $\sigma_\epsilon=0.326$ ).
 
 ## Hypothesis testing
 
