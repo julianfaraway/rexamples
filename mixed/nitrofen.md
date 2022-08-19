@@ -118,7 +118,8 @@ glmod <- glmer(live ~ I(conc/300)*brood + (1|id), nAGQ=25,
 summary(glmod, correlation = FALSE)
 ```
 
-    Generalized linear mixed model fit by maximum likelihood (Adaptive Gauss-Hermite Quadrature, nAGQ = 25) ['glmerMod']
+    Generalized linear mixed model fit by maximum likelihood (Adaptive
+      Gauss-Hermite Quadrature, nAGQ = 25) [glmerMod]
      Family: poisson  ( log )
     Formula: live ~ I(conc/300) * brood + (1 | id)
        Data: lnitrofen
@@ -127,20 +128,22 @@ summary(glmod, correlation = FALSE)
        334.5    349.5   -162.2    324.5      145 
 
     Scaled residuals: 
-       Min     1Q Median     3Q    Max 
-    -2.285 -0.858  0.068  0.706  2.866 
+         Min       1Q   Median       3Q      Max 
+    -2.28509 -0.85791  0.06805  0.70583  2.86585 
 
     Random effects:
      Groups Name        Variance Std.Dev.
-     id     (Intercept) 0.0835   0.289   
+     id     (Intercept) 0.08352  0.289   
     Number of obs: 150, groups:  id, 50
 
     Fixed effects:
-                      Estimate Std. Error z value Pr(>|z|)
-    (Intercept)         1.3451     0.1590    8.46  < 2e-16
-    I(conc/300)         0.3581     0.2801    1.28      0.2
-    brood               0.5815     0.0592    9.83  < 2e-16
-    I(conc/300):brood  -0.7957     0.1158   -6.87  6.3e-12
+                      Estimate Std. Error z value Pr(>|z|)    
+    (Intercept)        1.34507    0.15899   8.460  < 2e-16 ***
+    I(conc/300)        0.35813    0.28007   1.279    0.201    
+    brood              0.58154    0.05916   9.831  < 2e-16 ***
+    I(conc/300):brood -0.79571    0.11576  -6.874 6.26e-12 ***
+    ---
+    Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 We scaled the concentration by dividing by 300 (the maximum value is
 310) to avoid scaling problems encountered with `glmer()`. This is
@@ -158,12 +161,12 @@ above, indicating that the brood and concentration effects outweigh the
 individual variation.
 
 We can make a plot of the mean predicted response as concentration and
-brood vary. I have arbitrarily picked the first ID but we could pick any
-or average across these.
+brood vary. I have chosen not to include any random effects with the
+option `re.form=~0` because we are not interested in a particular `id`.
 
 ``` r
-predf = data.frame(conc=rep(c(0,80,160,235,310),each=3),brood=rep(1:3,5),id=1)
-predf$live = exp(predict(glmod, newdata=predf))
+predf = data.frame(conc=rep(c(0,80,160,235,310),each=3),brood=rep(1:3,5))
+predf$live = predict(glmod, newdata=predf, re.form=~0, type="response")
 predf$brood = factor(predf$brood)
 ggplot(predf, aes(x=conc,y=live,group=brood,color=brood)) + 
   geom_line() + xlab("Concentration")
@@ -177,7 +180,7 @@ offspring</figcaption>
 </figure>
 
 We see that if only the first brood were considered, the herbicide does
-not have much effect. In the second and third broods, the (negative)
+not have a large effect. In the second and third broods, the (negative)
 effect of the herbicide becomes more apparent with fewer live offspring
 being produced as the concentration rises.
 
@@ -202,12 +205,12 @@ The fixed effects summary is:
 imod$summary.fixed |> kable()
 ```
 
-|                   |     mean |      sd | 0.025quant | 0.5quant | 0.975quant |     mode | kld |
-|:------------------|---------:|--------:|-----------:|---------:|-----------:|---------:|----:|
-| (Intercept)       |  1.34785 | 0.15815 |    1.03377 |  1.34914 |    1.65466 |  1.35170 |   0 |
-| I(conc/300)       |  0.35873 | 0.27837 |   -0.18935 |  0.35935 |    0.90331 |  0.36055 |   0 |
-| brood             |  0.57923 | 0.05910 |    0.46418 |  0.57893 |    0.69601 |  0.57832 |   0 |
-| I(conc/300):brood | -0.79015 | 0.11556 |   -1.01804 | -0.78972 |   -0.56474 | -0.78885 |   0 |
+|                   |       mean |        sd | 0.025quant |   0.5quant | 0.975quant |       mode |   kld |
+|:------------------|-----------:|----------:|-----------:|-----------:|-----------:|-----------:|------:|
+| (Intercept)       |  1.3478410 | 0.1581628 |  1.0337439 |  1.3491282 |  1.6546623 |  1.3516879 | 3e-07 |
+| I(conc/300)       |  0.3587287 | 0.2783761 | -0.1893705 |  0.3593446 |  0.9033218 |  0.3605507 | 9e-07 |
+| brood             |  0.5792458 | 0.0591006 |  0.4641983 |  0.5789411 |  0.6960217 |  0.5783373 | 7e-07 |
+| I(conc/300):brood | -0.7901953 | 0.1155521 | -1.0180669 | -0.7897562 | -0.5648074 | -0.7888796 | 9e-07 |
 
 The posterior means are very similar to the PQL estimates. We can get
 plots of the posteriors of the fixed effects:
@@ -239,13 +242,13 @@ hpd = inla.tmarginal(function(x) 1/sqrt(x), imod$marginals.hyperpar[[1]])
 inla.zmarginal(hpd)
 ```
 
-    Mean            0.278142 
-    Stdev           0.0566841 
-    Quantile  0.025 0.173385 
-    Quantile  0.25  0.238902 
-    Quantile  0.5   0.275451 
-    Quantile  0.75  0.314402 
-    Quantile  0.975 0.397509 
+    Mean            0.278234 
+    Stdev           0.0566039 
+    Quantile  0.025 0.17404 
+    Quantile  0.25  0.239009 
+    Quantile  0.5   0.275503 
+    Quantile  0.75  0.314433 
+    Quantile  0.975 0.397532 
 
 Again the result is very similar to the PQL output although notice that
 INLA provides some assessment of uncertainty in this value in contrast
@@ -279,32 +282,11 @@ suppressMessages(bmod <- brm(live ~ I(conc/300)*brood + (1|id),
              family=poisson, data=lnitrofen))
 ```
 
-    Running /Library/Frameworks/R.framework/Resources/bin/R CMD SHLIB foo.c
-    clang -mmacosx-version-min=10.13 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG   -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/Rcpp/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/unsupported"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/BH/include" -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/src/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppParallel/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/rstan/include" -DEIGEN_NO_DEBUG  -DBOOST_DISABLE_ASSERTS  -DBOOST_PENDING_INTEGER_LOG2_HPP  -DSTAN_THREADS  -DUSE_STANC3 -DSTRICT_R_HEADERS  -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION  -DBOOST_NO_AUTO_PTR  -include '/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp'  -D_REENTRANT -DRCPP_PARALLEL_USE_TBB=1   -I/usr/local/include   -fPIC  -Wall -g -O2  -c foo.c -o foo.o
-    In file included from <built-in>:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:88:
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:1: error: unknown type name 'namespace'
-    namespace Eigen {
-    ^
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:16: error: expected ';' after top level declarator
-    namespace Eigen {
-                   ^
-                   ;
-    In file included from <built-in>:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:96:10: fatal error: 'complex' file not found
-    #include <complex>
-             ^~~~~~~~~
-    3 errors generated.
-    make: *** [foo.o] Error 1
 
     SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
     Chain 1: 
-    Chain 1: Gradient evaluation took 4.2e-05 seconds
-    Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.42 seconds.
+    Chain 1: Gradient evaluation took 5.8e-05 seconds
+    Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.58 seconds.
     Chain 1: Adjust your expectations accordingly!
     Chain 1: 
     Chain 1: 
@@ -321,15 +303,15 @@ suppressMessages(bmod <- brm(live ~ I(conc/300)*brood + (1|id),
     Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
     Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
     Chain 1: 
-    Chain 1:  Elapsed Time: 0.347 seconds (Warm-up)
-    Chain 1:                0.224 seconds (Sampling)
-    Chain 1:                0.571 seconds (Total)
+    Chain 1:  Elapsed Time: 0.83 seconds (Warm-up)
+    Chain 1:                0.456 seconds (Sampling)
+    Chain 1:                1.286 seconds (Total)
     Chain 1: 
 
     SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
     Chain 2: 
-    Chain 2: Gradient evaluation took 1.4e-05 seconds
-    Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.14 seconds.
+    Chain 2: Gradient evaluation took 3e-05 seconds
+    Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.3 seconds.
     Chain 2: Adjust your expectations accordingly!
     Chain 2: 
     Chain 2: 
@@ -346,15 +328,15 @@ suppressMessages(bmod <- brm(live ~ I(conc/300)*brood + (1|id),
     Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
     Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
     Chain 2: 
-    Chain 2:  Elapsed Time: 0.37 seconds (Warm-up)
-    Chain 2:                0.281 seconds (Sampling)
-    Chain 2:                0.651 seconds (Total)
+    Chain 2:  Elapsed Time: 0.801 seconds (Warm-up)
+    Chain 2:                0.424 seconds (Sampling)
+    Chain 2:                1.225 seconds (Total)
     Chain 2: 
 
     SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
     Chain 3: 
-    Chain 3: Gradient evaluation took 1.4e-05 seconds
-    Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.14 seconds.
+    Chain 3: Gradient evaluation took 3.2e-05 seconds
+    Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.32 seconds.
     Chain 3: Adjust your expectations accordingly!
     Chain 3: 
     Chain 3: 
@@ -371,15 +353,15 @@ suppressMessages(bmod <- brm(live ~ I(conc/300)*brood + (1|id),
     Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
     Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
     Chain 3: 
-    Chain 3:  Elapsed Time: 0.371 seconds (Warm-up)
-    Chain 3:                0.24 seconds (Sampling)
-    Chain 3:                0.611 seconds (Total)
+    Chain 3:  Elapsed Time: 0.72 seconds (Warm-up)
+    Chain 3:                0.534 seconds (Sampling)
+    Chain 3:                1.254 seconds (Total)
     Chain 3: 
 
     SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
     Chain 4: 
-    Chain 4: Gradient evaluation took 1.5e-05 seconds
-    Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.15 seconds.
+    Chain 4: Gradient evaluation took 2.8e-05 seconds
+    Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.28 seconds.
     Chain 4: Adjust your expectations accordingly!
     Chain 4: 
     Chain 4: 
@@ -396,9 +378,9 @@ suppressMessages(bmod <- brm(live ~ I(conc/300)*brood + (1|id),
     Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
     Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
     Chain 4: 
-    Chain 4:  Elapsed Time: 0.373 seconds (Warm-up)
-    Chain 4:                0.236 seconds (Sampling)
-    Chain 4:                0.609 seconds (Total)
+    Chain 4:  Elapsed Time: 0.749 seconds (Warm-up)
+    Chain 4:                0.417 seconds (Sampling)
+    Chain 4:                1.166 seconds (Total)
     Chain 4: 
 
 We can check the MCMC diagnostics and the posterior densities with:
@@ -495,14 +477,14 @@ summary(bmod)
     Group-Level Effects: 
     ~id (Number of levels: 50) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.32      0.06     0.21     0.44 1.00     1180     1998
+    sd(Intercept)     0.32      0.06     0.21     0.44 1.00     1198     1807
 
     Population-Level Effects: 
                     Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept           1.34      0.16     1.02     1.65 1.00     1790     2498
-    IconcD300           0.35      0.28    -0.20     0.90 1.00     1761     2204
-    brood               0.58      0.06     0.47     0.70 1.00     2289     2697
-    IconcD300:brood    -0.80      0.12    -1.03    -0.57 1.00     2080     2481
+    Intercept           1.34      0.16     1.02     1.65 1.00     1792     2734
+    IconcD300           0.35      0.28    -0.22     0.90 1.00     1799     2639
+    brood               0.58      0.06     0.47     0.70 1.00     2215     2412
+    IconcD300:brood    -0.80      0.12    -1.03    -0.57 1.00     2011     2740
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -539,15 +521,19 @@ summary(gmod)
     live ~ I(conc/300) * brood + s(fid, bs = "re")
 
     Parametric coefficients:
-                      Estimate Std. Error z value Pr(>|z|)
-    (Intercept)         1.3531     0.1607    8.42   <2e-16
-    I(conc/300)         0.3698     0.2827    1.31     0.19
-    brood               0.5834     0.0589    9.91   <2e-16
-    I(conc/300):brood  -0.8006     0.1147   -6.98    3e-12
+                      Estimate Std. Error z value Pr(>|z|)    
+    (Intercept)        1.35312    0.16067   8.422   <2e-16 ***
+    I(conc/300)        0.36977    0.28273   1.308    0.191    
+    brood              0.58342    0.05886   9.912   <2e-16 ***
+    I(conc/300):brood -0.80056    0.11473  -6.978    3e-12 ***
+    ---
+    Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
     Approximate significance of smooth terms:
-            edf Ref.df Chi.sq p-value
-    s(fid) 30.9     48   75.9  <2e-16
+             edf Ref.df Chi.sq p-value    
+    s(fid) 30.85     48  75.93  <2e-16 ***
+    ---
+    Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
     R-sq.(adj) =   0.63   Deviance explained =   62%
     -REML = 416.92  Scale est. = 1         n = 150
@@ -566,8 +552,8 @@ gam.vcomp(gmod)
 
     Standard deviations and 0.95 confidence intervals:
 
-           std.dev   lower   upper
-    s(fid) 0.30248 0.20977 0.43618
+             std.dev     lower    upper
+    s(fid) 0.3024833 0.2097693 0.436175
 
     Rank: 1/1
 
@@ -579,24 +565,34 @@ The random effect estimates for the fields can be found with:
 coef(gmod)
 ```
 
-          (Intercept)       I(conc/300)             brood I(conc/300):brood          s(fid).1          s(fid).2 
-             1.353117          0.369773          0.583423         -0.800556         -0.313616         -0.197844 
-             s(fid).3          s(fid).4          s(fid).5          s(fid).6          s(fid).7          s(fid).8 
-            -0.154221         -0.175851         -0.112008         -0.154221         -0.175851         -0.242957 
-             s(fid).9         s(fid).10         s(fid).11         s(fid).12         s(fid).13         s(fid).14 
-            -0.388148         -0.220209          0.120466          0.120466          0.166597          0.120466 
-            s(fid).15         s(fid).16         s(fid).17         s(fid).18         s(fid).19         s(fid).20 
-             0.189076         -0.054556         -0.028157          0.072696          0.096792          0.023191 
-            s(fid).21         s(fid).22         s(fid).23         s(fid).24         s(fid).25         s(fid).26 
-             0.284061          0.284061          0.111201          0.228691          0.310960          0.337355 
-            s(fid).27         s(fid).28         s(fid).29         s(fid).30         s(fid).31         s(fid).32 
-             0.310960          0.200188          0.284061          0.284061          0.317362          0.250294 
-            s(fid).33         s(fid).34         s(fid).35         s(fid).36         s(fid).37         s(fid).38 
-            -0.311950         -0.090527          0.443368          0.069377         -0.049190          0.030738 
-            s(fid).39         s(fid).40         s(fid).41         s(fid).42         s(fid).43         s(fid).44 
-             0.250294          0.107166         -0.227473         -0.227473         -0.176545         -0.557945 
-            s(fid).45         s(fid).46         s(fid).47         s(fid).48         s(fid).49         s(fid).50 
-             0.191696         -0.279561         -0.227473         -0.332826         -0.227473         -0.279561 
+          (Intercept)       I(conc/300)             brood I(conc/300):brood 
+           1.35311657        0.36977268        0.58342309       -0.80055609 
+             s(fid).1          s(fid).2          s(fid).3          s(fid).4 
+          -0.31361580       -0.19784392       -0.15422135       -0.17585148 
+             s(fid).5          s(fid).6          s(fid).7          s(fid).8 
+          -0.11200845       -0.15422135       -0.17585148       -0.24295744 
+             s(fid).9         s(fid).10         s(fid).11         s(fid).12 
+          -0.38814849       -0.22020900        0.12046570        0.12046570 
+            s(fid).13         s(fid).14         s(fid).15         s(fid).16 
+           0.16659652        0.12046570        0.18907633       -0.05455579 
+            s(fid).17         s(fid).18         s(fid).19         s(fid).20 
+          -0.02815654        0.07269648        0.09679186        0.02319081 
+            s(fid).21         s(fid).22         s(fid).23         s(fid).24 
+           0.28406064        0.28406064        0.11120103        0.22869111 
+            s(fid).25         s(fid).26         s(fid).27         s(fid).28 
+           0.31095955        0.33735522        0.31095955        0.20018816 
+            s(fid).29         s(fid).30         s(fid).31         s(fid).32 
+           0.28406064        0.28406064        0.31736240        0.25029391 
+            s(fid).33         s(fid).34         s(fid).35         s(fid).36 
+          -0.31194957       -0.09052720        0.44336760        0.06937683 
+            s(fid).37         s(fid).38         s(fid).39         s(fid).40 
+          -0.04918960        0.03073765        0.25029391        0.10716569 
+            s(fid).41         s(fid).42         s(fid).43         s(fid).44 
+          -0.22747345       -0.22747345       -0.17654500       -0.55794521 
+            s(fid).45         s(fid).46         s(fid).47         s(fid).48 
+           0.19169582       -0.27956125       -0.22747345       -0.33282615 
+            s(fid).49         s(fid).50 
+          -0.22747345       -0.27956125 
 
 # GINLA
 
@@ -645,43 +641,61 @@ hyperparameters.
 sessionInfo()
 ```
 
-    R version 4.2.1 (2022-06-23)
-    Platform: x86_64-apple-darwin17.0 (64-bit)
-    Running under: macOS Big Sur ... 10.16
+    R version 4.2.1 (2022-06-23 ucrt)
+    Platform: x86_64-w64-mingw32/x64 (64-bit)
+    Running under: Windows 10 x64 (build 19044)
 
     Matrix products: default
-    BLAS:   /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRblas.0.dylib
-    LAPACK: /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRlapack.dylib
 
     locale:
-    [1] en_GB.UTF-8/en_GB.UTF-8/en_GB.UTF-8/C/en_GB.UTF-8/en_GB.UTF-8
+    [1] LC_COLLATE=English_United Kingdom.utf8 
+    [2] LC_CTYPE=English_United Kingdom.utf8   
+    [3] LC_MONETARY=English_United Kingdom.utf8
+    [4] LC_NUMERIC=C                           
+    [5] LC_TIME=English_United Kingdom.utf8    
 
     attached base packages:
-    [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
+    [1] parallel  stats     graphics  grDevices utils     datasets  methods  
+    [8] base     
 
     other attached packages:
-     [1] mgcv_1.8-40   nlme_3.1-159  brms_2.17.0   Rcpp_1.0.9    knitr_1.39    INLA_22.07.23 sp_1.5-0      foreach_1.5.2
-     [9] lme4_1.1-30   Matrix_1.4-1  ggplot2_3.3.6
+     [1] mgcv_1.8-40   nlme_3.1-157  brms_2.17.0   Rcpp_1.0.9    knitr_1.39   
+     [6] INLA_22.07.23 sp_1.5-0      foreach_1.5.2 lme4_1.1-30   Matrix_1.4-1 
+    [11] ggplot2_3.3.6
 
     loaded via a namespace (and not attached):
-      [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2       ggridges_0.5.3       markdown_1.1        
-      [6] base64enc_0.1-3      rstudioapi_0.13      Deriv_4.1.3          farver_2.1.1         rstan_2.26.13       
-     [11] DT_0.24              fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18    
-     [16] splines_4.2.1        shinythemes_1.2.0    bayesplot_1.9.0      jsonlite_1.8.0       nloptr_2.0.3        
-     [21] shiny_1.7.2          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0       
-     [26] cli_3.3.0            later_1.3.0          htmltools_0.5.3      prettyunits_1.1.1    tools_4.2.1         
-     [31] igraph_1.3.4         coda_0.19-4          gtable_0.3.0         glue_1.6.2           reshape2_1.4.4      
-     [36] dplyr_1.0.9          posterior_1.3.0      V8_4.2.1             vctrs_0.4.1          svglite_2.1.0       
-     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.32            stringr_1.4.0       
-     [46] ps_1.7.1             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.1      gtools_3.9.3        
-     [51] MASS_7.3-58.1        zoo_1.8-10           scales_1.2.0         colourpicker_1.1.1   promises_1.2.0.1    
-     [56] Brobdingnag_1.2-7    inline_0.3.19        shinystan_2.6.0      yaml_2.3.5           curl_4.3.2          
-     [61] gridExtra_2.3        loo_2.5.1            StanHeaders_2.26.13  stringi_1.7.8        highr_0.9           
-     [66] dygraphs_1.1.1.6     checkmate_2.1.0      boot_1.3-28          pkgbuild_1.3.1       systemfonts_1.0.4   
-     [71] rlang_1.0.4          pkgconfig_2.0.3      matrixStats_0.62.0   distributional_0.3.0 evaluate_0.16       
-     [76] lattice_0.20-45      purrr_0.3.4          rstantools_2.2.0     htmlwidgets_1.5.4    labeling_0.4.2      
-     [81] tidyselect_1.1.2     processx_3.7.0       plyr_1.8.7           magrittr_2.0.3       R6_2.5.1            
-     [86] generics_0.1.3       DBI_1.1.3            pillar_1.8.0         withr_2.5.0          xts_0.12.1          
-     [91] abind_1.4-5          tibble_3.1.8         crayon_1.5.1         utf8_1.2.2           rmarkdown_2.15      
-     [96] grid_4.2.1           callr_3.7.1          threejs_0.3.3        digest_0.6.29        xtable_1.8-4        
-    [101] httpuv_1.6.5         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       
+      [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2      
+      [4] ggridges_0.5.3       markdown_1.1         base64enc_0.1-3     
+      [7] rstudioapi_0.13      Deriv_4.1.3          farver_2.1.1        
+     [10] rstan_2.26.13        DT_0.24              fansi_1.0.3         
+     [13] mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18    
+     [16] splines_4.2.1        shinythemes_1.2.0    bayesplot_1.9.0     
+     [19] jsonlite_1.8.0       nloptr_2.0.3         shiny_1.7.2         
+     [22] compiler_4.2.1       backports_1.4.1      assertthat_0.2.1    
+     [25] fastmap_1.1.0        cli_3.3.0            later_1.3.0         
+     [28] htmltools_0.5.3      prettyunits_1.1.1    tools_4.2.1         
+     [31] igraph_1.3.4         coda_0.19-4          gtable_0.3.0        
+     [34] glue_1.6.2           reshape2_1.4.4       dplyr_1.0.9         
+     [37] posterior_1.3.0      V8_4.2.1             vctrs_0.4.1         
+     [40] svglite_2.1.0        iterators_1.0.14     crosstalk_1.2.0     
+     [43] tensorA_0.36.2       xfun_0.32            stringr_1.4.0       
+     [46] ps_1.7.1             mime_0.12            miniUI_0.1.1.1      
+     [49] lifecycle_1.0.1      gtools_3.9.3         MASS_7.3-57         
+     [52] zoo_1.8-10           scales_1.2.0         colourpicker_1.1.1  
+     [55] promises_1.2.0.1     Brobdingnag_1.2-7    inline_0.3.19       
+     [58] shinystan_2.6.0      yaml_2.3.5           curl_4.3.2          
+     [61] gridExtra_2.3        loo_2.5.1            StanHeaders_2.26.13 
+     [64] stringi_1.7.8        highr_0.9            dygraphs_1.1.1.6    
+     [67] checkmate_2.1.0      boot_1.3-28          pkgbuild_1.3.1      
+     [70] systemfonts_1.0.4    rlang_1.0.4          pkgconfig_2.0.3     
+     [73] matrixStats_0.62.0   distributional_0.3.0 evaluate_0.16       
+     [76] lattice_0.20-45      purrr_0.3.4          rstantools_2.2.0    
+     [79] htmlwidgets_1.5.4    labeling_0.4.2       tidyselect_1.1.2    
+     [82] processx_3.7.0       plyr_1.8.7           magrittr_2.0.3      
+     [85] R6_2.5.1             generics_0.1.3       DBI_1.1.3           
+     [88] pillar_1.8.0         withr_2.5.0          xts_0.12.1          
+     [91] abind_1.4-5          tibble_3.1.8         crayon_1.5.1        
+     [94] utf8_1.2.2           rmarkdown_2.14       grid_4.2.1          
+     [97] callr_3.7.1          threejs_0.3.3        digest_0.6.29       
+    [100] xtable_1.8-4         httpuv_1.6.5         RcppParallel_5.1.5  
+    [103] stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       

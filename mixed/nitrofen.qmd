@@ -112,23 +112,22 @@ above, indicating that the brood and concentration effects outweigh the
 individual variation.
 
 We can make a plot of the mean predicted response as concentration and
-brood vary. I have arbitrarily picked the first ID but we could pick any
-or average across these.
+brood vary. I have chosen not to include any random effects with
+the option `re.form=~0` because we are not interested in a particular `id`.
 
 
 ```{r}
 #| label: fig-prednitro
 #| fig-cap: "Predicted number of live offspring"
-predf = data.frame(conc=rep(c(0,80,160,235,310),each=3),brood=rep(1:3,5),id=1)
-predf$live = exp(predict(glmod, newdata=predf))
+predf = data.frame(conc=rep(c(0,80,160,235,310),each=3),brood=rep(1:3,5))
+predf$live = predict(glmod, newdata=predf, re.form=~0, type="response")
 predf$brood = factor(predf$brood)
 ggplot(predf, aes(x=conc,y=live,group=brood,color=brood)) + 
   geom_line() + xlab("Concentration")
 ```
 
 We see that if only the first brood were considered, the herbicide does not
-have much effect. In the second and third broods, the (negative) effect of the 
-herbicide becomes more apparent with fewer live offspring being produced
+have a large effect. In the second and third broods, the (negative) effect of the herbicide becomes more apparent with fewer live offspring being produced
 as the concentration rises.
 
 # INLA
@@ -139,7 +138,9 @@ on this topic in [Bayesian Regression Modeling with INLA](http://julianfaraway.g
 [chapter on GLMMs](https://julianfaraway.github.io/brinlabook/chaglmm.html)
 
 The same model, with default priors, can be fitted with INLA as:
-```{r nitroinla1, cache=TRUE}
+```{r}
+#| label: nitroinla1
+#| cache: true
 formula <- live ~ I(conc/300)*brood + f(id, model="iid")
 imod <- inla(formula, family="poisson", data=lnitrofen)
 ```
