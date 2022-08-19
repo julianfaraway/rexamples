@@ -264,6 +264,15 @@ The random effect estimates for the fields can be found with:
 coef(gmod)
 ```
 
+We make a Q-Q plot of the ID random effects:
+
+```{r}
+#| label: fig-gamqq
+qqnorm(coef(gmod)[-(1:4)])
+```
+
+Nothing unusual here - none of the IDs standout in particular.
+
 # GINLA
 
 In [Wood (2019)](https://doi.org/10.1093/biomet/asz044), a

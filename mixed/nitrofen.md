@@ -594,6 +594,16 @@ coef(gmod)
             s(fid).49         s(fid).50 
           -0.22747345       -0.27956125 
 
+We make a Q-Q plot of the ID random effects:
+
+``` r
+qqnorm(coef(gmod)[-(1:4)])
+```
+
+<img src="figs/fig-gamqq-1..svg" id="fig-gamqq" />
+
+Nothing unusual here - none of the IDs standout in particular.
+
 # GINLA
 
 In [Wood (2019)](https://doi.org/10.1093/biomet/asz044), a simplified
