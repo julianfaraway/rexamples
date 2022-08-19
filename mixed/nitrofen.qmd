@@ -1,0 +1,282 @@
+---
+title: Poisson GLMM
+author: "[Julian Faraway](https://julianfaraway.github.io/)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+format: 
+  gfm:
+    toc: true
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(comment=NA, 
+                      echo = TRUE,
+                      fig.path="figs/",
+                      dev = 'svglite',  
+                      fig.ext = ".svg",
+                      warning=FALSE, 
+                      message=FALSE)
+knitr::opts_knit$set(global.par = TRUE)
+```
+
+```{r graphopts, include=FALSE}
+par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
+ggplot2::theme_set(ggplot2::theme_bw())
+```
+
+
+See the [introduction](../index.md) for an overview. 
+
+This example is discussed in more detail in the book
+[Bayesian Regression Modeling with INLA](https://julianfaraway.github.io/brinlabook/chaglmm.html#sec:poissonglmm)
+
+Packages used:
+
+```{r}
+library(ggplot2)
+library(lme4)
+library(INLA)
+library(knitr)
+library(brms)
+library(mgcv)
+```
+
+
+# Data and Model
+
+In [Davison and Hinkley, 1997]( https://doi.org/10.1017/CBO9780511802843), the results of a study on Nitrofen, a herbicide, are reported. Due to concern regarding the effect on animal life, 50 female water fleas were divided into five groups of ten each and treated with different concentrations of the herbicide. The number of offspring in three subsequent broods for each flea was recorded. We start by loading the data from the `boot` package: (the `boot` package comes with base R distribution  so there is no need to download this)
+
+```{r}
+#| label: nitrofendat
+data(nitrofen, package="boot")
+head(nitrofen)
+```
+
+We need to rearrange the data to have one response value per line:
+
+```{r}
+lnitrofen = data.frame(conc = rep(nitrofen$conc,each=3),
+  live = as.numeric(t(as.matrix(nitrofen[,2:4]))),
+  id = rep(1:50,each=3),
+  brood = rep(1:3,50))
+head(lnitrofen)
+```
+
+Make a plot of the data:
+
+```{r}
+#| label: fig-nitrodat
+#| fig-cap: "The number of live offspring varies with the concentration of Nitrofen and the brood number."
+lnitrofen$jconc <- lnitrofen$conc + rep(c(-10,0,10),50)
+ggplot(lnitrofen, aes(x=jconc,y=live, shape=factor(brood))) + 
+       geom_point(position = position_jitter(w = 0, h = 0.5)) + 
+       xlab("Concentration") + labs(shape = "Brood")
+```
+
+Since the response is a small count, a Poisson model is a natural
+choice. We expect the rate of the response to vary with the brood and
+concentration level. The plot of the data suggests these two predictors
+may have an interaction. The three observations for a single flea are
+likely to be correlated. We might expect a given flea to tend to produce
+more, or less, offspring over a lifetime. We can model this with an
+additive random effect. The linear predictor is:
+$$
+\eta_i = x_i^T \beta + u_{j(i)}, \quad i=1, \dots, 150. \quad j=1, \dots 50,
+$$
+where $x_i$ is a vector from the design matrix encoding the information
+about the $i^{th}$ observation and $u_j$ is the random affect associated
+with the $j^{th}$ flea. The response has distribution
+$Y_i \sim Poisson(\exp(\eta_i))$.
+
+# LME4
+
+We fit a model using penalized quasi-likelihood
+(PQL) using the `lme4` package:
+```{r}
+glmod <- glmer(live ~ I(conc/300)*brood + (1|id), nAGQ=25, 
+             family=poisson, data=lnitrofen)
+summary(glmod, correlation = FALSE)
+```
+We scaled the concentration by dividing by 300 (the maximum value is
+310) to avoid scaling problems encountered with `glmer()`. This is
+helpful in any case since it puts all the parameter estimates on a
+similar scale. The first brood is the reference level so the slope for
+this group is estimated as $-0.0437$ and is not statistically
+significant, confirming the impression from the plot. We can see that
+numbers of offspring in the second and third broods start out
+significantly higher for zero concentration of the herbicide, with
+estimates of $1.1688$ and $1.3512$. But as concentration increases, we
+see that the numbers decrease significantly, with slopes of $-1.6730$
+and $-1.8312$ relative to the first brood. The individual SD is
+estimated at $0.302$ which is noticeably smaller than the estimates
+above, indicating that the brood and concentration effects outweigh the
+individual variation.
+
+# INLA
+
+Integrated nested Laplace approximation is a method of Bayesian computation
+which uses approximation rather than simulation. More can be found
+on this topic in [Bayesian Regression Modeling with INLA](http://julianfaraway.github.io/brinla/) and the 
+[chapter on GLMMs](https://julianfaraway.github.io/brinlabook/chaglmm.html)
+
+The same model, with default priors, can be fitted with INLA as:
+```{r nitroinla1, cache=TRUE}
+formula <- live ~ I(conc/300)*brood + f(id, model="iid")
+imod <- inla(formula, family="poisson", data=lnitrofen)
+```
+The fixed effects summary is:
+```{r}
+imod$summary.fixed |> kable()
+```
+The posterior means are very similar to the PQL estimates. We
+can get plots of the posteriors of the fixed effects:
+```{r}
+#| label: fig-nitrofpd
+#| fig-cap: "Posterior densities of the fixed effects model for the Nitrofen data."
+fnames = names(imod$marginals.fixed)
+par(mfrow=c(2,2))
+for(i in 1:4){
+  plot(imod$marginals.fixed[[i]],
+       type="l",
+       ylab="density",
+       xlab=fnames[i])
+  abline(v=0)
+}
+par(mfrow=c(1,1))
+```
+
+We can also
+see the summary for the random effect SD:
+```{r}
+hpd = inla.tmarginal(function(x) 1/sqrt(x), imod$marginals.hyperpar[[1]])
+inla.zmarginal(hpd)
+```
+Again the result is very similar to the PQL output although notice that
+INLA provides some assessment of uncertainty in this value in contrast
+to the PQL result. We can also see the posterior density:
+
+```{r}
+#| label: fig-nitrohyppd
+#| fig-cap: "Posterior density of the SD of id"
+plot(hpd,type="l",xlab="linear predictor",ylab="density")
+```
+
+
+# BRMS
+
+For this example, I did not write my own STAN program. I am not
+that experienced in writing STAN programmes so it is better rely
+on the superior experience of others.
+
+[BRMS](https://paul-buerkner.github.io/brms/) stands for Bayesian Regression Models with STAN. It provides a convenient wrapper to STAN functionality.
+
+Fitting the model is very similar to `lmer` as seen above:
+
+```{r}
+#| label: brmfit
+#| cache: true
+suppressMessages(bmod <- brm(live ~ I(conc/300)*brood + (1|id),  
+             family=poisson, data=lnitrofen))
+```
+
+We can check the MCMC diagnostics and the posterior densities with:
+
+```{r}
+#| label: fig-nitrobrmsdiag
+plot(bmod)
+```
+
+Looks quite similar to the INLA results.
+
+We can look at the STAN code that `brms` used with:
+
+```{r}
+stancode(bmod)
+```
+
+We can see that some half-t distributions are used as priors for
+the hyperparameters.
+
+We examine the fit:
+
+```{r}
+summary(bmod)
+```
+
+The results are consistent with previous results.
+
+# MGCV
+
+```{r}
+lnitrofen$fid = factor(lnitrofen$id)
+gmod = gam(live ~ I(conc/300)*brood + s(fid,bs="re"), 
+           data=lnitrofen, family="poisson", method="REML")
+```
+
+and look at the summary output:
+
+```{r}
+summary(gmod)
+```
+
+We get the fixed effect estimates.
+We also get a test on the random effect (as described in this [article](https://doi.org/10.1093/biomet/ast038). The hypothesis of no variation
+between the ids is rejected.
+
+We can get an estimate of the id SD:
+
+```{r}
+gam.vcomp(gmod)
+```
+
+which is the same as the REML estimate from `lmer` earlier.
+
+The random effect estimates for the fields can be found with:
+
+```{r}
+coef(gmod)
+```
+
+# GINLA
+
+In [Wood (2019)](https://doi.org/10.1093/biomet/asz044), a
+simplified version of INLA is proposed. The first
+construct the GAM model without fitting and then use
+the `ginla()` function to perform the computation.
+
+```{r}
+gmod = gam(live ~ I(conc/300)*brood + s(fid,bs="re"), 
+           data=lnitrofen, family="poisson", fit = FALSE)
+gimod = ginla(gmod)
+```
+
+We get the posterior densities for the fixed effects as:
+
+```{r}
+#| label: fig-nitroginlareff
+#| fig-cap: "Posteriors of the fixed effects"
+par(mfrow=c(2,2))
+for(i in 1:4){
+plot(gimod$beta[i,],gimod$density[i,],type="l",
+     xlab=gmod$term.names[i],ylab="density")
+}
+par(mfrow=c(1,1))
+```
+
+It is not straightforward to obtain the posterior densities of
+the hyperparameters. 
+
+# Discussion
+
+- No strong differences in the results
+
+- LME4, MGCV and GINLA were very fast. INLA was fast. BRMS was slowest. But
+this is a small dataset and a simple model so we cannot draw too general
+a conclusion from this.
+
+# Package version info
+
+
+```{r}
+sessionInfo()
+```
+
