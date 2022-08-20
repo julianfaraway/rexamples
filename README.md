@@ -21,9 +21,9 @@ of the models.
 - [Randomized Block Design](mixed/penicillin.md) - the `penicillin` data
 - [Split Plot Design](mixed/irrigation.md) - the `irrigation` data
 - [Nested Effects](mixed/eggs.md) - the `eggs` data
-- [Crossed Effects](mixed/abrasion/md) - the `abrasion` data
+- [Crossed Effects](mixed/abrasion.md) - the `abrasion` data
 - [Multilevel Models](mixed/jspmultilevel.md) - the `jsp` data
 - [Longitudinal Models](mixed/longitudinal.md) - the `psid` data
-- [Repeated Measures](mixed/repeated.md) - the `vision` data
+- [Repeated Measures](mixed/vision.md) - the `vision` data
 - [Multiple Response Models](mixed/jspmultiple.md) - the `jsp` data
 - [Poisson reponse model](mixed/nitrofen.md) - the `nitrofen` data
