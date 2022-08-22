@@ -200,7 +200,8 @@ Fitting the model is very similar to `lmer` as seen above:
 #| warning: false
 #| error: false
 bmod <- brm(live ~ I(conc/300)*brood + (1|id), 
-            family=poisson, data=lnitrofen, refresh=0, silent=2, cores=4)
+            family=poisson, data=lnitrofen, 
+            refresh=0, silent=2, cores=4)
 ```
 
 We can check the MCMC diagnostics and the posterior densities with:
