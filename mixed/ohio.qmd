@@ -1,0 +1,298 @@
+---
+title: Binary response GLMM
+author: "[Julian Faraway](https://julianfaraway.github.io/)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+format: 
+  gfm:
+    toc: true
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(comment=NA, 
+                      echo = TRUE,
+                      fig.path="figs/",
+                      dev = 'svglite',  
+                      fig.ext = ".svg",
+                      warning=FALSE, 
+                      message=FALSE)
+knitr::opts_knit$set(global.par = TRUE)
+```
+
+```{r graphopts, include=FALSE}
+par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
+ggplot2::theme_set(ggplot2::theme_bw())
+```
+
+
+See the [introduction](../index.md) for an overview. 
+
+This example is discussed in more detail in the book
+[Bayesian Regression Modeling with INLA](https://julianfaraway.github.io/brinlabook/chaglmm.html)
+
+Packages used:
+
+```{r}
+library(ggplot2)
+library(lme4)
+library(INLA)
+library(knitr)
+library(brms)
+library(mgcv)
+```
+
+
+# Data and Model
+
+In [Fitzmaurice and Laird, 1993](https://doi.org/10.1093/biomet/80.1.141), data on 537 children aged 7--10 in six
+Ohio cities are reported. The response is binary --- does the child
+suffer from wheezing (indication of a pulmonary problem) where one
+indicates yes and zero no. This status is reported for each of four
+years at ages 7, 8, 9 and 10. There is also an indicator variable for
+whether the mother of the child is a smoker. Because we have four binary
+responses for each child, we expect these to be correlated and our model
+needs to reflect this.
+
+We sum the number of smoking and non-smoking mothers:
+```{r}
+#| label: ohiodat
+data(ohio, package="brinla")
+table(ohio$smoke)/4
+```
+We use this to produce the proportion of wheezing children classified by
+age and maternal smoking status:
+```{r}
+xtabs(resp ~ smoke + age, ohio)/c(350,187)
+```
+
+Age has been adjusted so that nine years old is zero. We see that
+wheezing appears to decline with age and that there may be more wheezing
+in children with mothers who smoke. But the effects are not clear and we
+need modeling to be sure about these conclusions.
+
+A plausible model uses a logit link with a linear predictor of the form:
+$$
+\eta_{ij} = \beta_0 + \beta_1 age_j + \beta_2 smoke_i + u_i, \quad i=1, \dots ,537, \quad j=1,2,3,4,
+$$
+with 
+$$
+P(Y_{ij} = 1) = {\exp(\eta_{ij}) \over 1+\exp(\eta_{ij})}.
+$$
+The
+random effect $u_i$ models the propensity of child $i$ to wheeze.
+Children are likely to vary in their health condition and this effect
+enables us to include this unknown variation in the model. Because $u_i$
+is added to all four observations for a child, we induce a positive
+correlation among the four responses as we might naturally expect. The
+response is Bernoulli or, in other words, binomial with trial size one.
+
+
+# LME4
+
+Here is the model fit penalized quasi-likelihood using the `lme4` package:
+
+```{r}
+#| label: ohiolmerfit
+modagh <- glmer(resp ~ age + smoke + (1|id), nAGQ=25, 
+              family=binomial, data=ohio)
+summary(modagh, correlation = FALSE)
+```
+
+We see that there is no significant effect due to maternal smoking.
+
+Suppose you do not take into account the correlated response
+within the individuals and fit a GLM ignoring the ID random effect:
+
+```{r}
+modglm <- glm(resp ~ age + smoke, family=binomial, data=ohio)
+faraway::sumary(modglm)
+```
+
+We see that the effect of maternal smoking is significant (but this
+would be the incorrect conclusion).
+
+# INLA
+
+Integrated nested Laplace approximation is a method of Bayesian computation
+which uses approximation rather than simulation. More can be found
+on this topic in [Bayesian Regression Modeling with INLA](http://julianfaraway.github.io/brinla/) and the 
+[chapter on GLMMs](https://julianfaraway.github.io/brinlabook/chaglmm.html)
+
+
+We can fit this model in INLA as:
+```{r}
+#| label: ohioinla1
+#| cache: true
+formula <- resp ~ age + smoke + f(id, model="iid")
+imod <- inla(formula, family="binomial", data=ohio)
+```
+The `id` variable represents the child and we use an `iid` model
+indicating that the $u_i$ variables should be independent and
+identically distributed between children. A summary of the posteriors
+for the fixed effect components can be obtained as:
+```{r}
+imod$summary.fixed |> kable()
+```
+
+The posterior means are similar to the PQL estimates. We
+can get plots of the posteriors of the fixed effects:
+```{r}
+#| label: fig-ohiofpd
+#| fig-cap: "Posterior densities of the fixed effects model for the Ohio wheeze data."
+fnames = names(imod$marginals.fixed)
+par(mfrow=c(1,2))
+for(i in 2:3){
+  plot(imod$marginals.fixed[[i]],
+       type="l",
+       ylab="density",
+       xlab=fnames[i])
+  abline(v=0)
+}
+par(mfrow=c(1,1))
+```
+
+We can also
+see the summary for the random effect SD:
+```{r}
+hpd = inla.tmarginal(function(x) 1/sqrt(x), imod$marginals.hyperpar[[1]])
+inla.zmarginal(hpd)
+```
+Again the result is similar to the PQL output although notice that
+INLA provides some assessment of uncertainty in this value in contrast
+to the PQL result. We can also see the posterior density:
+
+```{r}
+#| label: fig-ohiohyppd
+#| fig-cap: "Posterior density of the SD of id"
+plot(hpd,type="l",xlab="linear predictor",ylab="density")
+```
+
+
+# BRMS
+
+[BRMS](https://paul-buerkner.github.io/brms/) stands for Bayesian Regression Models with STAN. It provides a convenient wrapper to STAN functionality.
+
+Fitting the model is very similar to `lmer` as seen above. There
+is a `bernoulli` option for the `family` which is appropriate for a 0-1 response.
+
+```{r}
+#| label: brmfit
+#| cache: true
+#| warning: false
+#| message: false
+bmod <- brm(resp ~ age + smoke + (1|id), family=bernoulli(), data=ohio, cores = 4)
+```
+
+We can check the MCMC diagnostics and the posterior densities with:
+
+```{r}
+#| label: fig-ohiobrmsdiag
+plot(bmod)
+```
+
+Looks quite similar to the INLA results.
+
+We can look at the STAN code that `brms` used with:
+
+```{r}
+stancode(bmod)
+```
+
+We can see that some half-t distributions are used as priors for
+the hyperparameters.
+
+We examine the fit:
+
+```{r}
+summary(bmod)
+```
+
+The results are consistent with previous results.
+
+# MGCV
+
+It is possible to fit some GLMMs within the GAM framework of the `mgcv`
+package. An explanation of this can be found in this 
+[blog](https://fromthebottomoftheheap.net/2021/02/02/random-effects-in-gams/)
+
+We need to make a factor version of id otherwise it gets treated
+as a numerical variable.
+
+```{r}
+#| label: ohiomgcvfit
+#| cache: true
+ohio$fid = factor(ohio$id)
+gmod = gam(resp ~ age + smoke + s(fid,bs="re"), 
+           family=binomial, data=ohio, method="REML")
+```
+
+and look at the summary output:
+
+```{r}
+summary(gmod)
+```
+
+We get the fixed effect estimates.
+We also get a test on the random effect (as described in this [article](https://doi.org/10.1093/biomet/ast038)). The hypothesis of no variation
+between the ids is rejected.
+
+We can get an estimate of the id SD:
+
+```{r}
+gam.vcomp(gmod)
+```
+
+which is the same as the REML estimate from `lmer` earlier.
+
+The random effect estimates for the fields can be found with:
+
+```{r}
+head(coef(gmod))
+```
+
+# GINLA
+
+In [Wood (2019)](https://doi.org/10.1093/biomet/asz044), a
+simplified version of INLA is proposed. The first
+construct the GAM model without fitting and then use
+the `ginla()` function to perform the computation.
+
+```{r}
+#| label: ohioginlafit
+#| cache: true
+gmod = gam(resp ~ age + smoke + s(fid,bs="re"), 
+           family=binomial, data=ohio, fit = FALSE)
+gimod = ginla(gmod)
+```
+
+We get the posterior densities for the fixed effects as:
+
+```{r}
+#| label: fig-ohioginlareff
+#| fig-cap: "Posteriors of the fixed effects"
+par(mfrow=c(1,2))
+for(i in 2:3){
+plot(gimod$beta[i,],gimod$density[i,],type="l",
+     xlab=gmod$term.names[i],ylab="density")
+}
+par(mfrow=c(1,1))
+```
+
+It is not straightforward to obtain the posterior densities of
+the hyperparameters. 
+
+# Discussion
+
+- No strong differences in the results between the different methods. In
+all cases, we do not find strong evidence of an effect for maternal smoking.
+
+- LME4 was very fast. INLA was fast. BRMS, MGCV and GINLA were slower. 
+We have a large number of subject random effects which slows down
+the `mgcv` approach considerably. 
+
+# Package version info
+
+
+```{r}
+sessionInfo()
+```
+

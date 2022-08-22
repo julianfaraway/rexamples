@@ -27,3 +27,5 @@ of the models.
 - [Repeated Measures](mixed/vision.md) - the `vision` data
 - [Multiple Response Models](mixed/jspmultiple.md) - the `jsp` data
 - [Poisson reponse model](mixed/nitrofen.md) - the `nitrofen` data
+- [Binary response model](mixed/ohio.md) - the `ohio` data
+
