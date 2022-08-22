@@ -67,7 +67,8 @@ Make a plot of the data:
 #| label: fig-nitrodat
 #| fig-cap: "The number of live offspring varies with the concentration of Nitrofen and the brood number."
 lnitrofen$jconc <- lnitrofen$conc + rep(c(-10,0,10),50)
-ggplot(lnitrofen, aes(x=jconc,y=live, shape=factor(brood))) + 
+lnitrofen$fbrood = factor(lnitrofen$brood)
+ggplot(lnitrofen, aes(x=jconc,y=live, shape=fbrood, color=fbrood)) + 
        geom_point(position = position_jitter(w = 0, h = 0.5)) + 
        xlab("Concentration") + labs(shape = "Brood")
 ```
@@ -112,8 +113,8 @@ above, indicating that the brood and concentration effects outweigh the
 individual variation.
 
 We can make a plot of the mean predicted response as concentration and
-brood vary. I have chosen not to include any random effects with
-the option `re.form=~0` because we are not interested in a particular `id`.
+brood vary. I have chosen not specify a particular individual in the random effects with the option `re.form=~0` . We have $u_i = 0$ and so this represents the
+the response for a `typical` individual.
 
 
 ```{r}
@@ -195,8 +196,10 @@ Fitting the model is very similar to `lmer` as seen above:
 ```{r}
 #| label: brmfit
 #| cache: true
-suppressMessages(bmod <- brm(live ~ I(conc/300)*brood + (1|id),  
-             family=poisson, data=lnitrofen))
+#| message: false
+#| warning: false
+#| error: false
+bmod <- brm(live ~ I(conc/300)*brood + (1|id), family=poisson, data=lnitrofen)
 ```
 
 We can check the MCMC diagnostics and the posterior densities with:
