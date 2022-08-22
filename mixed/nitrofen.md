@@ -277,7 +277,8 @@ functionality.
 Fitting the model is very similar to `lmer` as seen above:
 
 ``` r
-bmod <- brm(live ~ I(conc/300)*brood + (1|id), family=poisson, data=lnitrofen)
+bmod <- brm(live ~ I(conc/300)*brood + (1|id), 
+            family=poisson, data=lnitrofen, refresh=0, silent=2, cores=4)
 ```
 
     Running /Library/Frameworks/R.framework/Resources/bin/R CMD SHLIB foo.c
@@ -301,106 +302,6 @@ bmod <- brm(live ~ I(conc/300)*brood + (1|id), family=poisson, data=lnitrofen)
              ^~~~~~~~~
     3 errors generated.
     make: *** [foo.o] Error 1
-
-    SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
-    Chain 1: 
-    Chain 1: Gradient evaluation took 4.4e-05 seconds
-    Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.44 seconds.
-    Chain 1: Adjust your expectations accordingly!
-    Chain 1: 
-    Chain 1: 
-    Chain 1: Iteration:    1 / 2000 [  0%]  (Warmup)
-    Chain 1: Iteration:  200 / 2000 [ 10%]  (Warmup)
-    Chain 1: Iteration:  400 / 2000 [ 20%]  (Warmup)
-    Chain 1: Iteration:  600 / 2000 [ 30%]  (Warmup)
-    Chain 1: Iteration:  800 / 2000 [ 40%]  (Warmup)
-    Chain 1: Iteration: 1000 / 2000 [ 50%]  (Warmup)
-    Chain 1: Iteration: 1001 / 2000 [ 50%]  (Sampling)
-    Chain 1: Iteration: 1200 / 2000 [ 60%]  (Sampling)
-    Chain 1: Iteration: 1400 / 2000 [ 70%]  (Sampling)
-    Chain 1: Iteration: 1600 / 2000 [ 80%]  (Sampling)
-    Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
-    Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
-    Chain 1: 
-    Chain 1:  Elapsed Time: 0.333 seconds (Warm-up)
-    Chain 1:                0.213 seconds (Sampling)
-    Chain 1:                0.546 seconds (Total)
-    Chain 1: 
-
-    SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
-    Chain 2: 
-    Chain 2: Gradient evaluation took 1.7e-05 seconds
-    Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.17 seconds.
-    Chain 2: Adjust your expectations accordingly!
-    Chain 2: 
-    Chain 2: 
-    Chain 2: Iteration:    1 / 2000 [  0%]  (Warmup)
-    Chain 2: Iteration:  200 / 2000 [ 10%]  (Warmup)
-    Chain 2: Iteration:  400 / 2000 [ 20%]  (Warmup)
-    Chain 2: Iteration:  600 / 2000 [ 30%]  (Warmup)
-    Chain 2: Iteration:  800 / 2000 [ 40%]  (Warmup)
-    Chain 2: Iteration: 1000 / 2000 [ 50%]  (Warmup)
-    Chain 2: Iteration: 1001 / 2000 [ 50%]  (Sampling)
-    Chain 2: Iteration: 1200 / 2000 [ 60%]  (Sampling)
-    Chain 2: Iteration: 1400 / 2000 [ 70%]  (Sampling)
-    Chain 2: Iteration: 1600 / 2000 [ 80%]  (Sampling)
-    Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
-    Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
-    Chain 2: 
-    Chain 2:  Elapsed Time: 0.328 seconds (Warm-up)
-    Chain 2:                0.226 seconds (Sampling)
-    Chain 2:                0.554 seconds (Total)
-    Chain 2: 
-
-    SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
-    Chain 3: 
-    Chain 3: Gradient evaluation took 1.4e-05 seconds
-    Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.14 seconds.
-    Chain 3: Adjust your expectations accordingly!
-    Chain 3: 
-    Chain 3: 
-    Chain 3: Iteration:    1 / 2000 [  0%]  (Warmup)
-    Chain 3: Iteration:  200 / 2000 [ 10%]  (Warmup)
-    Chain 3: Iteration:  400 / 2000 [ 20%]  (Warmup)
-    Chain 3: Iteration:  600 / 2000 [ 30%]  (Warmup)
-    Chain 3: Iteration:  800 / 2000 [ 40%]  (Warmup)
-    Chain 3: Iteration: 1000 / 2000 [ 50%]  (Warmup)
-    Chain 3: Iteration: 1001 / 2000 [ 50%]  (Sampling)
-    Chain 3: Iteration: 1200 / 2000 [ 60%]  (Sampling)
-    Chain 3: Iteration: 1400 / 2000 [ 70%]  (Sampling)
-    Chain 3: Iteration: 1600 / 2000 [ 80%]  (Sampling)
-    Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
-    Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
-    Chain 3: 
-    Chain 3:  Elapsed Time: 0.355 seconds (Warm-up)
-    Chain 3:                0.297 seconds (Sampling)
-    Chain 3:                0.652 seconds (Total)
-    Chain 3: 
-
-    SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
-    Chain 4: 
-    Chain 4: Gradient evaluation took 1.6e-05 seconds
-    Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.16 seconds.
-    Chain 4: Adjust your expectations accordingly!
-    Chain 4: 
-    Chain 4: 
-    Chain 4: Iteration:    1 / 2000 [  0%]  (Warmup)
-    Chain 4: Iteration:  200 / 2000 [ 10%]  (Warmup)
-    Chain 4: Iteration:  400 / 2000 [ 20%]  (Warmup)
-    Chain 4: Iteration:  600 / 2000 [ 30%]  (Warmup)
-    Chain 4: Iteration:  800 / 2000 [ 40%]  (Warmup)
-    Chain 4: Iteration: 1000 / 2000 [ 50%]  (Warmup)
-    Chain 4: Iteration: 1001 / 2000 [ 50%]  (Sampling)
-    Chain 4: Iteration: 1200 / 2000 [ 60%]  (Sampling)
-    Chain 4: Iteration: 1400 / 2000 [ 70%]  (Sampling)
-    Chain 4: Iteration: 1600 / 2000 [ 80%]  (Sampling)
-    Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
-    Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
-    Chain 4: 
-    Chain 4:  Elapsed Time: 0.376 seconds (Warm-up)
-    Chain 4:                0.221 seconds (Sampling)
-    Chain 4:                0.597 seconds (Total)
-    Chain 4: 
 
 We can check the MCMC diagnostics and the posterior densities with:
 
@@ -496,14 +397,14 @@ summary(bmod)
     Group-Level Effects: 
     ~id (Number of levels: 50) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.32      0.06     0.21     0.45 1.00     1045     1942
+    sd(Intercept)     0.31      0.06     0.20     0.44 1.00     1055     1796
 
     Population-Level Effects: 
                     Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept           1.35      0.16     1.03     1.67 1.00     1501     2336
-    IconcD300           0.34      0.29    -0.22     0.90 1.00     1486     2138
-    brood               0.58      0.06     0.47     0.70 1.00     1757     2498
-    IconcD300:brood    -0.80      0.12    -1.02    -0.57 1.00     1596     2353
+    Intercept           1.34      0.16     1.02     1.66 1.00     1607     2053
+    IconcD300           0.36      0.29    -0.22     0.92 1.00     1587     2089
+    brood               0.58      0.06     0.47     0.70 1.00     1803     2796
+    IconcD300:brood    -0.80      0.12    -1.03    -0.57 1.00     1707     2528
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
