@@ -1,42 +1,42 @@
 One Way Anova with a random effect
 ================
 [Julian Faraway](https://julianfaraway.github.io/)
-19 August 2022
+08 September 2022
 
--   <a href="#data" id="toc-data">Data</a>
--   <a href="#questions" id="toc-questions">Questions</a>
--   <a href="#linear-model-with-fixed-effects"
-    id="toc-linear-model-with-fixed-effects">Linear model with fixed
-    effects</a>
--   <a href="#likelihood-inference" id="toc-likelihood-inference">Likelihood
-    inference</a>
-    -   <a href="#hypothesis-testing" id="toc-hypothesis-testing">Hypothesis
-        testing</a>
-    -   <a href="#confidence-intervals" id="toc-confidence-intervals">Confidence
-        intervals</a>
-    -   <a href="#random-effects" id="toc-random-effects">Random effects</a>
--   <a href="#inla" id="toc-inla">INLA</a>
-    -   <a href="#halfnormal-prior-on-the-sds"
-        id="toc-halfnormal-prior-on-the-sds">Halfnormal prior on the SDs</a>
-    -   <a href="#informative-gamma-priors-on-the-precisions"
-        id="toc-informative-gamma-priors-on-the-precisions">Informative gamma
-        priors on the precisions</a>
-    -   <a href="#penalized-complexity-prior"
-        id="toc-penalized-complexity-prior">Penalized Complexity Prior</a>
--   <a href="#stan" id="toc-stan">STAN</a>
-    -   <a href="#diagnostics" id="toc-diagnostics">Diagnostics</a>
-    -   <a href="#output-summaries" id="toc-output-summaries">Output
-        summaries</a>
-    -   <a href="#posterior-distributions"
-        id="toc-posterior-distributions">Posterior Distributions</a>
-    -   <a href="#tail-probability" id="toc-tail-probability">Tail
-        probability</a>
--   <a href="#brms" id="toc-brms">BRMS</a>
--   <a href="#mgcv" id="toc-mgcv">MGCV</a>
-    -   <a href="#ginla" id="toc-ginla">GINLA</a>
--   <a href="#discussion" id="toc-discussion">Discussion</a>
--   <a href="#package-version-info" id="toc-package-version-info">Package
-    version info</a>
+- <a href="#data" id="toc-data">Data</a>
+- <a href="#questions" id="toc-questions">Questions</a>
+- <a href="#linear-model-with-fixed-effects"
+  id="toc-linear-model-with-fixed-effects">Linear model with fixed
+  effects</a>
+- <a href="#likelihood-inference" id="toc-likelihood-inference">Likelihood
+  inference</a>
+  - <a href="#hypothesis-testing" id="toc-hypothesis-testing">Hypothesis
+    testing</a>
+  - <a href="#confidence-intervals" id="toc-confidence-intervals">Confidence
+    intervals</a>
+  - <a href="#random-effects" id="toc-random-effects">Random effects</a>
+- <a href="#inla" id="toc-inla">INLA</a>
+  - <a href="#halfnormal-prior-on-the-sds"
+    id="toc-halfnormal-prior-on-the-sds">Halfnormal prior on the SDs</a>
+  - <a href="#informative-gamma-priors-on-the-precisions"
+    id="toc-informative-gamma-priors-on-the-precisions">Informative gamma
+    priors on the precisions</a>
+  - <a href="#penalized-complexity-prior"
+    id="toc-penalized-complexity-prior">Penalized Complexity Prior</a>
+- <a href="#stan" id="toc-stan">STAN</a>
+  - <a href="#diagnostics" id="toc-diagnostics">Diagnostics</a>
+  - <a href="#output-summaries" id="toc-output-summaries">Output
+    summaries</a>
+  - <a href="#posterior-distributions"
+    id="toc-posterior-distributions">Posterior Distributions</a>
+  - <a href="#tail-probability" id="toc-tail-probability">Tail
+    probability</a>
+- <a href="#brms" id="toc-brms">BRMS</a>
+- <a href="#mgcv" id="toc-mgcv">MGCV</a>
+  - <a href="#ginla" id="toc-ginla">GINLA</a>
+- <a href="#discussion" id="toc-discussion">Discussion</a>
+- <a href="#package-version-info" id="toc-package-version-info">Package
+  version info</a>
 
 See the [introduction](../index.md) for an overview.
 
@@ -169,15 +169,11 @@ handle some simple models but it is has very limited functionality.
 
 # Likelihood inference
 
-We use a model of the form:
-
-$$
+We use a model of the form: $$
 y_{ij} = \mu + \alpha_i + \epsilon_{ij} \qquad i=1,\dots ,a
   \qquad j=1,\dots ,n_i,
-$$
-
-where the $\alpha_i$ and $\epsilon_{ij}$ are normal with mean zero, but
-variances $\sigma_\alpha^2$ and $\sigma^2_\epsilon$, respectively.
+$$ where the $\alpha_i$ and $\epsilon_{ij}$ are normal with mean zero,
+but variances $\sigma_\alpha^2$ and $\sigma^2_\epsilon$, respectively.
 
 The default fit uses the REML estimation method:
 
@@ -1072,6 +1068,8 @@ greater weight on smaller values of the SD.
 It is possible to fit some GLMMs within the GAM framework of the `mgcv`
 package. An explanation of this can be found in this
 [blog](https://fromthebottomoftheheap.net/2021/02/02/random-effects-in-gams/)
+and also in this
+[blog](https://www.tjmahr.com/random-effects-penalized-splines-same-thing/)
 
 The `operator` term must be a factor for this to work:
 
@@ -1339,28 +1337,28 @@ sessionInfo()
 
     other attached packages:
      [1] mgcv_1.8-40         nlme_3.1-159        brms_2.17.0         Rcpp_1.0.9          rstan_2.26.13      
-     [6] StanHeaders_2.26.13 knitr_1.39          INLA_22.07.23       sp_1.5-0            foreach_1.5.2      
-    [11] lme4_1.1-30         Matrix_1.4-1        ggplot2_3.3.6       faraway_1.0.8      
+     [6] StanHeaders_2.26.13 knitr_1.40          INLA_22.07.23       sp_1.5-0            foreach_1.5.2      
+    [11] lme4_1.1-30         Matrix_1.4-1        ggplot2_3.3.6       faraway_1.0.9      
 
     loaded via a namespace (and not attached):
       [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2       ggridges_0.5.3       markdown_1.1        
-      [6] base64enc_0.1-3      rstudioapi_0.13      Deriv_4.1.3          farver_2.1.1         DT_0.24             
+      [6] base64enc_0.1-3      rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         DT_0.24             
      [11] fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18     splines_4.2.1       
      [16] shinythemes_1.2.0    bayesplot_1.9.0      jsonlite_1.8.0       nloptr_2.0.3         shiny_1.7.2         
      [21] compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0        cli_3.3.0           
      [26] later_1.3.0          htmltools_0.5.3      prettyunits_1.1.1    tools_4.2.1          igraph_1.3.4        
-     [31] coda_0.19-4          gtable_0.3.0         glue_1.6.2           reshape2_1.4.4       dplyr_1.0.9         
+     [31] coda_0.19-4          gtable_0.3.1         glue_1.6.2           reshape2_1.4.4       dplyr_1.0.10        
      [36] posterior_1.3.0      V8_4.2.1             vctrs_0.4.1          svglite_2.1.0        iterators_1.0.14    
-     [41] crosstalk_1.2.0      tensorA_0.36.2       xfun_0.32            stringr_1.4.0        ps_1.7.1            
+     [41] crosstalk_1.2.0      tensorA_0.36.2       xfun_0.32            stringr_1.4.1        ps_1.7.1            
      [46] mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.1      gtools_3.9.3         MASS_7.3-58.1       
-     [51] zoo_1.8-10           scales_1.2.0         colourpicker_1.1.1   promises_1.2.0.1     Brobdingnag_1.2-7   
+     [51] zoo_1.8-10           scales_1.2.1         colourpicker_1.1.1   promises_1.2.0.1     Brobdingnag_1.2-7   
      [56] inline_0.3.19        shinystan_2.6.0      yaml_2.3.5           curl_4.3.2           gridExtra_2.3       
      [61] loo_2.5.1            stringi_1.7.8        highr_0.9            dygraphs_1.1.1.6     checkmate_2.1.0     
-     [66] boot_1.3-28          pkgbuild_1.3.1       rlang_1.0.4          pkgconfig_2.0.3      systemfonts_1.0.4   
+     [66] boot_1.3-28          pkgbuild_1.3.1       rlang_1.0.5          pkgconfig_2.0.3      systemfonts_1.0.4   
      [71] matrixStats_0.62.0   distributional_0.3.0 evaluate_0.16        lattice_0.20-45      purrr_0.3.4         
      [76] rstantools_2.2.0     htmlwidgets_1.5.4    labeling_0.4.2       processx_3.7.0       tidyselect_1.1.2    
      [81] plyr_1.8.7           magrittr_2.0.3       R6_2.5.1             generics_0.1.3       DBI_1.1.3           
-     [86] pillar_1.8.0         withr_2.5.0          xts_0.12.1           abind_1.4-5          tibble_3.1.8        
-     [91] crayon_1.5.1         utf8_1.2.2           rmarkdown_2.15       grid_4.2.1           callr_3.7.1         
+     [86] pillar_1.8.1         withr_2.5.0          xts_0.12.1           abind_1.4-5          tibble_3.1.8        
+     [91] crayon_1.5.1         utf8_1.2.2           rmarkdown_2.16       grid_4.2.1           callr_3.7.2         
      [96] threejs_0.3.3        digest_0.6.29        xtable_1.8-4         httpuv_1.6.5         RcppParallel_5.1.5  
     [101] stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       

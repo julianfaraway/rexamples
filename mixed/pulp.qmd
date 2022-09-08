@@ -721,6 +721,7 @@ greater weight on smaller values of the SD.
 It is possible to fit some GLMMs within the GAM framework of the `mgcv`
 package. An explanation of this can be found in this 
 [blog](https://fromthebottomoftheheap.net/2021/02/02/random-effects-in-gams/)
+and also in this [blog](https://www.tjmahr.com/random-effects-penalized-splines-same-thing/)
 
 The `operator` term must be a factor for this to work:
 
