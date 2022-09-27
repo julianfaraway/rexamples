@@ -1,7 +1,7 @@
 Repeated Measures
 ================
 [Julian Faraway](https://julianfaraway.github.io/)
-10 August 2022
+27 September 2022
 
 -   <a href="#data" id="toc-data">Data</a>
 -   <a href="#mixed-effect-model" id="toc-mixed-effect-model">Mixed Effect
@@ -116,28 +116,15 @@ faraway::sumary(mmod)
     AIC = 342.7, DIC = 349.6
     deviance = 339.2 
 
-This model can be written as:
+This model can be written as: $$
+y_{ijk} = \mu + p_j + s_i + e_{ik} + \epsilon_{ijk}
+$$ where $i=1, \dots ,7$ runs over individuals, $j=1, \dots ,4$ runs
+over power and $k=1,2$ runs over eyes. The $p_j$ term is a fixed effect,
+but the remaining terms are random. Let $s_i \sim N(0,\sigma^2_s)$,
+$e_{ik} \sim N(0,\sigma^2_e)$ and
+$\epsilon_{ijk} \sim N(0,\sigma^2\Sigma)$ where we take $\Sigma=I$.
 
-![y\_{ijk} = \mu + p_j + s_i + e\_{ik} + \epsilon\_{ijk}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;y_%7Bijk%7D%20%3D%20%5Cmu%20%2B%20p_j%20%2B%20s_i%20%2B%20e_%7Bik%7D%20%2B%20%5Cepsilon_%7Bijk%7D "y_{ijk} = \mu + p_j + s_i + e_{ik} + \epsilon_{ijk}")
-
-where
-![i=1, \dots ,7](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;i%3D1%2C%20%5Cdots%20%2C7 "i=1, \dots ,7")
-runs over individuals,
-![j=1, \dots ,4](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;j%3D1%2C%20%5Cdots%20%2C4 "j=1, \dots ,4")
-runs over power and
-![k=1,2](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;k%3D1%2C2 "k=1,2")
-runs over eyes. The
-![p_j](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;p_j "p_j")
-term is a fixed effect, but the remaining terms are random. Let
-![s_i \sim N(0,\sigma^2_s)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;s_i%20%5Csim%20N%280%2C%5Csigma%5E2_s%29 "s_i \sim N(0,\sigma^2_s)"),
-![e\_{ik} \sim N(0,\sigma^2_e)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;e_%7Bik%7D%20%5Csim%20N%280%2C%5Csigma%5E2_e%29 "e_{ik} \sim N(0,\sigma^2_e)")
-and
-![\epsilon\_{ijk} \sim N(0,\sigma^2\Sigma)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Cepsilon_%7Bijk%7D%20%5Csim%20N%280%2C%5Csigma%5E2%5CSigma%29 "\epsilon_{ijk} \sim N(0,\sigma^2\Sigma)")
-where we take
-![\Sigma=I](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5CSigma%3DI "\Sigma=I").
-
-We can check for a power effect using a Kenward-Roger adjusted
-![F](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;F "F")-test:
+We can check for a power effect using a Kenward-Roger adjusted $F$-test:
 
 ``` r
 mmod <- lmer(acuity~power+(1|subject)+(1|subject:eye),vision,REML=FALSE)
@@ -302,16 +289,16 @@ summary(result)
 
     Fixed effects:
                    mean    sd 0.025quant 0.5quant 0.975quant    mode kld
-    (Intercept) 112.646 2.500    107.651  112.646    117.642 112.646   0
-    power6/18     0.781 1.532     -2.239    0.781      3.801   0.782   0
-    power6/36    -1.002 1.532     -4.023   -1.002      2.018  -1.002   0
-    power6/60     3.278 1.532      0.258    3.278      6.298   3.279   0
+    (Intercept) 112.646 2.436    107.777  112.646    117.516 112.646   0
+    power6/18     0.781 1.533     -2.241    0.781      3.803   0.782   0
+    power6/36    -1.002 1.533     -4.025   -1.002      2.019  -1.002   0
+    power6/60     3.278 1.533      0.256    3.278      6.300   3.279   0
 
     Model hyperparameters:
                                              mean    sd 0.025quant 0.5quant 0.975quant  mode
-    Precision for the Gaussian observations 0.064 0.014      0.040    0.062      0.096 0.060
-    Precision for subject                   0.090 0.112      0.012    0.057      0.377 0.028
-    Precision for eyesub                    0.089 0.066      0.017    0.072      0.263 0.044
+    Precision for the Gaussian observations 0.064 0.014      0.040    0.062      0.095 0.060
+    Precision for subject                   0.064 0.055      0.012    0.049      0.209 0.029
+    Precision for eyesub                    0.108 0.091      0.018    0.082      0.350 0.047
 
      is computed 
 
@@ -331,13 +318,13 @@ data.frame(restab) |> kable()
 
 |            | mu     | power6.18 | power6.36 | power6.60 | subject | eyesub | epsilon |
 |:-----------|:-------|:----------|:----------|:----------|:--------|:-------|:--------|
-| mean       | 112.65 | 0.78119   | -1.0024   | 3.2783    | 4.4714  | 4.005  | 4.0291  |
-| sd         | 2.4978 | 1.5312    | 1.5312    | 1.5312    | 1.8951  | 1.4798 | 0.44513 |
-| quant0.025 | 107.65 | -2.2398   | -4.0233   | 0.25702   | 1.6433  | 1.9582 | 3.2361  |
-| quant0.25  | 111.05 | -0.23942  | -2.0231   | 2.2577    | 3.0744  | 2.9524 | 3.7148  |
-| quant0.5   | 112.64 | 0.77789   | -1.0058   | 3.275     | 4.1933  | 3.711  | 3.9992  |
-| quant0.75  | 114.23 | 1.7951    | 0.011451  | 4.2922    | 5.5411  | 4.7409 | 4.3117  |
-| quant0.975 | 117.63 | 3.7948    | 2.0113    | 6.2916    | 8.9454  | 7.693  | 4.9825  |
+| mean       | 112.65 | 0.78119   | -1.0024   | 3.2782    | 4.8196  | 3.7471 | 4.0404  |
+| sd         | 2.4346 | 1.5321    | 1.5321    | 1.5321    | 1.7878  | 1.4501 | 0.44658 |
+| quant0.025 | 107.78 | -2.2417   | -4.0252   | 0.25515   | 2.196   | 1.6974 | 3.2497  |
+| quant0.25  | 111.09 | -0.24004  | -2.0237   | 2.2571    | 3.531   | 2.7097 | 3.7246  |
+| quant0.5   | 112.64 | 0.77788   | -1.0058   | 3.275     | 4.5243  | 3.4787 | 4.0083  |
+| quant0.75  | 114.19 | 1.7957    | 0.012072  | 4.2928    | 5.7761  | 4.4878 | 4.3227  |
+| quant0.975 | 117.5  | 3.7966    | 2.0132    | 6.2935    | 9.1373  | 7.3199 | 5.0016  |
 
 Make the plots:
 
@@ -929,31 +916,31 @@ sessionInfo()
     [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-40         nlme_3.1-158        brms_2.17.0         Rcpp_1.0.9          rstan_2.26.13      
-     [6] StanHeaders_2.26.13 knitr_1.39          INLA_22.07.23       sp_1.5-0            foreach_1.5.2      
-    [11] RLRsim_3.1-8        pbkrtest_0.5.1      lme4_1.1-30         Matrix_1.4-1        ggplot2_3.3.6      
-    [16] faraway_1.0.8      
+     [1] mgcv_1.8-40         nlme_3.1-159        brms_2.18.0         Rcpp_1.0.9          rstan_2.26.13      
+     [6] StanHeaders_2.26.13 knitr_1.40          INLA_22.09.26       sp_1.5-0            foreach_1.5.2      
+    [11] RLRsim_3.1-8        pbkrtest_0.5.1      lme4_1.1-30         Matrix_1.5-1        ggplot2_3.3.6      
+    [16] faraway_1.0.9      
 
     loaded via a namespace (and not attached):
-      [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2       ggridges_0.5.3       markdown_1.1        
-      [6] base64enc_0.1-3      rstudioapi_0.13      Deriv_4.1.3          farver_2.1.1         MatrixModels_0.5-0  
-     [11] DT_0.23              fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18    
+      [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2       ggridges_0.5.4       markdown_1.1        
+      [6] base64enc_0.1-3      rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         MatrixModels_0.5-1  
+     [11] DT_0.25              fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18    
      [16] splines_4.2.1        shinythemes_1.2.0    bayesplot_1.9.0      jsonlite_1.8.0       nloptr_2.0.3        
-     [21] broom_1.0.0          shiny_1.7.2          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1    
-     [26] fastmap_1.1.0        cli_3.3.0            later_1.3.0          htmltools_0.5.3      prettyunits_1.1.1   
-     [31] tools_4.2.1          igraph_1.3.4         coda_0.19-4          gtable_0.3.0         glue_1.6.2          
-     [36] reshape2_1.4.4       dplyr_1.0.9          posterior_1.2.2      V8_4.2.0             vctrs_0.4.1         
-     [41] svglite_2.1.0        iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.31           
-     [46] stringr_1.4.0        ps_1.7.1             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.1     
-     [51] gtools_3.9.3         MASS_7.3-58          zoo_1.8-10           scales_1.2.0         colourpicker_1.1.1  
+     [21] broom_1.0.1          shiny_1.7.2          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1    
+     [26] fastmap_1.1.0        cli_3.4.1            later_1.3.0          htmltools_0.5.3      prettyunits_1.1.1   
+     [31] tools_4.2.1          igraph_1.3.5         coda_0.19-4          gtable_0.3.1         glue_1.6.2          
+     [36] reshape2_1.4.4       dplyr_1.0.10         posterior_1.3.1      V8_4.2.1             vctrs_0.4.1         
+     [41] svglite_2.1.0        iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.33           
+     [46] stringr_1.4.1        ps_1.7.1             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.2     
+     [51] gtools_3.9.3         MASS_7.3-58.1        zoo_1.8-11           scales_1.2.1         colourpicker_1.1.1  
      [56] promises_1.2.0.1     Brobdingnag_1.2-7    inline_0.3.19        shinystan_2.6.0      yaml_2.3.5          
      [61] curl_4.3.2           gridExtra_2.3        loo_2.5.1            stringi_1.7.8        highr_0.9           
      [66] dygraphs_1.1.1.6     checkmate_2.1.0      boot_1.3-28          pkgbuild_1.3.1       systemfonts_1.0.4   
-     [71] rlang_1.0.4          pkgconfig_2.0.3      matrixStats_0.62.0   distributional_0.3.0 evaluate_0.15       
+     [71] rlang_1.0.6          pkgconfig_2.0.3      matrixStats_0.62.0   distributional_0.3.1 evaluate_0.16       
      [76] lattice_0.20-45      purrr_0.3.4          labeling_0.4.2       rstantools_2.2.0     htmlwidgets_1.5.4   
      [81] processx_3.7.0       tidyselect_1.1.2     plyr_1.8.7           magrittr_2.0.3       R6_2.5.1            
-     [86] generics_0.1.3       DBI_1.1.3            pillar_1.8.0         withr_2.5.0          xts_0.12.1          
-     [91] abind_1.4-5          tibble_3.1.8         crayon_1.5.1         utf8_1.2.2           rmarkdown_2.14      
-     [96] grid_4.2.1           callr_3.7.1          threejs_0.3.3        digest_0.6.29        xtable_1.8-4        
-    [101] tidyr_1.2.0          httpuv_1.6.5         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0       
+     [86] generics_0.1.3       DBI_1.1.3            pillar_1.8.1         withr_2.5.0          xts_0.12.1          
+     [91] abind_1.4-5          tibble_3.1.8         crayon_1.5.1         utf8_1.2.2           rmarkdown_2.16      
+     [96] grid_4.2.1           callr_3.7.2          threejs_0.3.3        digest_0.6.29        xtable_1.8-4        
+    [101] tidyr_1.2.1          httpuv_1.6.6         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0       
     [106] shinyjs_2.1.0       

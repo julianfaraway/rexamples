@@ -1,17 +1,17 @@
 Poisson GLMM
 ================
 [Julian Faraway](https://julianfaraway.github.io/)
-22 August 2022
+27 September 2022
 
--   <a href="#data-and-model" id="toc-data-and-model">Data and Model</a>
--   <a href="#lme4" id="toc-lme4">LME4</a>
--   <a href="#inla" id="toc-inla">INLA</a>
--   <a href="#brms" id="toc-brms">BRMS</a>
--   <a href="#mgcv" id="toc-mgcv">MGCV</a>
--   <a href="#ginla" id="toc-ginla">GINLA</a>
--   <a href="#discussion" id="toc-discussion">Discussion</a>
--   <a href="#package-version-info" id="toc-package-version-info">Package
-    version info</a>
+- <a href="#data-and-model" id="toc-data-and-model">Data and Model</a>
+- <a href="#lme4" id="toc-lme4">LME4</a>
+- <a href="#inla" id="toc-inla">INLA</a>
+- <a href="#brms" id="toc-brms">BRMS</a>
+- <a href="#mgcv" id="toc-mgcv">MGCV</a>
+- <a href="#ginla" id="toc-ginla">GINLA</a>
+- <a href="#discussion" id="toc-discussion">Discussion</a>
+- <a href="#package-version-info" id="toc-package-version-info">Package
+  version info</a>
 
 See the [introduction](../index.md) for an overview.
 
@@ -85,8 +85,8 @@ ggplot(lnitrofen, aes(x=jconc,y=live, shape=fbrood, color=fbrood)) +
 
 <figure>
 <img src="figs/fig-nitrodat-1..svg" id="fig-nitrodat"
-alt="Figure 1: The number of live offspring varies with the concentration of Nitrofen and the brood number." />
-<figcaption aria-hidden="true">Figure 1: The number of live offspring
+alt="Figure 1: The number of live offspring varies with the concentration of Nitrofen and the brood number." />
+<figcaption aria-hidden="true">Figure 1: The number of live offspring
 varies with the concentration of Nitrofen and the brood
 number.</figcaption>
 </figure>
@@ -97,15 +97,11 @@ concentration level. The plot of the data suggests these two predictors
 may have an interaction. The three observations for a single flea are
 likely to be correlated. We might expect a given flea to tend to produce
 more, or less, offspring over a lifetime. We can model this with an
-additive random effect. The linear predictor is:
-
-$$
+additive random effect. The linear predictor is: $$
 \eta_i = x_i^T \beta + u_{j(i)}, \quad i=1, \dots, 150. \quad j=1, \dots 50,
-$$
-
-where $x_i$ is a vector from the design matrix encoding the information
-about the $i^{th}$ observation and $u_j$ is the random affect associated
-with the $j^{th}$ flea. The response has distribution
+$$ where $x_i$ is a vector from the design matrix encoding the
+information about the $i^{th}$ observation and $u_j$ is the random
+affect associated with the $j^{th}$ flea. The response has distribution
 $Y_i \sim Poisson(\exp(\eta_i))$.
 
 # LME4
@@ -173,8 +169,8 @@ ggplot(predf, aes(x=conc,y=live,group=brood,color=brood)) +
 
 <figure>
 <img src="figs/fig-prednitro-1..svg" id="fig-prednitro"
-alt="Figure 2: Predicted number of live offspring" />
-<figcaption aria-hidden="true">Figure 2: Predicted number of live
+alt="Figure 2: Predicted number of live offspring" />
+<figcaption aria-hidden="true">Figure 2: Predicted number of live
 offspring</figcaption>
 </figure>
 
@@ -229,8 +225,8 @@ par(mfrow=c(1,1))
 
 <figure>
 <img src="figs/fig-nitrofpd-1..svg" id="fig-nitrofpd"
-alt="Figure 3: Posterior densities of the fixed effects model for the Nitrofen data." />
-<figcaption aria-hidden="true">Figure 3: Posterior densities of the
+alt="Figure 3: Posterior densities of the fixed effects model for the Nitrofen data." />
+<figcaption aria-hidden="true">Figure 3: Posterior densities of the
 fixed effects model for the Nitrofen data.</figcaption>
 </figure>
 
@@ -259,8 +255,8 @@ plot(hpd,type="l",xlab="linear predictor",ylab="density")
 
 <figure>
 <img src="figs/fig-nitrohyppd-1..svg" id="fig-nitrohyppd"
-alt="Figure 4: Posterior density of the SD of id" />
-<figcaption aria-hidden="true">Figure 4: Posterior density of the SD of
+alt="Figure 4: Posterior density of the SD of id" />
+<figcaption aria-hidden="true">Figure 4: Posterior density of the SD of
 id</figcaption>
 </figure>
 
@@ -515,8 +511,8 @@ par(mfrow=c(1,1))
 
 <figure>
 <img src="figs/fig-nitroginlareff-1..svg" id="fig-nitroginlareff"
-alt="Figure 5: Posteriors of the fixed effects" />
-<figcaption aria-hidden="true">Figure 5: Posteriors of the fixed
+alt="Figure 5: Posteriors of the fixed effects" />
+<figcaption aria-hidden="true">Figure 5: Posteriors of the fixed
 effects</figcaption>
 </figure>
 
@@ -525,11 +521,11 @@ hyperparameters.
 
 # Discussion
 
--   No strong differences in the results between the different methods.
+- No strong differences in the results between the different methods.
 
--   LME4, MGCV and GINLA were very fast. INLA was fast. BRMS was
-    slowest. But this is a small dataset and a simple model so we cannot
-    draw too general a conclusion from this.
+- LME4, MGCV and GINLA were very fast. INLA was fast. BRMS was slowest.
+  But this is a small dataset and a simple model so we cannot draw too
+  general a conclusion from this.
 
 # Package version info
 
@@ -552,28 +548,28 @@ sessionInfo()
     [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-40   nlme_3.1-159  brms_2.17.0   Rcpp_1.0.9    knitr_1.39    INLA_22.07.23 sp_1.5-0      foreach_1.5.2
-     [9] lme4_1.1-30   Matrix_1.4-1  ggplot2_3.3.6
+     [1] mgcv_1.8-40   nlme_3.1-159  brms_2.18.0   Rcpp_1.0.9    knitr_1.40    INLA_22.09.26 sp_1.5-0      foreach_1.5.2
+     [9] lme4_1.1-30   Matrix_1.5-1  ggplot2_3.3.6
 
     loaded via a namespace (and not attached):
-      [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2       ggridges_0.5.3       markdown_1.1        
-      [6] base64enc_0.1-3      rstudioapi_0.13      Deriv_4.1.3          farver_2.1.1         rstan_2.26.13       
-     [11] DT_0.24              fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18    
+      [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2       ggridges_0.5.4       markdown_1.1        
+      [6] base64enc_0.1-3      rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         rstan_2.26.13       
+     [11] DT_0.25              fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18    
      [16] splines_4.2.1        shinythemes_1.2.0    bayesplot_1.9.0      jsonlite_1.8.0       nloptr_2.0.3        
      [21] shiny_1.7.2          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0       
-     [26] cli_3.3.0            later_1.3.0          htmltools_0.5.3      prettyunits_1.1.1    tools_4.2.1         
-     [31] igraph_1.3.4         coda_0.19-4          gtable_0.3.0         glue_1.6.2           reshape2_1.4.4      
-     [36] dplyr_1.0.9          posterior_1.3.0      V8_4.2.1             vctrs_0.4.1          svglite_2.1.0       
-     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.32            stringr_1.4.0       
-     [46] ps_1.7.1             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.1      gtools_3.9.3        
-     [51] MASS_7.3-58.1        zoo_1.8-10           scales_1.2.0         colourpicker_1.1.1   promises_1.2.0.1    
+     [26] cli_3.4.1            later_1.3.0          htmltools_0.5.3      prettyunits_1.1.1    tools_4.2.1         
+     [31] igraph_1.3.5         coda_0.19-4          gtable_0.3.1         glue_1.6.2           reshape2_1.4.4      
+     [36] dplyr_1.0.10         posterior_1.3.1      V8_4.2.1             vctrs_0.4.1          svglite_2.1.0       
+     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.33            stringr_1.4.1       
+     [46] ps_1.7.1             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.2      gtools_3.9.3        
+     [51] MASS_7.3-58.1        zoo_1.8-11           scales_1.2.1         colourpicker_1.1.1   promises_1.2.0.1    
      [56] Brobdingnag_1.2-7    inline_0.3.19        shinystan_2.6.0      yaml_2.3.5           curl_4.3.2          
      [61] gridExtra_2.3        loo_2.5.1            StanHeaders_2.26.13  stringi_1.7.8        highr_0.9           
      [66] dygraphs_1.1.1.6     checkmate_2.1.0      boot_1.3-28          pkgbuild_1.3.1       systemfonts_1.0.4   
-     [71] rlang_1.0.4          pkgconfig_2.0.3      matrixStats_0.62.0   distributional_0.3.0 evaluate_0.16       
+     [71] rlang_1.0.6          pkgconfig_2.0.3      matrixStats_0.62.0   distributional_0.3.1 evaluate_0.16       
      [76] lattice_0.20-45      purrr_0.3.4          rstantools_2.2.0     htmlwidgets_1.5.4    labeling_0.4.2      
      [81] tidyselect_1.1.2     processx_3.7.0       plyr_1.8.7           magrittr_2.0.3       R6_2.5.1            
-     [86] generics_0.1.3       DBI_1.1.3            pillar_1.8.0         withr_2.5.0          xts_0.12.1          
-     [91] abind_1.4-5          tibble_3.1.8         crayon_1.5.1         utf8_1.2.2           rmarkdown_2.15      
-     [96] grid_4.2.1           callr_3.7.1          threejs_0.3.3        digest_0.6.29        xtable_1.8-4        
-    [101] httpuv_1.6.5         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       
+     [86] generics_0.1.3       DBI_1.1.3            pillar_1.8.1         withr_2.5.0          xts_0.12.1          
+     [91] abind_1.4-5          tibble_3.1.8         crayon_1.5.1         utf8_1.2.2           rmarkdown_2.16      
+     [96] grid_4.2.1           callr_3.7.2          threejs_0.3.3        digest_0.6.29        xtable_1.8-4        
+    [101] httpuv_1.6.6         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       

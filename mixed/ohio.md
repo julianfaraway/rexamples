@@ -1,17 +1,17 @@
 Binary response GLMM
 ================
 [Julian Faraway](https://julianfaraway.github.io/)
-22 August 2022
+27 September 2022
 
--   <a href="#data-and-model" id="toc-data-and-model">Data and Model</a>
--   <a href="#lme4" id="toc-lme4">LME4</a>
--   <a href="#inla" id="toc-inla">INLA</a>
--   <a href="#brms" id="toc-brms">BRMS</a>
--   <a href="#mgcv" id="toc-mgcv">MGCV</a>
--   <a href="#ginla" id="toc-ginla">GINLA</a>
--   <a href="#discussion" id="toc-discussion">Discussion</a>
--   <a href="#package-version-info" id="toc-package-version-info">Package
-    version info</a>
+- <a href="#data-and-model" id="toc-data-and-model">Data and Model</a>
+- <a href="#lme4" id="toc-lme4">LME4</a>
+- <a href="#inla" id="toc-inla">INLA</a>
+- <a href="#brms" id="toc-brms">BRMS</a>
+- <a href="#mgcv" id="toc-mgcv">MGCV</a>
+- <a href="#ginla" id="toc-ginla">GINLA</a>
+- <a href="#discussion" id="toc-discussion">Discussion</a>
+- <a href="#package-version-info" id="toc-package-version-info">Package
+  version info</a>
 
 See the [introduction](../index.md) for an overview.
 
@@ -71,18 +71,11 @@ in children with mothers who smoke. But the effects are not clear and we
 need modeling to be sure about these conclusions.
 
 A plausible model uses a logit link with a linear predictor of the form:
-
 $$
 \eta_{ij} = \beta_0 + \beta_1 age_j + \beta_2 smoke_i + u_i, \quad i=1, \dots ,537, \quad j=1,2,3,4,
-$$
-
-with
-
-$$
+$$ with $$
 P(Y_{ij} = 1) = {\exp(\eta_{ij}) \over 1+\exp(\eta_{ij})}.
-$$
-
-The random effect $u_i$ models the propensity of child $i$ to wheeze.
+$$ The random effect $u_i$ models the propensity of child $i$ to wheeze.
 Children are likely to vary in their health condition and this effect
 enables us to include this unknown variation in the model. Because $u_i$
 is added to all four observations for a child, we induce a positive
@@ -192,8 +185,8 @@ par(mfrow=c(1,1))
 
 <figure>
 <img src="figs/fig-ohiofpd-1..svg" id="fig-ohiofpd"
-alt="Figure 1: Posterior densities of the fixed effects model for the Ohio wheeze data." />
-<figcaption aria-hidden="true">Figure 1: Posterior densities of the
+alt="Figure 1: Posterior densities of the fixed effects model for the Ohio wheeze data." />
+<figcaption aria-hidden="true">Figure 1: Posterior densities of the
 fixed effects model for the Ohio wheeze data.</figcaption>
 </figure>
 
@@ -222,8 +215,8 @@ plot(hpd,type="l",xlab="linear predictor",ylab="density")
 
 <figure>
 <img src="figs/fig-ohiohyppd-1..svg" id="fig-ohiohyppd"
-alt="Figure 2: Posterior density of the SD of id" />
-<figcaption aria-hidden="true">Figure 2: Posterior density of the SD of
+alt="Figure 2: Posterior density of the SD of id" />
+<figcaption aria-hidden="true">Figure 2: Posterior density of the SD of
 id</figcaption>
 </figure>
 
@@ -467,8 +460,8 @@ par(mfrow=c(1,1))
 
 <figure>
 <img src="figs/fig-ohioginlareff-1..svg" id="fig-ohioginlareff"
-alt="Figure 3: Posteriors of the fixed effects" />
-<figcaption aria-hidden="true">Figure 3: Posteriors of the fixed
+alt="Figure 3: Posteriors of the fixed effects" />
+<figcaption aria-hidden="true">Figure 3: Posteriors of the fixed
 effects</figcaption>
 </figure>
 
@@ -477,13 +470,13 @@ hyperparameters.
 
 # Discussion
 
--   No strong differences in the results between the different methods.
-    In all cases, we do not find strong evidence of an effect for
-    maternal smoking.
+- No strong differences in the results between the different methods. In
+  all cases, we do not find strong evidence of an effect for maternal
+  smoking.
 
--   LME4 was very fast. INLA was fast. BRMS, MGCV and GINLA were slower.
-    We have a large number of subject random effects which slows down
-    the `mgcv` approach considerably.
+- LME4 was very fast. INLA was fast. BRMS, MGCV and GINLA were slower.
+  We have a large number of subject random effects which slows down the
+  `mgcv` approach considerably.
 
 # Package version info
 
@@ -506,29 +499,29 @@ sessionInfo()
     [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-40   nlme_3.1-159  brms_2.17.0   Rcpp_1.0.9    knitr_1.39    INLA_22.07.23 sp_1.5-0      foreach_1.5.2
-     [9] lme4_1.1-30   Matrix_1.4-1  ggplot2_3.3.6
+     [1] mgcv_1.8-40   nlme_3.1-159  brms_2.18.0   Rcpp_1.0.9    knitr_1.40    INLA_22.09.26 sp_1.5-0      foreach_1.5.2
+     [9] lme4_1.1-30   Matrix_1.5-1  ggplot2_3.3.6
 
     loaded via a namespace (and not attached):
-      [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2       ggridges_0.5.3       markdown_1.1        
-      [6] base64enc_0.1-3      rstudioapi_0.13      Deriv_4.1.3          farver_2.1.1         rstan_2.26.13       
-     [11] DT_0.24              fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18    
+      [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2       ggridges_0.5.4       markdown_1.1        
+      [6] base64enc_0.1-3      rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         rstan_2.26.13       
+     [11] DT_0.25              fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18    
      [16] splines_4.2.1        shinythemes_1.2.0    bayesplot_1.9.0      jsonlite_1.8.0       nloptr_2.0.3        
      [21] shiny_1.7.2          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0       
-     [26] cli_3.3.0            later_1.3.0          htmltools_0.5.3      prettyunits_1.1.1    tools_4.2.1         
-     [31] igraph_1.3.4         coda_0.19-4          gtable_0.3.0         glue_1.6.2           reshape2_1.4.4      
-     [36] dplyr_1.0.9          posterior_1.3.0      V8_4.2.1             vctrs_0.4.1          svglite_2.1.0       
-     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.32            stringr_1.4.0       
-     [46] ps_1.7.1             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.1      gtools_3.9.3        
-     [51] MASS_7.3-58.1        zoo_1.8-10           scales_1.2.0         colourpicker_1.1.1   promises_1.2.0.1    
-     [56] Brobdingnag_1.2-7    faraway_1.0.8        inline_0.3.19        shinystan_2.6.0      yaml_2.3.5          
+     [26] cli_3.4.1            later_1.3.0          htmltools_0.5.3      prettyunits_1.1.1    tools_4.2.1         
+     [31] igraph_1.3.5         coda_0.19-4          gtable_0.3.1         glue_1.6.2           reshape2_1.4.4      
+     [36] dplyr_1.0.10         posterior_1.3.1      V8_4.2.1             vctrs_0.4.1          svglite_2.1.0       
+     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.33            stringr_1.4.1       
+     [46] ps_1.7.1             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.2      gtools_3.9.3        
+     [51] MASS_7.3-58.1        zoo_1.8-11           scales_1.2.1         colourpicker_1.1.1   promises_1.2.0.1    
+     [56] Brobdingnag_1.2-7    faraway_1.0.9        inline_0.3.19        shinystan_2.6.0      yaml_2.3.5          
      [61] curl_4.3.2           gridExtra_2.3        loo_2.5.1            StanHeaders_2.26.13  stringi_1.7.8       
      [66] highr_0.9            dygraphs_1.1.1.6     checkmate_2.1.0      boot_1.3-28          pkgbuild_1.3.1      
-     [71] systemfonts_1.0.4    rlang_1.0.4          pkgconfig_2.0.3      matrixStats_0.62.0   distributional_0.3.0
+     [71] systemfonts_1.0.4    rlang_1.0.6          pkgconfig_2.0.3      matrixStats_0.62.0   distributional_0.3.1
      [76] evaluate_0.16        lattice_0.20-45      purrr_0.3.4          labeling_0.4.2       rstantools_2.2.0    
      [81] htmlwidgets_1.5.4    tidyselect_1.1.2     processx_3.7.0       plyr_1.8.7           magrittr_2.0.3      
-     [86] R6_2.5.1             generics_0.1.3       DBI_1.1.3            pillar_1.8.0         withr_2.5.0         
+     [86] R6_2.5.1             generics_0.1.3       DBI_1.1.3            pillar_1.8.1         withr_2.5.0         
      [91] xts_0.12.1           abind_1.4-5          tibble_3.1.8         crayon_1.5.1         utf8_1.2.2          
-     [96] rmarkdown_2.15       grid_4.2.1           callr_3.7.1          threejs_0.3.3        digest_0.6.29       
-    [101] xtable_1.8-4         httpuv_1.6.5         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0       
+     [96] rmarkdown_2.16       grid_4.2.1           callr_3.7.2          threejs_0.3.3        digest_0.6.29       
+    [101] xtable_1.8-4         httpuv_1.6.6         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0       
     [106] shinyjs_2.1.0       

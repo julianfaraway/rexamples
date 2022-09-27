@@ -1,7 +1,7 @@
 Split Plot Design
 ================
 [Julian Faraway](https://julianfaraway.github.io/)
-08 July 2022
+27 September 2022
 
 -   <a href="#data" id="toc-data">Data</a>
 -   <a href="#mixed-effect-model" id="toc-mixed-effect-model">Mixed Effect
@@ -83,27 +83,17 @@ The irrigation and variety are fixed effects, but the field is a random
 effect. We must also consider the interaction between field and variety,
 which is necessarily also a random effect because one of the two
 components is random. The fullest model that we might consider is:
-
-![y\_{ijk} = \mu + i_i + v_j + (iv)\_{ij} + f_k + (vf)\_{jk} + \epsilon\_{ijk}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;y_%7Bijk%7D%20%3D%20%5Cmu%20%2B%20i_i%20%2B%20v_j%20%2B%20%28iv%29_%7Bij%7D%20%2B%20f_k%20%2B%20%28vf%29_%7Bjk%7D%20%2B%20%5Cepsilon_%7Bijk%7D "y_{ijk} = \mu + i_i + v_j + (iv)_{ij} + f_k + (vf)_{jk} + \epsilon_{ijk}")
-
-where
-![\mu, i_i, v_j, (iv)\_{ij}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Cmu%2C%20i_i%2C%20v_j%2C%20%28iv%29_%7Bij%7D "\mu, i_i, v_j, (iv)_{ij}")
-are fixed effects; the rest are random having variances
-![\sigma^2_f](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Csigma%5E2_f "\sigma^2_f"),
-![\sigma^2\_{vf}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Csigma%5E2_%7Bvf%7D "\sigma^2_{vf}")
-and
-![\sigma^2\_\epsilon](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Csigma%5E2_%5Cepsilon "\sigma^2_\epsilon").
-Note that we have no
-![(if)\_{ik}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%28if%29_%7Bik%7D "(if)_{ik}")
-term in this model. It would not be possible to estimate such an effect
-since only one type of irrigation is used on a given field; the factors
-are not crossed. Unfortunately, it is not possible to distinguish the
-variety within the field variation. We would need more than one
-observation per variety within each field for us to separate the two
-variabilities. We resort to a simpler model that omits the variety by
-field interaction random effect:
-
-![y\_{ijk} = \mu + i_i + v_j + (iv)\_{ij} + f_k +  \epsilon\_{ijk}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;y_%7Bijk%7D%20%3D%20%5Cmu%20%2B%20i_i%20%2B%20v_j%20%2B%20%28iv%29_%7Bij%7D%20%2B%20f_k%20%2B%20%20%5Cepsilon_%7Bijk%7D "y_{ijk} = \mu + i_i + v_j + (iv)_{ij} + f_k +  \epsilon_{ijk}")
+$$y_{ijk} = \mu + i_i + v_j + (iv)_{ij} + f_k + (vf)_{jk} + \epsilon_{ijk}$$
+where $\mu, i_i, v_j, (iv)_{ij}$ are fixed effects; the rest are random
+having variances $\sigma^2_f$, $\sigma^2_{vf}$ and $\sigma^2_\epsilon$.
+Note that we have no $(if)_{ik}$ term in this model. It would not be
+possible to estimate such an effect since only one type of irrigation is
+used on a given field; the factors are not crossed. Unfortunately, it is
+not possible to distinguish the variety within the field variation. We
+would need more than one observation per variety within each field for
+us to separate the two variabilities. We resort to a simpler model that
+omits the variety by field interaction random effect:
+$$y_{ijk} = \mu + i_i + v_j + (iv)_{ij} + f_k +  \epsilon_{ijk}$$
 
 We fit this model with:
 
@@ -220,7 +210,7 @@ RLRsim::exactRLRT(lmod)
         (p-value based on 10000 simulated values)
 
     data:  
-    RLRT = 6.11, p-value = 0.0098
+    RLRT = 6.11, p-value = 0.01
 
 We can see that there is a significant variation among the fields.
 
@@ -536,8 +526,7 @@ We see the posterior mean, SE and SD of the samples. We see some
 quantiles from which we could construct a 95% credible interval (for
 example). The `n_eff` is a rough measure of the sample size taking into
 account the correlation in the samples. The effective sample sizes for
-the primary parameters is good enough for most purposes. The
-![\hat R](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Chat%20R "\hat R")
+the primary parameters is good enough for most purposes. The $\hat R$
 statistics are good.
 
 Notice that the posterior mean for field SD is substantially larger than
@@ -890,31 +879,30 @@ sessionInfo()
     [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-40         nlme_3.1-157        brms_2.17.0         Rcpp_1.0.8.3        rstan_2.26.13      
-     [6] StanHeaders_2.26.13 knitr_1.39          INLA_22.06.20-2     sp_1.4-7            foreach_1.5.2      
-    [11] RLRsim_3.1-8        pbkrtest_0.5.1      lme4_1.1-29         Matrix_1.4-1        ggplot2_3.3.6      
-    [16] faraway_1.0.8      
+     [1] mgcv_1.8-40         nlme_3.1-159        brms_2.18.0         Rcpp_1.0.9          rstan_2.26.13      
+     [6] StanHeaders_2.26.13 knitr_1.40          INLA_22.09.26       sp_1.5-0            foreach_1.5.2      
+    [11] RLRsim_3.1-8        pbkrtest_0.5.1      lme4_1.1-30         Matrix_1.5-1        ggplot2_3.3.6      
+    [16] faraway_1.0.9      
 
     loaded via a namespace (and not attached):
-      [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2       ggridges_0.5.3       markdown_1.1        
-      [6] base64enc_0.1-3      rstudioapi_0.13      Deriv_4.1.3          farver_2.1.0         MatrixModels_0.5-0  
-     [11] DT_0.23              fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18    
-     [16] splines_4.2.1        shinythemes_1.2.0    bayesplot_1.9.0      jsonlite_1.8.0       nloptr_2.0.3        
-     [21] broom_0.8.0          shiny_1.7.1          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1    
-     [26] fastmap_1.1.0        cli_3.3.0            later_1.3.0          htmltools_0.5.2      prettyunits_1.1.1   
-     [31] tools_4.2.1          igraph_1.3.1         coda_0.19-4          gtable_0.3.0         glue_1.6.2          
-     [36] reshape2_1.4.4       dplyr_1.0.9          posterior_1.2.2      V8_4.2.0             vctrs_0.4.1         
-     [41] svglite_2.1.0        iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.31           
-     [46] stringr_1.4.0        ps_1.7.0             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.1     
-     [51] gtools_3.9.2.1       MASS_7.3-57          zoo_1.8-10           scales_1.2.0         colourpicker_1.1.1  
-     [56] promises_1.2.0.1     Brobdingnag_1.2-7    inline_0.3.19        shinystan_2.6.0      yaml_2.3.5          
-     [61] curl_4.3.2           gridExtra_2.3        loo_2.5.1            stringi_1.7.6        highr_0.9           
-     [66] dygraphs_1.1.1.6     checkmate_2.1.0      boot_1.3-28          pkgbuild_1.3.1       systemfonts_1.0.4   
-     [71] rlang_1.0.2          pkgconfig_2.0.3      matrixStats_0.62.0   distributional_0.3.0 evaluate_0.15       
-     [76] lattice_0.20-45      purrr_0.3.4          labeling_0.4.2       rstantools_2.2.0     htmlwidgets_1.5.4   
-     [81] processx_3.5.3       tidyselect_1.1.2     plyr_1.8.7           magrittr_2.0.3       R6_2.5.1            
-     [86] generics_0.1.2       DBI_1.1.2            pillar_1.7.0         withr_2.5.0          xts_0.12.1          
-     [91] abind_1.4-5          tibble_3.1.7         crayon_1.5.1         utf8_1.2.2           rmarkdown_2.14      
-     [96] grid_4.2.1           callr_3.7.0          threejs_0.3.3        digest_0.6.29        xtable_1.8-4        
-    [101] tidyr_1.2.0          httpuv_1.6.5         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0       
-    [106] shinyjs_2.1.0       
+      [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2       ggridges_0.5.4       markdown_1.1        
+      [6] base64enc_0.1-3      rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         DT_0.25             
+     [11] fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18     splines_4.2.1       
+     [16] shinythemes_1.2.0    bayesplot_1.9.0      jsonlite_1.8.0       nloptr_2.0.3         broom_1.0.1         
+     [21] shiny_1.7.2          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0       
+     [26] cli_3.4.1            later_1.3.0          htmltools_0.5.3      prettyunits_1.1.1    tools_4.2.1         
+     [31] igraph_1.3.5         coda_0.19-4          gtable_0.3.1         glue_1.6.2           reshape2_1.4.4      
+     [36] dplyr_1.0.10         posterior_1.3.1      V8_4.2.1             vctrs_0.4.1          svglite_2.1.0       
+     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.33            stringr_1.4.1       
+     [46] ps_1.7.1             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.2      gtools_3.9.3        
+     [51] MASS_7.3-58.1        zoo_1.8-11           scales_1.2.1         colourpicker_1.1.1   promises_1.2.0.1    
+     [56] Brobdingnag_1.2-7    inline_0.3.19        shinystan_2.6.0      yaml_2.3.5           curl_4.3.2          
+     [61] gridExtra_2.3        loo_2.5.1            stringi_1.7.8        highr_0.9            dygraphs_1.1.1.6    
+     [66] checkmate_2.1.0      boot_1.3-28          pkgbuild_1.3.1       systemfonts_1.0.4    rlang_1.0.6         
+     [71] pkgconfig_2.0.3      matrixStats_0.62.0   distributional_0.3.1 evaluate_0.16        lattice_0.20-45     
+     [76] purrr_0.3.4          labeling_0.4.2       rstantools_2.2.0     htmlwidgets_1.5.4    processx_3.7.0      
+     [81] tidyselect_1.1.2     plyr_1.8.7           magrittr_2.0.3       R6_2.5.1             generics_0.1.3      
+     [86] DBI_1.1.3            pillar_1.8.1         withr_2.5.0          xts_0.12.1           abind_1.4-5         
+     [91] tibble_3.1.8         crayon_1.5.1         utf8_1.2.2           rmarkdown_2.16       grid_4.2.1          
+     [96] callr_3.7.2          threejs_0.3.3        digest_0.6.29        xtable_1.8-4         tidyr_1.2.1         
+    [101] httpuv_1.6.6         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       
