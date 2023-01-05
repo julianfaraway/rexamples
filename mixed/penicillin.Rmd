@@ -178,7 +178,7 @@ Use the most recent computational methodology:
 
 
 ```{r}
-inla.setOption(inla.mode="experimental")
+inla.setOption(inla.mode="compact")
 inla.setOption("short.summary",TRUE)
 ```
  

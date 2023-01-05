@@ -1,29 +1,29 @@
 Nested Design
 ================
 [Julian Faraway](https://julianfaraway.github.io/)
-27 September 2022
+05 January 2023
 
--   <a href="#data" id="toc-data">Data</a>
--   <a href="#mixed-effect-model" id="toc-mixed-effect-model">Mixed Effect
-    Model</a>
--   <a href="#inla" id="toc-inla">INLA</a>
-    -   <a href="#informative-gamma-priors-on-the-precisions"
-        id="toc-informative-gamma-priors-on-the-precisions">Informative Gamma
-        priors on the precisions</a>
-    -   <a href="#penalized-complexity-prior"
-        id="toc-penalized-complexity-prior">Penalized Complexity Prior</a>
--   <a href="#stan" id="toc-stan">STAN</a>
-    -   <a href="#diagnostics" id="toc-diagnostics">Diagnostics</a>
-    -   <a href="#output-summaries" id="toc-output-summaries">Output
-        summaries</a>
-    -   <a href="#posterior-distributions"
-        id="toc-posterior-distributions">Posterior Distributions</a>
--   <a href="#brms" id="toc-brms">BRMS</a>
--   <a href="#mgcv" id="toc-mgcv">MGCV</a>
--   <a href="#ginla" id="toc-ginla">GINLA</a>
--   <a href="#discussion" id="toc-discussion">Discussion</a>
--   <a href="#package-version-info" id="toc-package-version-info">Package
-    version info</a>
+- <a href="#data" id="toc-data">Data</a>
+- <a href="#mixed-effect-model" id="toc-mixed-effect-model">Mixed Effect
+  Model</a>
+- <a href="#inla" id="toc-inla">INLA</a>
+  - <a href="#informative-gamma-priors-on-the-precisions"
+    id="toc-informative-gamma-priors-on-the-precisions">Informative Gamma
+    priors on the precisions</a>
+  - <a href="#penalized-complexity-prior"
+    id="toc-penalized-complexity-prior">Penalized Complexity Prior</a>
+- <a href="#stan" id="toc-stan">STAN</a>
+  - <a href="#diagnostics" id="toc-diagnostics">Diagnostics</a>
+  - <a href="#output-summaries" id="toc-output-summaries">Output
+    summaries</a>
+  - <a href="#posterior-distributions"
+    id="toc-posterior-distributions">Posterior Distributions</a>
+- <a href="#brms" id="toc-brms">BRMS</a>
+- <a href="#mgcv" id="toc-mgcv">MGCV</a>
+- <a href="#ginla" id="toc-ginla">GINLA</a>
+- <a href="#discussion" id="toc-discussion">Discussion</a>
+- <a href="#package-version-info" id="toc-package-version-info">Package
+  version info</a>
 
 See the [introduction](index.md) for an overview.
 
@@ -130,7 +130,7 @@ exactRLRT(cmods, cmod, cmodr)
         (p-value based on 10000 simulated values)
 
     data:  
-    RLRT = 1.6, p-value = 0.1
+    RLRT = 1.6, p-value = 0.098
 
 We can remove the sample random effect from the model. But consider the
 confidence intervals:
@@ -891,25 +891,25 @@ hyperparameters.
 See the [Discussion of the single random effect
 model](pulp.md#Discussion) for general comments.
 
--   As with some of the other analyses, we see that the INLA-produced
-    posterior densities for the random effect SDs are well-bounded away
-    from zero. We see that the choice of prior does make an important
-    difference and that the default choice is a clear failure.
+- As with some of the other analyses, we see that the INLA-produced
+  posterior densities for the random effect SDs are well-bounded away
+  from zero. We see that the choice of prior does make an important
+  difference and that the default choice is a clear failure.
 
--   The default STAN priors produce a credible result and posteriors do
-    give some weight to values close to zero. There is no ground truth
-    here but given the experience in the `lmer` analysis, there does
-    appear to be some suggestion that any of the three sources of
-    variation could be very small. INLA is the odd-one-out in this
-    instance.
+- The default STAN priors produce a credible result and posteriors do
+  give some weight to values close to zero. There is no ground truth
+  here but given the experience in the `lmer` analysis, there does
+  appear to be some suggestion that any of the three sources of
+  variation could be very small. INLA is the odd-one-out in this
+  instance.
 
--   The `mgcv` based analysis is mostly the same as the `lme4` fit
-    excepting the confidence intervals where a different method has been
-    used.
+- The `mgcv` based analysis is mostly the same as the `lme4` fit
+  excepting the confidence intervals where a different method has been
+  used.
 
--   The `ginla` does not readily produce posterior densities for the
-    hyperparameters so we cannot compare on that basis. The other
-    posteriors were produced very rapidly.
+- The `ginla` does not readily produce posterior densities for the
+  hyperparameters so we cannot compare on that basis. The other
+  posteriors were produced very rapidly.
 
 # Package version info
 
@@ -926,36 +926,36 @@ sessionInfo()
     LAPACK: /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRlapack.dylib
 
     locale:
-    [1] en_GB.UTF-8/en_GB.UTF-8/en_GB.UTF-8/C/en_GB.UTF-8/en_GB.UTF-8
+    [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 
     attached base packages:
     [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-40         nlme_3.1-159        brms_2.18.0         Rcpp_1.0.9          rstan_2.26.13      
-     [6] StanHeaders_2.26.13 knitr_1.40          INLA_22.09.26       sp_1.5-0            foreach_1.5.2      
-    [11] RLRsim_3.1-8        pbkrtest_0.5.1      lme4_1.1-30         Matrix_1.5-1        ggplot2_3.3.6      
+     [1] mgcv_1.8-41         nlme_3.1-161        brms_2.18.0         Rcpp_1.0.9          rstan_2.26.13      
+     [6] StanHeaders_2.26.13 knitr_1.41          INLA_22.12.16       sp_1.5-1            foreach_1.5.2      
+    [11] RLRsim_3.1-8        pbkrtest_0.5.1      lme4_1.1-31         Matrix_1.5-3        ggplot2_3.4.0      
     [16] faraway_1.0.9      
 
     loaded via a namespace (and not attached):
-      [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2       ggridges_0.5.4       markdown_1.1        
-      [6] base64enc_0.1-3      rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         DT_0.25             
-     [11] fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18     splines_4.2.1       
-     [16] shinythemes_1.2.0    bayesplot_1.9.0      jsonlite_1.8.0       nloptr_2.0.3         broom_1.0.1         
-     [21] shiny_1.7.2          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0       
-     [26] cli_3.4.1            later_1.3.0          htmltools_0.5.3      prettyunits_1.1.1    tools_4.2.1         
-     [31] igraph_1.3.5         coda_0.19-4          gtable_0.3.1         glue_1.6.2           reshape2_1.4.4      
-     [36] dplyr_1.0.10         posterior_1.3.1      V8_4.2.1             vctrs_0.4.1          svglite_2.1.0       
-     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.33            stringr_1.4.1       
-     [46] ps_1.7.1             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.2      gtools_3.9.3        
-     [51] MASS_7.3-58.1        zoo_1.8-11           scales_1.2.1         colourpicker_1.1.1   promises_1.2.0.1    
-     [56] Brobdingnag_1.2-7    inline_0.3.19        shinystan_2.6.0      yaml_2.3.5           curl_4.3.2          
-     [61] gridExtra_2.3        loo_2.5.1            stringi_1.7.8        highr_0.9            dygraphs_1.1.1.6    
-     [66] checkmate_2.1.0      boot_1.3-28          pkgbuild_1.3.1       systemfonts_1.0.4    rlang_1.0.6         
-     [71] pkgconfig_2.0.3      matrixStats_0.62.0   distributional_0.3.1 evaluate_0.16        lattice_0.20-45     
-     [76] purrr_0.3.4          labeling_0.4.2       rstantools_2.2.0     htmlwidgets_1.5.4    processx_3.7.0      
-     [81] tidyselect_1.1.2     plyr_1.8.7           magrittr_2.0.3       R6_2.5.1             generics_0.1.3      
-     [86] DBI_1.1.3            pillar_1.8.1         withr_2.5.0          xts_0.12.1           abind_1.4-5         
-     [91] tibble_3.1.8         crayon_1.5.1         utf8_1.2.2           rmarkdown_2.16       grid_4.2.1          
-     [96] callr_3.7.2          threejs_0.3.3        digest_0.6.29        xtable_1.8-4         tidyr_1.2.1         
-    [101] httpuv_1.6.6         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       
+      [1] minqa_1.2.5          colorspace_2.0-3     ellipsis_0.3.2       markdown_1.4         base64enc_0.1-3     
+      [6] rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         DT_0.26              fansi_1.0.3         
+     [11] mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18     splines_4.2.1        shinythemes_1.2.0   
+     [16] bayesplot_1.10.0     jsonlite_1.8.4       nloptr_2.0.3         broom_1.0.2          shiny_1.7.4         
+     [21] compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0        cli_3.5.0           
+     [26] later_1.3.0          htmltools_0.5.4      prettyunits_1.1.1    tools_4.2.1          igraph_1.3.5        
+     [31] coda_0.19-4          gtable_0.3.1         glue_1.6.2           reshape2_1.4.4       dplyr_1.0.10        
+     [36] posterior_1.3.1      V8_4.2.2             vctrs_0.5.1          svglite_2.1.0        iterators_1.0.14    
+     [41] crosstalk_1.2.0      tensorA_0.36.2       xfun_0.36            stringr_1.5.0        ps_1.7.2            
+     [46] mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.3      gtools_3.9.4         MASS_7.3-58.1       
+     [51] zoo_1.8-11           scales_1.2.1         colourpicker_1.2.0   promises_1.2.0.1     Brobdingnag_1.2-9   
+     [56] inline_0.3.19        shinystan_2.6.0      yaml_2.3.6           curl_4.3.3           gridExtra_2.3       
+     [61] loo_2.5.1            stringi_1.7.8        highr_0.10           dygraphs_1.1.1.6     checkmate_2.1.0     
+     [66] boot_1.3-28.1        pkgbuild_1.4.0       systemfonts_1.0.4    rlang_1.0.6          pkgconfig_2.0.3     
+     [71] matrixStats_0.63.0   distributional_0.3.1 evaluate_0.19        lattice_0.20-45      purrr_1.0.0         
+     [76] labeling_0.4.2       rstantools_2.2.0     htmlwidgets_1.6.0    processx_3.8.0       tidyselect_1.2.0    
+     [81] plyr_1.8.8           magrittr_2.0.3       R6_2.5.1             generics_0.1.3       DBI_1.1.3           
+     [86] pillar_1.8.1         withr_2.5.0          xts_0.12.2           abind_1.4-5          tibble_3.1.8        
+     [91] crayon_1.5.2         utf8_1.2.2           rmarkdown_2.19       grid_4.2.1           callr_3.7.3         
+     [96] threejs_0.3.3        digest_0.6.31        xtable_1.8-4         tidyr_1.2.1          httpuv_1.6.7        
+    [101] RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       

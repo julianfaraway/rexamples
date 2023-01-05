@@ -1269,10 +1269,12 @@ computations.
     configuration of my computer. I never did discover the source of the
     problem - suggestions on the internet required uninstalling and
     reinstalling large pieces of software. Fortunately, I could see that
-    the errors and warnings could be ignored. After several decades of
-    fiddling with computers to get software to work, I (mostly) possess
-    the patience and experience to deal with this sort of problem.
-    That’s far from true for many potential users.
+    the errors and warnings could be ignored. *Update: Now that I run
+    the same code again a few months later, the errors and warnings have
+    gone away. I don’t know why. They might come back.* After several
+    decades of fiddling with computers to get software to work, I
+    (mostly) possess the patience and experience to deal with this sort
+    of problem. That’s far from true for many potential users.
 
 7.  Both STAN and INLA are being actively developed. Of course, it’s
     good to know that functionality and performance are being improved.
