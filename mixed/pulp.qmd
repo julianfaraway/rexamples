@@ -236,23 +236,25 @@ which uses approximation rather than simulation. More can be found
 on this topic in [Bayesian Regression Modeling with INLA](http://julianfaraway.github.io/brinla/) and the 
 [chapter on GLMMs](https://julianfaraway.github.io/brinlabook/chaglmm.html)
 
-At the time of writing, INLA is undergoing some changes that
+At the time of writing, INLA has recently undergone some changes that
 have some impact on the fitting of mixed effect models. Previously,
 the model fitting proceeded in two stages - the first step computed
 the posteriors for most of the parameters while a second step makes
 a refinement to compute posteriors for the hyperparameters (the variances
-of the random terms in this case). This is termed *classic* mode. Now
-the idea to compute all the posteriors in one stage called *experimental*
-mode below. We would have preferred to stick with classic mode for
-continuity reasons but this mode is no longer functional in the most
-recent version of INLA. You can see an [older analyis](http://julianfaraway.github.io/brinla/examples/oneway.html) of
+of the random terms in this case). This was termed *classic* mode. In
+the new method,
+the idea is to compute all the posteriors in one stage. This was called *experimental*
+mode and is now called *compact* mode. This *compact* mode is now
+the default.
+
+You can see an [older analyis](http://julianfaraway.github.io/brinla/examples/oneway.html) of
 the same data using the previous methodology.
 We use the most recent computational methodology
 and also opt for a shorter output summary:
 
 
 ```{r}
-inla.setOption(inla.mode="experimental")
+inla.setOption(inla.mode="compact")
 inla.setOption("short.summary",TRUE)
 ```
 
@@ -873,9 +875,7 @@ Fortunately, I could see that the errors and warnings could be ignored.
 After several decades of fiddling with computers to get software to work, I (mostly) possess the patience and experience to deal with this sort of problem. That's far from true for many potential users. 
 
 7. Both STAN and INLA are being actively developed. Of course, it's good to know
-that functionality and performance are being improved. In both cases, I installed
-the release version and encountered problems. I fared better with the development
-versions although in the case of INLA, I had to use an "experimental" mode. It's
+that functionality and performance are being improved. It's
 not unusual to complete an analysis, come back to it a year later and find
 that the results are different in some important way or that the code does not
 run at all. Again I can ride along with this but less experienced users find
