@@ -1,7 +1,7 @@
 Binary response GLMM
 ================
 [Julian Faraway](https://julianfaraway.github.io/)
-27 September 2022
+1/6/23
 
 - <a href="#data-and-model" id="toc-data-and-model">Data and Model</a>
 - <a href="#lme4" id="toc-lme4">LME4</a>
@@ -163,9 +163,9 @@ imod$summary.fixed |> kable()
 
 |             |     mean |      sd | 0.025quant | 0.5quant | 0.975quant |     mode | kld |
 |:------------|---------:|--------:|-----------:|---------:|-----------:|---------:|----:|
-| (Intercept) | -2.98954 | 0.19446 |   -3.39128 | -2.98280 |   -2.62726 | -2.97029 |   0 |
-| age         | -0.16652 | 0.06278 |   -0.29019 | -0.16632 |   -0.04394 | -0.16594 |   0 |
-| smoke       |  0.39137 | 0.23904 |   -0.07678 |  0.39092 |    0.86206 |  0.39004 |   0 |
+| (Intercept) | -2.92023 | 0.19075 |   -3.31025 | -2.91443 |   -2.56275 | -2.90295 |   0 |
+| age         | -0.17157 | 0.06271 |   -0.29482 | -0.17148 |   -0.04883 | -0.17130 |   0 |
+| smoke       |  0.38205 | 0.23645 |   -0.08007 |  0.38126 |    0.84862 |  0.37971 |   0 |
 
 The posterior means are similar to the PQL estimates. We can get plots
 of the posteriors of the fixed effects:
@@ -197,13 +197,13 @@ hpd = inla.tmarginal(function(x) 1/sqrt(x), imod$marginals.hyperpar[[1]])
 inla.zmarginal(hpd)
 ```
 
-    Mean            1.92242 
-    Stdev           0.153963 
-    Quantile  0.025 1.62149 
-    Quantile  0.25  1.82364 
-    Quantile  0.5   1.91652 
-    Quantile  0.75  2.01333 
-    Quantile  0.975 2.26752 
+    Mean            1.90247 
+    Stdev           0.148106 
+    Quantile  0.025 1.62102 
+    Quantile  0.25  1.79994 
+    Quantile  0.5   1.89932 
+    Quantile  0.75  2.00381 
+    Quantile  0.975 2.19165 
 
 Again the result is similar to the PQL output although notice that INLA
 provides some assessment of uncertainty in this value in contrast to the
@@ -234,28 +234,6 @@ response.
 bmod <- brm(resp ~ age + smoke + (1|id), family=bernoulli(), data=ohio, cores = 4)
 ```
 
-    Running /Library/Frameworks/R.framework/Resources/bin/R CMD SHLIB foo.c
-    clang -mmacosx-version-min=10.13 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG   -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/Rcpp/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/unsupported"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/BH/include" -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/src/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppParallel/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/rstan/include" -DEIGEN_NO_DEBUG  -DBOOST_DISABLE_ASSERTS  -DBOOST_PENDING_INTEGER_LOG2_HPP  -DSTAN_THREADS  -DUSE_STANC3 -DSTRICT_R_HEADERS  -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION  -DBOOST_NO_AUTO_PTR  -include '/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp'  -D_REENTRANT -DRCPP_PARALLEL_USE_TBB=1   -I/usr/local/include   -fPIC  -Wall -g -O2  -c foo.c -o foo.o
-    In file included from <built-in>:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:88:
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:1: error: unknown type name 'namespace'
-    namespace Eigen {
-    ^
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:16: error: expected ';' after top level declarator
-    namespace Eigen {
-                   ^
-                   ;
-    In file included from <built-in>:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:96:10: fatal error: 'complex' file not found
-    #include <complex>
-             ^~~~~~~~~
-    3 errors generated.
-    make: *** [foo.o] Error 1
-
 We can check the MCMC diagnostics and the posterior densities with:
 
 ``` r
@@ -272,7 +250,7 @@ We can look at the STAN code that `brms` used with:
 stancode(bmod)
 ```
 
-    // generated with brms 2.17.0
+    // generated with brms 2.18.0
     functions {
     }
     data {
@@ -315,7 +293,8 @@ stancode(bmod)
       // likelihood including constants
       if (!prior_only) {
         // initialize linear predictor term
-        vector[N] mu = Intercept + rep_vector(0.0, N);
+        vector[N] mu = rep_vector(0.0, N);
+        mu += Intercept;
         for (n in 1:N) {
           // add more terms to the linear predictor
           mu[n] += r_1_1[J_1[n]] * Z_1_1[n];
@@ -350,13 +329,13 @@ summary(bmod)
     Group-Level Effects: 
     ~id (Number of levels: 537) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     2.19      0.18     1.84     2.56 1.00     1044     1856
+    sd(Intercept)     2.20      0.19     1.86     2.60 1.00     1045     1569
 
     Population-Level Effects: 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept    -3.11      0.22    -3.56    -2.70 1.00     1331     1942
-    age          -0.17      0.07    -0.31    -0.04 1.01     5813     2587
-    smoke         0.39      0.28    -0.16     0.94 1.00     1452     2279
+    Intercept    -3.12      0.22    -3.57    -2.71 1.00     1606     2073
+    age          -0.18      0.07    -0.31    -0.04 1.00     5301     3086
+    smoke         0.40      0.28    -0.15     0.93 1.00     1580     2515
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -493,35 +472,34 @@ sessionInfo()
     LAPACK: /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRlapack.dylib
 
     locale:
-    [1] en_GB.UTF-8/en_GB.UTF-8/en_GB.UTF-8/C/en_GB.UTF-8/en_GB.UTF-8
+    [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 
     attached base packages:
     [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-40   nlme_3.1-159  brms_2.18.0   Rcpp_1.0.9    knitr_1.40    INLA_22.09.26 sp_1.5-0      foreach_1.5.2
-     [9] lme4_1.1-30   Matrix_1.5-1  ggplot2_3.3.6
+     [1] mgcv_1.8-41   nlme_3.1-161  brms_2.18.0   Rcpp_1.0.9    knitr_1.41    INLA_22.12.16 sp_1.5-1      foreach_1.5.2
+     [9] lme4_1.1-31   Matrix_1.5-3  ggplot2_3.4.0
 
     loaded via a namespace (and not attached):
-      [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2       ggridges_0.5.4       markdown_1.1        
-      [6] base64enc_0.1-3      rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         rstan_2.26.13       
-     [11] DT_0.25              fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18    
-     [16] splines_4.2.1        shinythemes_1.2.0    bayesplot_1.9.0      jsonlite_1.8.0       nloptr_2.0.3        
-     [21] shiny_1.7.2          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0       
-     [26] cli_3.4.1            later_1.3.0          htmltools_0.5.3      prettyunits_1.1.1    tools_4.2.1         
+      [1] minqa_1.2.5          colorspace_2.0-3     ellipsis_0.3.2       markdown_1.4         base64enc_0.1-3     
+      [6] rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         rstan_2.26.13        MatrixModels_0.5-1  
+     [11] DT_0.26              fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18    
+     [16] splines_4.2.1        shinythemes_1.2.0    bayesplot_1.10.0     jsonlite_1.8.4       nloptr_2.0.3        
+     [21] shiny_1.7.4          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0       
+     [26] cli_3.5.0            later_1.3.0          htmltools_0.5.4      prettyunits_1.1.1    tools_4.2.1         
      [31] igraph_1.3.5         coda_0.19-4          gtable_0.3.1         glue_1.6.2           reshape2_1.4.4      
-     [36] dplyr_1.0.10         posterior_1.3.1      V8_4.2.1             vctrs_0.4.1          svglite_2.1.0       
-     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.33            stringr_1.4.1       
-     [46] ps_1.7.1             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.2      gtools_3.9.3        
-     [51] MASS_7.3-58.1        zoo_1.8-11           scales_1.2.1         colourpicker_1.1.1   promises_1.2.0.1    
-     [56] Brobdingnag_1.2-7    faraway_1.0.9        inline_0.3.19        shinystan_2.6.0      yaml_2.3.5          
-     [61] curl_4.3.2           gridExtra_2.3        loo_2.5.1            StanHeaders_2.26.13  stringi_1.7.8       
-     [66] highr_0.9            dygraphs_1.1.1.6     checkmate_2.1.0      boot_1.3-28          pkgbuild_1.3.1      
-     [71] systemfonts_1.0.4    rlang_1.0.6          pkgconfig_2.0.3      matrixStats_0.62.0   distributional_0.3.1
-     [76] evaluate_0.16        lattice_0.20-45      purrr_0.3.4          labeling_0.4.2       rstantools_2.2.0    
-     [81] htmlwidgets_1.5.4    tidyselect_1.1.2     processx_3.7.0       plyr_1.8.7           magrittr_2.0.3      
-     [86] R6_2.5.1             generics_0.1.3       DBI_1.1.3            pillar_1.8.1         withr_2.5.0         
-     [91] xts_0.12.1           abind_1.4-5          tibble_3.1.8         crayon_1.5.1         utf8_1.2.2          
-     [96] rmarkdown_2.16       grid_4.2.1           callr_3.7.2          threejs_0.3.3        digest_0.6.29       
-    [101] xtable_1.8-4         httpuv_1.6.6         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0       
-    [106] shinyjs_2.1.0       
+     [36] dplyr_1.0.10         posterior_1.3.1      V8_4.2.2             vctrs_0.5.1          svglite_2.1.0       
+     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.36            stringr_1.5.0       
+     [46] ps_1.7.2             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.3      gtools_3.9.4        
+     [51] MASS_7.3-58.1        zoo_1.8-11           scales_1.2.1         colourpicker_1.2.0   promises_1.2.0.1    
+     [56] Brobdingnag_1.2-9    faraway_1.0.9        inline_0.3.19        shinystan_2.6.0      yaml_2.3.6          
+     [61] curl_4.3.3           gridExtra_2.3        loo_2.5.1            StanHeaders_2.26.13  stringi_1.7.8       
+     [66] highr_0.10           dygraphs_1.1.1.6     checkmate_2.1.0      boot_1.3-28.1        pkgbuild_1.4.0      
+     [71] systemfonts_1.0.4    rlang_1.0.6          pkgconfig_2.0.3      matrixStats_0.63.0   distributional_0.3.1
+     [76] evaluate_0.19        lattice_0.20-45      labeling_0.4.2       rstantools_2.2.0     htmlwidgets_1.6.0   
+     [81] tidyselect_1.2.0     processx_3.8.0       plyr_1.8.8           magrittr_2.0.3       R6_2.5.1            
+     [86] generics_0.1.3       DBI_1.1.3            pillar_1.8.1         withr_2.5.0          xts_0.12.2          
+     [91] abind_1.4-5          tibble_3.1.8         crayon_1.5.2         utf8_1.2.2           rmarkdown_2.19      
+     [96] grid_4.2.1           callr_3.7.3          threejs_0.3.3        digest_0.6.31        xtable_1.8-4        
+    [101] httpuv_1.6.7         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       

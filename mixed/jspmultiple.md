@@ -1,28 +1,28 @@
 Multilevel Design
 ================
 [Julian Faraway](https://julianfaraway.github.io/)
-27 September 2022
+06 January 2023
 
--   <a href="#data" id="toc-data">Data</a>
--   <a href="#mixed-effect-model" id="toc-mixed-effect-model">Mixed Effect
-    Model</a>
--   <a href="#inla" id="toc-inla">INLA</a>
-    -   <a href="#informative-gamma-priors-on-the-precisions"
-        id="toc-informative-gamma-priors-on-the-precisions">Informative Gamma
-        priors on the precisions</a>
-    -   <a href="#penalized-complexity-prior"
-        id="toc-penalized-complexity-prior">Penalized Complexity Prior</a>
--   <a href="#stan" id="toc-stan">STAN</a>
-    -   <a href="#diagnostics" id="toc-diagnostics">Diagnostics</a>
-    -   <a href="#output-summary" id="toc-output-summary">Output Summary</a>
-    -   <a href="#posterior-distributions"
-        id="toc-posterior-distributions">Posterior Distributions</a>
--   <a href="#brms" id="toc-brms">BRMS</a>
--   <a href="#mgcv" id="toc-mgcv">MGCV</a>
--   <a href="#ginla" id="toc-ginla">GINLA</a>
--   <a href="#discussion" id="toc-discussion">Discussion</a>
--   <a href="#package-version-info" id="toc-package-version-info">Package
-    version info</a>
+- <a href="#data" id="toc-data">Data</a>
+- <a href="#mixed-effect-model" id="toc-mixed-effect-model">Mixed Effect
+  Model</a>
+- <a href="#inla" id="toc-inla">INLA</a>
+  - <a href="#informative-gamma-priors-on-the-precisions"
+    id="toc-informative-gamma-priors-on-the-precisions">Informative Gamma
+    priors on the precisions</a>
+  - <a href="#penalized-complexity-prior"
+    id="toc-penalized-complexity-prior">Penalized Complexity Prior</a>
+- <a href="#stan" id="toc-stan">STAN</a>
+  - <a href="#diagnostics" id="toc-diagnostics">Diagnostics</a>
+  - <a href="#output-summary" id="toc-output-summary">Output Summary</a>
+  - <a href="#posterior-distributions"
+    id="toc-posterior-distributions">Posterior Distributions</a>
+- <a href="#brms" id="toc-brms">BRMS</a>
+- <a href="#mgcv" id="toc-mgcv">MGCV</a>
+- <a href="#ginla" id="toc-ginla">GINLA</a>
+- <a href="#discussion" id="toc-discussion">Discussion</a>
+- <a href="#package-version-info" id="toc-package-version-info">Package
+  version info</a>
 
 See the [introduction](index.md) for an overview.
 
@@ -232,9 +232,9 @@ summary(result)
     Model hyperparameters:
                                                 mean       sd 0.025quant 0.5quant 0.975quant    mode
     Precision for the Gaussian observations    73.61     3.38      67.11    73.56      80.44   73.49
-    Precision for school                      418.79   129.81     181.51   411.61     671.92  405.30
-    Precision for classch                   14265.56 43533.53    1097.62  5310.86   87610.64 1793.34
-    Precision for classchid                    96.52     7.31      82.24    96.50     111.01   96.94
+    Precision for school                      418.85   129.75     181.64   411.67     671.79  405.43
+    Precision for classch                   14210.33 43224.49    1097.46  5304.42   87203.49 1793.65
+    Precision for classchid                    96.52     7.30      82.24    96.50     111.00   96.94
 
      is computed 
 
@@ -279,8 +279,8 @@ summary(result)
     Model hyperparameters:
                                               mean     sd 0.025quant 0.5quant 0.975quant   mode
     Precision for the Gaussian observations  73.78   3.38      67.31    73.72      80.61  73.62
-    Precision for school                    367.25 112.60     193.27   351.59     632.55 322.33
-    Precision for classch                   473.37 133.13     263.73   456.03     783.91 423.36
+    Precision for school                    367.26 112.60     193.27   351.60     632.55 322.34
+    Precision for classch                   473.37 133.13     263.72   456.02     783.90 423.35
     Precision for classchid                  99.80   8.55      84.21    99.36     117.87  98.37
 
      is computed 
@@ -303,21 +303,21 @@ data.frame(restab)
 ```
 
                X.Intercept. subjectmath gendergirl     craven    social2     social3   social4   social5   social6
-    mean            0.44092     0.36656   0.062025    0.01735   0.013317   -0.019764 -0.068989 -0.050493 -0.085273
+    mean            0.44092     0.36656   0.062025    0.01735   0.013317   -0.019764 -0.068989 -0.050492 -0.085273
     sd             0.027403   0.0077025   0.010284 0.00093429   0.027504    0.029309  0.026179  0.029123  0.031004
     quant0.025      0.38713     0.35145   0.041843   0.015517  -0.040668   -0.077295  -0.12038  -0.10766  -0.14614
     quant0.25       0.42239     0.36135   0.055067   0.016718 -0.0052859   -0.039588 -0.086696  -0.07019  -0.10624
     quant0.5        0.44087     0.36655   0.062003   0.017348   0.013259   -0.019826 -0.069044 -0.050554 -0.085336
-    quant0.75       0.45934     0.37174   0.068939   0.017978   0.031804 -6.3471e-05 -0.051392 -0.030917 -0.064432
-    quant0.975       0.4946     0.38165    0.08217    0.01918   0.067192    0.037645 -0.017711 0.0065534 -0.024549
+    quant0.75       0.45934     0.37174   0.068939   0.017978   0.031804 -6.3476e-05 -0.051392 -0.030917 -0.064432
+    quant0.975       0.4946     0.38165    0.08217    0.01918   0.067192    0.037645 -0.017711 0.0065533 -0.024549
                  social7   social8   social9 subjectmath.gendergirl subjectmath.craven    school     class        id
     mean       -0.098472  -0.08022 -0.046173              -0.059194         -0.0037203  0.053973  0.047292   0.10037
-    sd          0.031979  0.042735  0.027725               0.010696         0.00092951 0.0081268 0.0065313 0.0042548
+    sd          0.031979  0.042735  0.027725               0.010696         0.00092951 0.0081267 0.0065314 0.0042548
     quant0.025  -0.16125  -0.16411   -0.1006              -0.080189         -0.0055448  0.039858  0.035797  0.092174
-    quant0.25    -0.1201  -0.10912 -0.064925              -0.066428          -0.004349  0.048198  0.042663   0.09745
-    quant0.5   -0.098538 -0.080309 -0.046231              -0.059217         -0.0037222  0.053313  0.046815   0.10032
-    quant0.75  -0.076976 -0.051494 -0.027536              -0.052005         -0.0030955  0.059032  0.051399   0.10322
-    quant0.975 -0.035836 0.0034861 0.0081338              -0.038244         -0.0018996  0.071718   0.06141   0.10888
+    quant0.25    -0.1201  -0.10912 -0.064925              -0.066428          -0.004349  0.048197  0.042663   0.09745
+    quant0.5   -0.098538 -0.080309 -0.046231              -0.059217         -0.0037222  0.053312  0.046815   0.10032
+    quant0.75  -0.076976 -0.051494 -0.027536              -0.052005         -0.0030955  0.059031  0.051399   0.10322
+    quant0.975 -0.035836  0.003486 0.0081337              -0.038244         -0.0018996  0.071718   0.06141   0.10888
                  epsilon
     mean         0.11651
     sd         0.0026509
@@ -377,10 +377,10 @@ summary(result)
 
     Model hyperparameters:
                                                mean      sd 0.025quant 0.5quant 0.975quant    mode
-    Precision for the Gaussian observations   73.67    3.38      67.25    73.59      80.57   73.41
-    Precision for school                     411.21  130.53     204.10   394.99     713.30  364.54
-    Precision for classch                   5441.03 8156.26     743.81  3129.71   25078.08 1489.73
-    Precision for classchid                   97.71    8.24      82.58    97.32     115.03   96.49
+    Precision for the Gaussian observations   73.67    3.38      67.25    73.58      80.57   73.39
+    Precision for school                     412.31  131.39     204.31   395.84     716.83  364.90
+    Precision for classch                   5411.85 8091.11     739.90  3116.42   24907.73 1484.85
+    Precision for classchid                   97.71    8.25      82.58    97.32     115.06   96.48
 
      is computed 
 
@@ -400,22 +400,22 @@ colnames(restab) = c(names(lmod$coef),"school","class","id","epsilon")
 data.frame(restab)
 ```
 
-               X.Intercept. subjectmath gendergirl     craven    social2   social3   social4   social5   social6   social7
-    mean            0.44146     0.36656   0.063241   0.017388   0.013804  -0.02059 -0.070472 -0.050412 -0.087581 -0.099292
-    sd               0.0266   0.0077089   0.010277 0.00092625   0.027283  0.029036  0.025931  0.028876  0.030754   0.03169
-    quant0.025      0.38924     0.35143   0.043073    0.01557  -0.039748 -0.077583  -0.12137  -0.10709  -0.14795   -0.1615
-    quant0.25       0.42347     0.36135   0.056287   0.016761 -0.0046499 -0.040229 -0.088012 -0.069944  -0.10838  -0.12073
-    quant0.5        0.44141     0.36655   0.063218   0.017386   0.013747 -0.020651 -0.070526 -0.050473 -0.087644 -0.099358
-    quant0.75       0.45934     0.37175   0.070151   0.018011   0.032143 -0.001072 -0.053041 -0.031002 -0.066907 -0.077989
-    quant0.975      0.49356     0.38166   0.083374   0.019202   0.067244  0.036284  -0.01968 0.0061477 -0.027348 -0.037224
-                 social8   social9 subjectmath.gendergirl subjectmath.craven   school     class        id   epsilon
-    mean       -0.081413 -0.047174              -0.059194         -0.0037203 0.051184  0.018883   0.10143    0.1166
-    sd          0.042436  0.027501               0.010704         0.00093028 0.008221 0.0078621 0.0042387 0.0026569
-    quant0.025  -0.16471  -0.10116              -0.080206         -0.0055463 0.037544  0.006397  0.093305   0.11145
-    quant0.25   -0.11012 -0.065775              -0.066435         -0.0043495 0.045305  0.012914  0.098517   0.11478
-    quant0.5     -0.0815 -0.047231              -0.059217         -0.0037222 0.050263  0.018052   0.10136   0.11657
-    quant0.75  -0.052886 -0.028688              -0.051999         -0.0030949 0.056124  0.023878   0.10426   0.11838
-    quant0.975 0.0017044 0.0066907              -0.038227         -0.0018981 0.069729    0.0363   0.10995   0.12189
+               X.Intercept. subjectmath gendergirl     craven  social2    social3   social4   social5   social6   social7
+    mean            0.44146     0.36656   0.063242   0.017388 0.013804  -0.020589 -0.070472 -0.050412 -0.087583 -0.099294
+    sd               0.0266   0.0077092   0.010278 0.00092627 0.027283   0.029036  0.025932  0.028876  0.030755  0.031691
+    quant0.025      0.38924     0.35143   0.043073    0.01557 -0.03975  -0.077584  -0.12137  -0.10709  -0.14796   -0.1615
+    quant0.25       0.42347     0.36135   0.056287   0.016761 -0.00465   -0.04023 -0.088012 -0.069944  -0.10838  -0.12073
+    quant0.5        0.44141     0.36655   0.063219   0.017386 0.013747   -0.02065 -0.070526 -0.050472 -0.087645 -0.099359
+    quant0.75       0.45934     0.37175   0.070151   0.018011 0.032144 -0.0010709  -0.05304 -0.031001 -0.066908  -0.07799
+    quant0.975      0.49356     0.38166   0.083375   0.019202 0.067246   0.036286 -0.019679   0.00615 -0.027347 -0.037223
+                 social8   social9 subjectmath.gendergirl subjectmath.craven    school    class        id   epsilon
+    mean       -0.081413 -0.047174              -0.059194         -0.0037203  0.051128 0.018925   0.10143    0.1166
+    sd          0.042437  0.027502               0.010705         0.00093031 0.0082355 0.007883 0.0042421 0.0026571
+    quant0.025  -0.16472  -0.10116              -0.080207         -0.0055464  0.037452 0.006418  0.093292   0.11145
+    quant0.25   -0.11012 -0.065776              -0.066435         -0.0043496  0.045239 0.012943  0.098514   0.11478
+    quant0.5   -0.081501 -0.047231              -0.059217         -0.0037222   0.05021 0.018086   0.10136   0.11657
+    quant0.75  -0.052886 -0.028687              -0.051998         -0.0030949   0.05608 0.023924   0.10426   0.11838
+    quant0.975 0.0017069 0.0066922              -0.038227         -0.0018981  0.069695 0.036409   0.10995   0.12188
 
 Make the plots:
 
@@ -532,37 +532,12 @@ estimations.
 ``` r
 rt <- stanc("../stancode/multiple.stan")
 sm <- stan_model(stanc_ret = rt, verbose=FALSE)
-```
-
-    Running /Library/Frameworks/R.framework/Resources/bin/R CMD SHLIB foo.c
-    clang -mmacosx-version-min=10.13 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG   -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/Rcpp/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/unsupported"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/BH/include" -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/src/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppParallel/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/rstan/include" -DEIGEN_NO_DEBUG  -DBOOST_DISABLE_ASSERTS  -DBOOST_PENDING_INTEGER_LOG2_HPP  -DSTAN_THREADS  -DUSE_STANC3 -DSTRICT_R_HEADERS  -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION  -DBOOST_NO_AUTO_PTR  -include '/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp'  -D_REENTRANT -DRCPP_PARALLEL_USE_TBB=1   -I/usr/local/include   -fPIC  -Wall -g -O2  -c foo.c -o foo.o
-    In file included from <built-in>:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:88:
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:1: error: unknown type name 'namespace'
-    namespace Eigen {
-    ^
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:16: error: expected ';' after top level declarator
-    namespace Eigen {
-                   ^
-                   ;
-    In file included from <built-in>:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:96:10: fatal error: 'complex' file not found
-    #include <complex>
-             ^~~~~~~~~
-    3 errors generated.
-    make: *** [foo.o] Error 1
-
-``` r
 set.seed(123)
 system.time(fit <- sampling(sm, data=jspdat, iter=10000))
 ```
 
        user  system elapsed 
-    795.359  31.592 287.648 
+    670.801  24.611 248.132 
 
 ## Diagnostics
 
@@ -643,7 +618,7 @@ print(fit,pars=c("beta","sigmalev1","sigmalev2","sigmalev2","sigmaeps"))
     sigmalev2  0.02       0 0.01  0.00  0.01  0.02  0.03  0.05  1374    1
     sigmaeps   0.12       0 0.00  0.11  0.11  0.12  0.12  0.12  8110    1
 
-    Samples were drawn using NUTS(diag_e) at Thu Aug 11 13:52:30 2022.
+    Samples were drawn using NUTS(diag_e) at Fri Jan  6 10:46:26 2023.
     For each parameter, n_eff is a crude measure of effective sample size,
     and Rhat is the potential scale reduction factor on split chains (at 
     convergence, Rhat=1).
@@ -702,28 +677,6 @@ problems and does not cost much computationally.
 suppressMessages(bmod <- brm(score ~ subject*gender + craven*subject + social + (1|school) + (1|school:class) + (1|school:class:id),data=mjspr,iter=10000, cores=4))
 ```
 
-    Running /Library/Frameworks/R.framework/Resources/bin/R CMD SHLIB foo.c
-    clang -mmacosx-version-min=10.13 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG   -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/Rcpp/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/unsupported"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/BH/include" -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/src/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppParallel/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/rstan/include" -DEIGEN_NO_DEBUG  -DBOOST_DISABLE_ASSERTS  -DBOOST_PENDING_INTEGER_LOG2_HPP  -DSTAN_THREADS  -DUSE_STANC3 -DSTRICT_R_HEADERS  -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION  -DBOOST_NO_AUTO_PTR  -include '/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp'  -D_REENTRANT -DRCPP_PARALLEL_USE_TBB=1   -I/usr/local/include   -fPIC  -Wall -g -O2  -c foo.c -o foo.o
-    In file included from <built-in>:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:88:
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:1: error: unknown type name 'namespace'
-    namespace Eigen {
-    ^
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:16: error: expected ';' after top level declarator
-    namespace Eigen {
-                   ^
-                   ;
-    In file included from <built-in>:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:96:10: fatal error: 'complex' file not found
-    #include <complex>
-             ^~~~~~~~~
-    3 errors generated.
-    make: *** [foo.o] Error 1
-
 We get some minor warnings. We can obtain some posterior densities and
 diagnostics with:
 
@@ -743,7 +696,7 @@ We can look at the STAN code that `brms` used with:
 stancode(bmod)
 ```
 
-    // generated with brms 2.17.0
+    // generated with brms 2.18.0
     functions {
     }
     data {
@@ -813,7 +766,8 @@ stancode(bmod)
       // likelihood including constants
       if (!prior_only) {
         // initialize linear predictor term
-        vector[N] mu = Intercept + rep_vector(0.0, N);
+        vector[N] mu = rep_vector(0.0, N);
+        mu += Intercept;
         for (n in 1:N) {
           // add more terms to the linear predictor
           mu[n] += r_1_1[J_1[n]] * Z_1_1[n] + r_2_1[J_2[n]] * Z_2_1[n] + r_3_1[J_3[n]] * Z_3_1[n];
@@ -853,36 +807,36 @@ summary(bmod)
     Group-Level Effects: 
     ~school (Number of levels: 48) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.05      0.01     0.03     0.07 1.00     1835     1624
+    sd(Intercept)     0.05      0.01     0.02     0.07 1.01     1076      524
 
     ~school:class (Number of levels: 90) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.02      0.01     0.00     0.05 1.00      953     1518
+    sd(Intercept)     0.02      0.01     0.00     0.05 1.01      853      612
 
     ~school:class:id (Number of levels: 953) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.10      0.00     0.09     0.11 1.00     5249     9391
+    sd(Intercept)     0.10      0.00     0.09     0.11 1.00     3700     7429
 
     Population-Level Effects: 
                            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept                  0.44      0.03     0.39     0.49 1.00     2891     6054
-    subjectmath                0.37      0.01     0.35     0.38 1.00    12493    13745
-    gendergirl                 0.06      0.01     0.04     0.08 1.00     7941    11372
-    craven                     0.02      0.00     0.02     0.02 1.00    12233    14487
-    social2                    0.01      0.03    -0.04     0.07 1.00     2715     6590
-    social3                   -0.02      0.03    -0.08     0.04 1.00     2911     6476
-    social4                   -0.07      0.03    -0.12    -0.02 1.00     2440     5486
-    social5                   -0.05      0.03    -0.11     0.01 1.00     2760     4876
-    social6                   -0.09      0.03    -0.15    -0.03 1.00     3219     6819
-    social7                   -0.10      0.03    -0.16    -0.04 1.00     3422     6942
-    social8                   -0.08      0.04    -0.17     0.00 1.00     4806     8687
-    social9                   -0.05      0.03    -0.10     0.01 1.00     3159     6533
-    subjectmath:gendergirl    -0.06      0.01    -0.08    -0.04 1.00    11191    13408
-    subjectmath:craven        -0.00      0.00    -0.01    -0.00 1.00    36471    14414
+    Intercept                  0.44      0.03     0.39     0.49 1.00     3577     5953
+    subjectmath                0.37      0.01     0.35     0.38 1.00    12670    14306
+    gendergirl                 0.06      0.01     0.04     0.08 1.00     8311    10174
+    craven                     0.02      0.00     0.02     0.02 1.00    12032    13873
+    social2                    0.01      0.03    -0.04     0.07 1.00     3634     6670
+    social3                   -0.02      0.03    -0.08     0.04 1.00     3897     7206
+    social4                   -0.07      0.03    -0.12    -0.02 1.00     3381     6115
+    social5                   -0.05      0.03    -0.11     0.01 1.00     3805     7224
+    social6                   -0.09      0.03    -0.15    -0.03 1.00     4037     7403
+    social7                   -0.10      0.03    -0.16    -0.04 1.00     3881     7358
+    social8                   -0.08      0.04    -0.16    -0.00 1.00     5633     9493
+    social9                   -0.05      0.03    -0.10     0.01 1.00     3601     6673
+    subjectmath:gendergirl    -0.06      0.01    -0.08    -0.04 1.00     9947    10819
+    subjectmath:craven        -0.00      0.00    -0.01    -0.00 1.00    33301    14201
 
     Family Specific Parameters: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma     0.12      0.00     0.11     0.12 1.00     6919    11718
+    sigma     0.12      0.00     0.11     0.12 1.00     6693    10845
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -1042,21 +996,21 @@ hyperparameters.
 See the [Discussion of the single random effect
 model](pulp.md#Discussion) for general comments.
 
--   As with the previous analyses, sometimes the INLA posteriors for the
-    hyperparameters have densities which do not give weight to
-    close-to-zero values where other analyses suggest this might be
-    reasonable.
+- As with the previous analyses, sometimes the INLA posteriors for the
+  hyperparameters have densities which do not give weight to
+  close-to-zero values where other analyses suggest this might be
+  reasonable.
 
--   There is relatively little disagreement between the methods and much
-    similarity.
+- There is relatively little disagreement between the methods and much
+  similarity.
 
--   There were no major computational issue with the analyses (in
-    contrast with some of the other examples)
+- There were no major computational issue with the analyses (in contrast
+  with some of the other examples)
 
--   The `mgcv` analyses (both standard and ginla) took much longer than
-    previous analyses because the sample size is larger and there are a
-    large number of random effects — slower than any of the other
-    analyses.
+- The `mgcv` analyses (both standard and ginla) took much longer than
+  previous analyses because the sample size is larger and there are a
+  large number of random effects — slower than any of the other
+  analyses.
 
 # Package version info
 
@@ -1073,36 +1027,36 @@ sessionInfo()
     LAPACK: /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRlapack.dylib
 
     locale:
-    [1] en_GB.UTF-8/en_GB.UTF-8/en_GB.UTF-8/C/en_GB.UTF-8/en_GB.UTF-8
+    [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 
     attached base packages:
     [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-40         nlme_3.1-159        brms_2.18.0         Rcpp_1.0.9          rstan_2.26.13      
-     [6] StanHeaders_2.26.13 knitr_1.40          INLA_22.09.26       sp_1.5-0            foreach_1.5.2      
-    [11] RLRsim_3.1-8        pbkrtest_0.5.1      lme4_1.1-30         Matrix_1.5-1        ggplot2_3.3.6      
+     [1] mgcv_1.8-41         nlme_3.1-161        brms_2.18.0         Rcpp_1.0.9          rstan_2.26.13      
+     [6] StanHeaders_2.26.13 knitr_1.41          INLA_22.12.16       sp_1.5-1            foreach_1.5.2      
+    [11] RLRsim_3.1-8        pbkrtest_0.5.1      lme4_1.1-31         Matrix_1.5-3        ggplot2_3.4.0      
     [16] faraway_1.0.9      
 
     loaded via a namespace (and not attached):
-      [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2       ggridges_0.5.4       markdown_1.1        
-      [6] base64enc_0.1-3      rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         DT_0.25             
+      [1] minqa_1.2.5          colorspace_2.0-3     ellipsis_0.3.2       markdown_1.4         base64enc_0.1-3     
+      [6] rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         MatrixModels_0.5-1   DT_0.26             
      [11] fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18     splines_4.2.1       
-     [16] shinythemes_1.2.0    bayesplot_1.9.0      jsonlite_1.8.0       nloptr_2.0.3         broom_1.0.1         
-     [21] shiny_1.7.2          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0       
-     [26] cli_3.4.1            later_1.3.0          htmltools_0.5.3      prettyunits_1.1.1    tools_4.2.1         
+     [16] shinythemes_1.2.0    bayesplot_1.10.0     jsonlite_1.8.4       nloptr_2.0.3         broom_1.0.2         
+     [21] shiny_1.7.4          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0       
+     [26] cli_3.5.0            later_1.3.0          htmltools_0.5.4      prettyunits_1.1.1    tools_4.2.1         
      [31] igraph_1.3.5         coda_0.19-4          gtable_0.3.1         glue_1.6.2           reshape2_1.4.4      
-     [36] dplyr_1.0.10         posterior_1.3.1      V8_4.2.1             vctrs_0.4.1          svglite_2.1.0       
-     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.33            stringr_1.4.1       
-     [46] ps_1.7.1             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.2      gtools_3.9.3        
-     [51] MASS_7.3-58.1        zoo_1.8-11           scales_1.2.1         colourpicker_1.1.1   promises_1.2.0.1    
-     [56] Brobdingnag_1.2-7    inline_0.3.19        shinystan_2.6.0      yaml_2.3.5           curl_4.3.2          
-     [61] gridExtra_2.3        loo_2.5.1            stringi_1.7.8        highr_0.9            dygraphs_1.1.1.6    
-     [66] checkmate_2.1.0      boot_1.3-28          pkgbuild_1.3.1       systemfonts_1.0.4    rlang_1.0.6         
-     [71] pkgconfig_2.0.3      matrixStats_0.62.0   distributional_0.3.1 evaluate_0.16        lattice_0.20-45     
-     [76] purrr_0.3.4          labeling_0.4.2       rstantools_2.2.0     htmlwidgets_1.5.4    processx_3.7.0      
-     [81] tidyselect_1.1.2     plyr_1.8.7           magrittr_2.0.3       R6_2.5.1             generics_0.1.3      
-     [86] DBI_1.1.3            pillar_1.8.1         withr_2.5.0          xts_0.12.1           abind_1.4-5         
-     [91] tibble_3.1.8         crayon_1.5.1         utf8_1.2.2           rmarkdown_2.16       grid_4.2.1          
-     [96] callr_3.7.2          threejs_0.3.3        digest_0.6.29        xtable_1.8-4         tidyr_1.2.1         
-    [101] httpuv_1.6.6         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       
+     [36] dplyr_1.0.10         posterior_1.3.1      V8_4.2.2             vctrs_0.5.1          svglite_2.1.0       
+     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.36            stringr_1.5.0       
+     [46] ps_1.7.2             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.3      gtools_3.9.4        
+     [51] MASS_7.3-58.1        zoo_1.8-11           scales_1.2.1         colourpicker_1.2.0   promises_1.2.0.1    
+     [56] Brobdingnag_1.2-9    inline_0.3.19        shinystan_2.6.0      yaml_2.3.6           curl_4.3.3          
+     [61] gridExtra_2.3        loo_2.5.1            stringi_1.7.8        highr_0.10           dygraphs_1.1.1.6    
+     [66] checkmate_2.1.0      boot_1.3-28.1        pkgbuild_1.4.0       systemfonts_1.0.4    rlang_1.0.6         
+     [71] pkgconfig_2.0.3      matrixStats_0.63.0   distributional_0.3.1 evaluate_0.19        lattice_0.20-45     
+     [76] purrr_1.0.0          labeling_0.4.2       rstantools_2.2.0     htmlwidgets_1.6.0    processx_3.8.0      
+     [81] tidyselect_1.2.0     plyr_1.8.8           magrittr_2.0.3       R6_2.5.1             generics_0.1.3      
+     [86] DBI_1.1.3            pillar_1.8.1         withr_2.5.0          xts_0.12.2           abind_1.4-5         
+     [91] tibble_3.1.8         crayon_1.5.2         utf8_1.2.2           rmarkdown_2.19       grid_4.2.1          
+     [96] callr_3.7.3          threejs_0.3.3        digest_0.6.31        xtable_1.8-4         tidyr_1.2.1         
+    [101] httpuv_1.6.7         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       

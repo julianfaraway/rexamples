@@ -1,28 +1,28 @@
 Multilevel Design
 ================
 [Julian Faraway](https://julianfaraway.github.io/)
-27 September 2022
+06 January 2023
 
--   <a href="#data" id="toc-data">Data</a>
--   <a href="#mixed-effect-model" id="toc-mixed-effect-model">Mixed Effect
-    Model</a>
--   <a href="#inla" id="toc-inla">INLA</a>
-    -   <a href="#informative-gamma-priors-on-the-precisions"
-        id="toc-informative-gamma-priors-on-the-precisions">Informative Gamma
-        priors on the precisions</a>
-    -   <a href="#penalized-complexity-prior"
-        id="toc-penalized-complexity-prior">Penalized Complexity Prior</a>
--   <a href="#stan" id="toc-stan">STAN</a>
-    -   <a href="#diagnostics" id="toc-diagnostics">Diagnostics</a>
-    -   <a href="#output-summary" id="toc-output-summary">Output Summary</a>
-    -   <a href="#posterior-distributions"
-        id="toc-posterior-distributions">Posterior Distributions</a>
--   <a href="#brms" id="toc-brms">BRMS</a>
--   <a href="#mgcv" id="toc-mgcv">MGCV</a>
--   <a href="#ginla" id="toc-ginla">GINLA</a>
--   <a href="#discussion" id="toc-discussion">Discussion</a>
--   <a href="#package-version-info" id="toc-package-version-info">Package
-    version info</a>
+- <a href="#data" id="toc-data">Data</a>
+- <a href="#mixed-effect-model" id="toc-mixed-effect-model">Mixed Effect
+  Model</a>
+- <a href="#inla" id="toc-inla">INLA</a>
+  - <a href="#informative-gamma-priors-on-the-precisions"
+    id="toc-informative-gamma-priors-on-the-precisions">Informative Gamma
+    priors on the precisions</a>
+  - <a href="#penalized-complexity-prior"
+    id="toc-penalized-complexity-prior">Penalized Complexity Prior</a>
+- <a href="#stan" id="toc-stan">STAN</a>
+  - <a href="#diagnostics" id="toc-diagnostics">Diagnostics</a>
+  - <a href="#output-summary" id="toc-output-summary">Output Summary</a>
+  - <a href="#posterior-distributions"
+    id="toc-posterior-distributions">Posterior Distributions</a>
+- <a href="#brms" id="toc-brms">BRMS</a>
+- <a href="#mgcv" id="toc-mgcv">MGCV</a>
+- <a href="#ginla" id="toc-ginla">GINLA</a>
+- <a href="#discussion" id="toc-discussion">Discussion</a>
+- <a href="#package-version-info" id="toc-package-version-info">Package
+  version info</a>
 
 See the [introduction](index.md) for an overview.
 
@@ -135,7 +135,7 @@ exactRLRT(mmodc, mmod, mmods)
         (p-value based on 10000 simulated values)
 
     data:  
-    RLRT = 1.85, p-value = 0.083
+    RLRT = 1.85, p-value = 0.079
 
 ``` r
 exactRLRT(mmods, mmod, mmodc)
@@ -147,7 +147,7 @@ exactRLRT(mmods, mmod, mmodc)
         (p-value based on 10000 simulated values)
 
     data:  
-    RLRT = 7.64, p-value = 0.0023
+    RLRT = 7.64, p-value = 0.0019
 
 The first test is for the class effect which just fails to meet the 5%
 significance level. The second test is for the school effect and shows
@@ -174,19 +174,19 @@ confint(mmod, method="boot")
 ```
 
                    2.5 %    97.5 %
-    .sig01       0.00000  1.757208
-    .sig02       1.04277  2.405022
-    .sigma       4.98087  5.506082
-    (Intercept) 30.02716 33.966436
-    craven       0.52053  0.643322
-    social2     -2.42796  1.877769
-    social3     -3.12613  1.495473
-    social4     -4.00300 -0.149969
-    social5     -3.72293  0.857557
-    social6     -4.92549 -0.040958
-    social7     -5.42334 -0.480610
-    social8     -7.14257 -0.217118
-    social9     -3.18592  1.358621
+    .sig01       0.00000  1.681487
+    .sig02       0.88730  2.426820
+    .sigma       4.99846  5.495708
+    (Intercept) 29.68545 33.968028
+    craven       0.52062  0.647020
+    social2     -2.46486  1.900315
+    social3     -3.10829  1.911041
+    social4     -4.06682  0.116276
+    social5     -3.55844  1.167582
+    social6     -4.63449  0.390854
+    social7     -5.43122 -0.046263
+    social8     -6.87023  0.123759
+    social9     -2.99946  1.466552
 
 The lower end of the class confidence interval is zero while the school
 random effect is clearly larger. This is consistent with the earlier
@@ -215,22 +215,22 @@ summary(result)
 
     Fixed effects:
                   mean    sd 0.025quant 0.5quant 0.975quant   mode kld
-    (Intercept) 31.791 1.016     29.798   31.791     33.784 31.791   0
-    social2     -0.187 1.096     -2.337   -0.187      1.963 -0.187   0
-    social3     -0.527 1.166     -2.814   -0.527      1.761 -0.527   0
-    social4     -1.841 1.038     -3.876   -1.841      0.195 -1.841   0
-    social5     -1.170 1.158     -3.441   -1.171      1.101 -1.171   0
-    social6     -2.217 1.231     -4.632   -2.217      0.198 -2.217   0
-    social7     -2.933 1.268     -5.420   -2.933     -0.445 -2.933   0
-    social8     -3.359 1.710     -6.712   -3.359     -0.005 -3.359   0
-    social9     -0.652 1.100     -2.809   -0.652      1.504 -0.652   0
-    craven       0.585 0.032      0.522    0.585      0.649  0.585   0
+    (Intercept) 31.858 1.017     29.864   31.858     33.853 31.858   0
+    social2     -0.237 1.094     -2.382   -0.237      1.909 -0.237   0
+    social3     -0.598 1.164     -2.880   -0.598      1.684 -0.598   0
+    social4     -1.926 1.036     -3.958   -1.926      0.107 -1.926   0
+    social5     -1.218 1.156     -3.485   -1.218      1.049 -1.218   0
+    social6     -2.273 1.229     -4.683   -2.273      0.138 -2.273   0
+    social7     -2.977 1.265     -5.459   -2.977     -0.494 -2.977   0
+    social8     -3.408 1.704     -6.750   -3.408     -0.065 -3.408   0
+    social9     -0.722 1.098     -2.876   -0.722      1.433 -0.722   0
+    craven       0.585 0.032      0.522    0.585      0.648  0.585   0
 
     Model hyperparameters:
-                                              mean      sd 0.025quant 0.5quant 0.975quant  mode
-    Precision for the Gaussian observations  0.036   0.002      0.033    0.036      0.040 0.036
-    Precision for school                    53.626 223.836      0.415   12.401    361.184 0.634
-    Precision for classch                    0.275   0.079      0.159    0.262      0.467 0.236
+                                             mean    sd 0.025quant 0.5quant 0.975quant  mode
+    Precision for the Gaussian observations 0.036 0.002      0.033    0.036      0.040 0.036
+    Precision for school                    2.151 1.452      0.752    1.731      6.011 1.212
+    Precision for classch                   0.384 0.136      0.189    0.360      0.718 0.317
 
      is computed 
 
@@ -258,22 +258,22 @@ summary(result)
 
     Fixed effects:
                   mean    sd 0.025quant 0.5quant 0.975quant   mode kld
-    (Intercept) 32.001 1.061     29.921   32.001     34.083 32.000   0
-    social2     -0.395 1.099     -2.550   -0.395      1.760 -0.396   0
-    social3     -0.760 1.171     -3.056   -0.760      1.537 -0.760   0
-    social4     -2.098 1.045     -4.147   -2.098     -0.048 -2.098   0
-    social5     -1.422 1.164     -3.704   -1.422      0.861 -1.423   0
-    social6     -2.349 1.238     -4.778   -2.349      0.080 -2.349   0
+    (Intercept) 32.002 1.061     29.921   32.002     34.084 32.001   0
+    social2     -0.396 1.099     -2.551   -0.396      1.760 -0.396   0
+    social3     -0.761 1.171     -3.057   -0.761      1.536 -0.761   0
+    social4     -2.099 1.045     -4.148   -2.099     -0.049 -2.099   0
+    social5     -1.423 1.164     -3.705   -1.423      0.860 -1.423   0
+    social6     -2.349 1.238     -4.778   -2.349      0.079 -2.350   0
     social7     -3.056 1.277     -5.560   -3.056     -0.551 -3.056   0
-    social8     -3.553 1.708     -6.903   -3.553     -0.202 -3.553   0
-    social9     -0.887 1.107     -3.059   -0.887      1.286 -0.887   0
+    social8     -3.553 1.708     -6.904   -3.553     -0.202 -3.554   0
+    social9     -0.887 1.107     -3.059   -0.888      1.285 -0.888   0
     craven       0.586 0.032      0.522    0.586      0.650  0.586   0
 
     Model hyperparameters:
                                              mean    sd 0.025quant 0.5quant 0.975quant  mode
     Precision for the Gaussian observations 0.037 0.002      0.033    0.037      0.040 0.037
-    Precision for school                    0.266 0.086      0.137    0.253      0.472 0.229
-    Precision for classch                   0.340 0.101      0.183    0.327      0.576 0.301
+    Precision for school                    0.264 0.085      0.137    0.251      0.469 0.226
+    Precision for classch                   0.341 0.101      0.183    0.328      0.579 0.302
 
      is computed 
 
@@ -296,19 +296,19 @@ data.frame(restab) |> kable()
 
 |            | mu     | social2  | social3  | social4   | social5  | social6  | social7  | social8  | social9  | craven   | school.SD | class.SD | epsilon |
 |:-----------|:-------|:---------|:---------|:----------|:---------|:---------|:---------|:---------|:---------|:---------|:----------|:---------|:--------|
-| mean       | 32.001 | -0.39521 | -0.7598  | -2.0979   | -1.4222  | -2.3491  | -3.0556  | -3.5527  | -0.88672 | 0.58598  | 2.0098    | 1.769    | 5.2228  |
-| sd         | 1.0602 | 1.0981   | 1.1701   | 1.0443    | 1.163    | 1.2374   | 1.2761   | 1.7072   | 1.1067   | 0.032392 | 0.31439   | 0.25701  | 0.12387 |
-| quant0.025 | 29.921 | -2.5504  | -3.0564  | -4.1476   | -3.7048  | -4.778   | -5.5604  | -6.9036  | -3.0589  | 0.52239  | 1.4593    | 1.3207   | 4.9849  |
-| quant0.25  | 31.284 | -1.138   | -1.5513  | -2.8042   | -2.2089  | -3.1861  | -3.9188  | -4.7075  | -1.6353  | 0.56407  | 1.7865    | 1.5865   | 5.1377  |
-| quant0.5   | 31.999 | -0.39762 | -0.76233 | -2.1001   | -1.4248  | -2.3517  | -3.0583  | -3.5564  | -0.88912 | 0.58591  | 1.9865    | 1.7487   | 5.2206  |
-| quant0.75  | 32.714 | 0.34286  | 0.026693 | -1.3959   | -0.64049 | -1.5173  | -2.1978  | -2.4052  | -0.14282 | 0.60775  | 2.2069    | 1.9295   | 5.3055  |
-| quant0.975 | 34.079 | 1.756    | 1.5324   | -0.052084 | 0.85624  | 0.074889 | -0.55583 | -0.20826 | 1.2813   | 0.64943  | 2.6916    | 2.3283   | 5.4713  |
+| mean       | 32.002 | -0.39576 | -0.76051 | -2.0986   | -1.4229  | -2.3494  | -3.0558  | -3.5532  | -0.88745 | 0.58598  | 2.0181    | 1.7675   | 5.2227  |
+| sd         | 1.0604 | 1.0981   | 1.1701   | 1.0443    | 1.163    | 1.2375   | 1.2761   | 1.7072   | 1.1068   | 0.032393 | 0.31213   | 0.2587   | 0.12363 |
+| quant0.025 | 29.921 | -2.5509  | -3.0571  | -4.1483   | -3.7056  | -4.7783  | -5.5607  | -6.9041  | -3.0597  | 0.52239  | 1.4649    | 1.3179   | 4.9853  |
+| quant0.25  | 31.285 | -1.1385  | -1.552   | -2.805    | -2.2097  | -3.1864  | -3.919   | -4.708   | -1.6361  | 0.56407  | 1.7967    | 1.5837   | 5.1377  |
+| quant0.5   | 31.999 | -0.39816 | -0.76305 | -2.1009   | -1.4255  | -2.3521  | -3.0586  | -3.5569  | -0.88984 | 0.58591  | 1.9977    | 1.7464   | 5.2204  |
+| quant0.75  | 32.714 | 0.34231  | 0.025977 | -1.3967   | -0.64122 | -1.5177  | -2.1981  | -2.4057  | -0.14354 | 0.60776  | 2.2157    | 1.9286   | 5.3052  |
+| quant0.975 | 34.08  | 1.7555   | 1.5317   | -0.052836 | 0.85551  | 0.074568 | -0.55604 | -0.20886 | 1.2806   | 0.64943  | 2.6881    | 2.3322   | 5.4708  |
 
 Also construct a plot the SD posteriors:
 
 ``` r
 ddf <- data.frame(rbind(sigmasch,sigmacla,sigmaepsilon),errterm=gl(3,nrow(sigmasch),labels = c("school","class","epsilon")))
-ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("wear")+ylab("density")
+ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("math")+ylab("density")
 ```
 
 ![](figs/jsppostsd-1..svg)<!-- -->
@@ -334,22 +334,22 @@ summary(result)
 
     Fixed effects:
                   mean    sd 0.025quant 0.5quant 0.975quant   mode kld
-    (Intercept) 31.987 1.034     29.959   31.987     34.017 31.986   0
-    social2     -0.345 1.091     -2.485   -0.345      1.796 -0.345   0
-    social3     -0.750 1.162     -3.029   -0.750      1.529 -0.751   0
-    social4     -2.091 1.037     -4.124   -2.091     -0.058 -2.091   0
-    social5     -1.349 1.155     -3.615   -1.349      0.917 -1.349   0
-    social6     -2.348 1.229     -4.757   -2.348      0.062 -2.348   0
-    social7     -3.030 1.266     -5.513   -3.030     -0.547 -3.030   0
-    social8     -3.521 1.698     -6.851   -3.521     -0.191 -3.521   0
-    social9     -0.863 1.100     -3.020   -0.863      1.293 -0.864   0
-    craven       0.584 0.032      0.522    0.584      0.647  0.584   0
+    (Intercept) 31.970 1.032     29.946   31.969     33.996 31.969   0
+    social2     -0.331 1.092     -2.473   -0.331      1.812 -0.331   0
+    social3     -0.730 1.163     -3.012   -0.730      1.553 -0.730   0
+    social4     -2.069 1.038     -4.105   -2.069     -0.032 -2.069   0
+    social5     -1.331 1.156     -3.599   -1.331      0.937 -1.332   0
+    social6     -2.338 1.230     -4.750   -2.338      0.074 -2.338   0
+    social7     -3.024 1.267     -5.508   -3.024     -0.539 -3.024   0
+    social8     -3.506 1.700     -6.840   -3.506     -0.171 -3.507   0
+    social9     -0.844 1.101     -3.003   -0.844      1.315 -0.844   0
+    craven       0.584 0.032      0.521    0.584      0.647  0.584   0
 
     Model hyperparameters:
                                              mean    sd 0.025quant 0.5quant 0.975quant  mode
-    Precision for the Gaussian observations 0.036 0.002      0.033    0.036      0.040 0.037
-    Precision for school                    0.290 0.098      0.130    0.279      0.512 0.258
-    Precision for classch                   1.813 1.977      0.377    1.235      6.973 0.692
+    Precision for the Gaussian observations 0.036 0.002      0.033    0.036      0.040 0.036
+    Precision for school                    0.370 0.182      0.110    0.339      0.807 0.269
+    Precision for classch                   1.193 1.208      0.258    0.830      4.330 0.491
 
      is computed 
 
@@ -369,19 +369,19 @@ data.frame(restab) |> kable()
 
 |            | mu     | social2  | social3  | social4   | social5  | social6  | social7  | social8  | social9  | craven   | school.SD | class.SD | epsilon |
 |:-----------|:-------|:---------|:---------|:----------|:---------|:---------|:---------|:---------|:---------|:---------|:----------|:---------|:--------|
-| mean       | 31.987 | -0.3449  | -0.75032 | -2.0912   | -1.3491  | -2.3476  | -3.0301  | -3.5209  | -0.86343 | 0.58446  | 1.941     | 0.93025  | 5.2451  |
-| sd         | 1.0338 | 1.0905   | 1.1612   | 1.0361    | 1.1547   | 1.2279   | 1.2651   | 1.6967   | 1.0989   | 0.032069 | 0.34817   | 0.32219  | 0.12568 |
-| quant0.025 | 29.959 | -2.4851  | -3.0294  | -4.1248   | -3.6153  | -4.7578  | -5.5133  | -6.8511  | -3.0204  | 0.52151  | 1.4027    | 0.38336  | 5.0152  |
-| quant0.25  | 31.288 | -1.0825  | -1.5358  | -2.792    | -2.1302  | -3.1782  | -3.8858  | -4.6686  | -1.6067  | 0.56277  | 1.6898    | 0.6881   | 5.157   |
-| quant0.5   | 31.984 | -0.34729 | -0.75285 | -2.0934   | -1.3517  | -2.3502  | -3.0328  | -3.5246  | -0.86577 | 0.58439  | 1.8877    | 0.90882  | 5.2382  |
-| quant0.75  | 32.682 | 0.38805  | 0.030183 | -1.3947   | -0.57304 | -1.5222  | -2.1797  | -2.3804  | -0.12475 | 0.60602  | 2.1393    | 1.1452   | 5.3271  |
-| quant0.975 | 34.013 | 1.7913   | 1.5244   | -0.061553 | 0.91284  | 0.057574 | -0.55204 | -0.19711 | 1.2892   | 0.64727  | 2.7594    | 1.6114   | 5.5078  |
+| mean       | 31.97  | -0.33093 | -0.72989 | -2.0691   | -1.3312  | -2.3383  | -3.024   | -3.5062  | -0.84412 | 0.58448  | 1.8059    | 1.1293   | 5.2411  |
+| sd         | 1.0316 | 1.0918   | 1.1628   | 1.0375    | 1.1557   | 1.2289   | 1.2659   | 1.6989   | 1.1      | 0.032099 | 0.48498   | 0.38533  | 0.12539 |
+| quant0.025 | 29.946 | -2.4737  | -3.012   | -4.1054   | -3.5993  | -4.7505  | -5.5089  | -6.8407  | -3.0031  | 0.52147  | 1.1164    | 0.48296  | 5.0041  |
+| quant0.25  | 31.272 | -1.0694  | -1.5164  | -2.7708   | -2.1129  | -3.1695  | -3.8802  | -4.6553  | -1.5881  | 0.56277  | 1.4579    | 0.84188  | 5.1544  |
+| quant0.5   | 31.967 | -0.33335 | -0.73247 | -2.0713   | -1.3337  | -2.3409  | -3.0267  | -3.5099  | -0.8465  | 0.58441  | 1.7128    | 1.0997   | 5.2372  |
+| quant0.75  | 32.663 | 0.40283  | 0.051615 | -1.3717   | -0.55445 | -1.5123  | -2.1732  | -2.3643  | -0.10482 | 0.60605  | 2.0586    | 1.3791   | 5.3241  |
+| quant0.975 | 33.992 | 1.808    | 1.5482   | -0.036467 | 0.93293  | 0.068964 | -0.54432 | -0.17786 | 1.3106   | 0.64735  | 2.9977    | 1.9602   | 5.4963  |
 
 Make the plots:
 
 ``` r
 ddf <- data.frame(rbind(sigmasch,sigmacla,sigmaepsilon),errterm=gl(3,nrow(sigmasch),labels = c("school","class","epsilon")))
-ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("wear")+ylab("density")
+ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("math")+ylab("density")
 ```
 
 ![](figs/jsppostsdpc-1..svg)<!-- -->
@@ -484,7 +484,7 @@ system.time(fit <- sampling(sm, data=jspdat, iter=10000))
 ```
 
        user  system elapsed 
-    135.507   7.363  58.611 
+    135.313   7.741  58.501 
 
 ## Diagnostics
 
@@ -550,7 +550,7 @@ print(fit,pars=c("beta","sigmalev1","sigmalev2","sigmaeps"))
     sigmalev2  1.00    0.01 0.49  0.08  0.65  1.01  1.35  1.98  1901    1
     sigmaeps   5.26    0.00 0.13  5.02  5.17  5.26  5.35  5.51 26651    1
 
-    Samples were drawn using NUTS(diag_e) at Wed Aug 10 11:38:04 2022.
+    Samples were drawn using NUTS(diag_e) at Fri Jan  6 10:10:37 2023.
     For each parameter, n_eff is a crude measure of effective sample size,
     and Rhat is the potential scale reduction factor on split chains (at 
     convergence, Rhat=1).
@@ -650,7 +650,7 @@ We can look at the STAN code that `brms` used with:
 stancode(bmod)
 ```
 
-    // generated with brms 2.17.0
+    // generated with brms 2.18.0
     functions {
     }
     data {
@@ -708,7 +708,8 @@ stancode(bmod)
       // likelihood including constants
       if (!prior_only) {
         // initialize linear predictor term
-        vector[N] mu = Intercept + rep_vector(0.0, N);
+        vector[N] mu = rep_vector(0.0, N);
+        mu += Intercept;
         for (n in 1:N) {
           // add more terms to the linear predictor
           mu[n] += r_1_1[J_1[n]] * Z_1_1[n] + r_2_1[J_2[n]] * Z_2_1[n];
@@ -747,28 +748,28 @@ summary(bmod)
     Group-Level Effects: 
     ~school (Number of levels: 48) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     1.80      0.40     0.96     2.55 1.00     3662     4037
+    sd(Intercept)     1.78      0.42     0.85     2.55 1.00     2023     1353
 
     ~school:class (Number of levels: 90) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.98      0.48     0.09     1.92 1.00     2135     4728
+    sd(Intercept)     1.02      0.50     0.09     2.01 1.00     1726     1883
 
     Population-Level Effects: 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept    31.99      1.05    29.93    34.01 1.00     5554     8792
-    craven        0.58      0.03     0.52     0.65 1.00    36045    14317
-    social2      -0.34      1.10    -2.50     1.83 1.00     6068    10062
-    social3      -0.76      1.18    -3.04     1.57 1.00     6300    10106
-    social4      -2.10      1.05    -4.15    -0.01 1.00     5575     8717
-    social5      -1.34      1.17    -3.59     0.95 1.00     6578    10505
-    social6      -2.35      1.24    -4.77     0.07 1.00     6707    11434
-    social7      -3.02      1.28    -5.53    -0.50 1.00     7236    11602
-    social8      -3.52      1.71    -6.83    -0.17 1.00    10681    14276
-    social9      -0.87      1.11    -3.04     1.31 1.00     5892     9966
+    Intercept    32.01      1.05    29.94    34.07 1.00     5304     8366
+    craven        0.58      0.03     0.52     0.65 1.00    28278    14479
+    social2      -0.36      1.10    -2.50     1.82 1.00     5570     9659
+    social3      -0.78      1.18    -3.10     1.54 1.00     5821     9654
+    social4      -2.12      1.06    -4.18    -0.05 1.00     5081     7761
+    social5      -1.36      1.17    -3.67     0.93 1.00     5886     9010
+    social6      -2.37      1.25    -4.81     0.11 1.00     6062     8541
+    social7      -3.04      1.27    -5.55    -0.55 1.00     6563    11312
+    social8      -3.54      1.71    -6.88    -0.17 1.00     9695    13207
+    social9      -0.89      1.11    -3.10     1.29 1.00     5522     8704
 
     Family Specific Parameters: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma     5.26      0.13     5.02     5.51 1.00    22531    14195
+    sigma     5.26      0.13     5.02     5.52 1.00    20617    14837
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -944,19 +945,19 @@ hyperparameters.
 See the [Discussion of the single random effect
 model](pulp.md#Discussion) for general comments.
 
--   As with the previous analyses, sometimes the INLA posteriors for the
-    hyperparameters have densities which do not give weight to
-    close-to-zero values where other analyses suggest this might be
-    reasonable.
+- As with the previous analyses, sometimes the INLA posteriors for the
+  hyperparameters have densities which do not give weight to
+  close-to-zero values where other analyses suggest this might be
+  reasonable.
 
--   There is relatively little disagreement between the methods and much
-    similarity.
+- There is relatively little disagreement between the methods and much
+  similarity.
 
--   There were no major computational issue with the analyses (in
-    contrast with some of the other examples)
+- There were no major computational issue with the analyses (in contrast
+  with some of the other examples)
 
--   The `mgcv` analyses took a little longer than previous analyses
-    because the sample size is larger (but still were quite fast).
+- The `mgcv` analyses took a little longer than previous analyses
+  because the sample size is larger (but still were quite fast).
 
 # Package version info
 
@@ -973,36 +974,36 @@ sessionInfo()
     LAPACK: /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRlapack.dylib
 
     locale:
-    [1] en_GB.UTF-8/en_GB.UTF-8/en_GB.UTF-8/C/en_GB.UTF-8/en_GB.UTF-8
+    [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 
     attached base packages:
     [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-40         nlme_3.1-159        brms_2.18.0         Rcpp_1.0.9          rstan_2.26.13      
-     [6] StanHeaders_2.26.13 knitr_1.40          INLA_22.09.26       sp_1.5-0            foreach_1.5.2      
-    [11] RLRsim_3.1-8        pbkrtest_0.5.1      lme4_1.1-30         Matrix_1.5-1        ggplot2_3.3.6      
+     [1] mgcv_1.8-41         nlme_3.1-161        brms_2.18.0         Rcpp_1.0.9          rstan_2.26.13      
+     [6] StanHeaders_2.26.13 knitr_1.41          INLA_22.12.16       sp_1.5-1            foreach_1.5.2      
+    [11] RLRsim_3.1-8        pbkrtest_0.5.1      lme4_1.1-31         Matrix_1.5-3        ggplot2_3.4.0      
     [16] faraway_1.0.9      
 
     loaded via a namespace (and not attached):
-      [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2       ggridges_0.5.4       markdown_1.1        
-      [6] base64enc_0.1-3      rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         DT_0.25             
+      [1] minqa_1.2.5          colorspace_2.0-3     ellipsis_0.3.2       markdown_1.4         base64enc_0.1-3     
+      [6] rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         MatrixModels_0.5-1   DT_0.26             
      [11] fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18     splines_4.2.1       
-     [16] shinythemes_1.2.0    bayesplot_1.9.0      jsonlite_1.8.0       nloptr_2.0.3         broom_1.0.1         
-     [21] shiny_1.7.2          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0       
-     [26] cli_3.4.1            later_1.3.0          htmltools_0.5.3      prettyunits_1.1.1    tools_4.2.1         
+     [16] shinythemes_1.2.0    bayesplot_1.10.0     jsonlite_1.8.4       nloptr_2.0.3         broom_1.0.2         
+     [21] shiny_1.7.4          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0       
+     [26] cli_3.5.0            later_1.3.0          htmltools_0.5.4      prettyunits_1.1.1    tools_4.2.1         
      [31] igraph_1.3.5         coda_0.19-4          gtable_0.3.1         glue_1.6.2           reshape2_1.4.4      
-     [36] dplyr_1.0.10         posterior_1.3.1      V8_4.2.1             vctrs_0.4.1          svglite_2.1.0       
-     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.33            stringr_1.4.1       
-     [46] ps_1.7.1             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.2      gtools_3.9.3        
-     [51] MASS_7.3-58.1        zoo_1.8-11           scales_1.2.1         colourpicker_1.1.1   promises_1.2.0.1    
-     [56] Brobdingnag_1.2-7    inline_0.3.19        shinystan_2.6.0      yaml_2.3.5           curl_4.3.2          
-     [61] gridExtra_2.3        loo_2.5.1            stringi_1.7.8        highr_0.9            dygraphs_1.1.1.6    
-     [66] checkmate_2.1.0      boot_1.3-28          pkgbuild_1.3.1       systemfonts_1.0.4    rlang_1.0.6         
-     [71] pkgconfig_2.0.3      matrixStats_0.62.0   distributional_0.3.1 evaluate_0.16        lattice_0.20-45     
-     [76] purrr_0.3.4          labeling_0.4.2       rstantools_2.2.0     htmlwidgets_1.5.4    processx_3.7.0      
-     [81] tidyselect_1.1.2     plyr_1.8.7           magrittr_2.0.3       R6_2.5.1             generics_0.1.3      
-     [86] DBI_1.1.3            pillar_1.8.1         withr_2.5.0          xts_0.12.1           abind_1.4-5         
-     [91] tibble_3.1.8         crayon_1.5.1         utf8_1.2.2           rmarkdown_2.16       grid_4.2.1          
-     [96] callr_3.7.2          threejs_0.3.3        digest_0.6.29        xtable_1.8-4         tidyr_1.2.1         
-    [101] httpuv_1.6.6         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       
+     [36] dplyr_1.0.10         posterior_1.3.1      V8_4.2.2             vctrs_0.5.1          svglite_2.1.0       
+     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.36            stringr_1.5.0       
+     [46] ps_1.7.2             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.3      gtools_3.9.4        
+     [51] MASS_7.3-58.1        zoo_1.8-11           scales_1.2.1         colourpicker_1.2.0   promises_1.2.0.1    
+     [56] Brobdingnag_1.2-9    inline_0.3.19        shinystan_2.6.0      yaml_2.3.6           curl_4.3.3          
+     [61] gridExtra_2.3        loo_2.5.1            stringi_1.7.8        highr_0.10           dygraphs_1.1.1.6    
+     [66] checkmate_2.1.0      boot_1.3-28.1        pkgbuild_1.4.0       systemfonts_1.0.4    rlang_1.0.6         
+     [71] pkgconfig_2.0.3      matrixStats_0.63.0   distributional_0.3.1 evaluate_0.19        lattice_0.20-45     
+     [76] purrr_1.0.0          labeling_0.4.2       rstantools_2.2.0     htmlwidgets_1.6.0    processx_3.8.0      
+     [81] tidyselect_1.2.0     plyr_1.8.8           magrittr_2.0.3       R6_2.5.1             generics_0.1.3      
+     [86] DBI_1.1.3            pillar_1.8.1         withr_2.5.0          xts_0.12.2           abind_1.4-5         
+     [91] tibble_3.1.8         crayon_1.5.2         utf8_1.2.2           rmarkdown_2.19       grid_4.2.1          
+     [96] callr_3.7.3          threejs_0.3.3        digest_0.6.31        xtable_1.8-4         tidyr_1.2.1         
+    [101] httpuv_1.6.7         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       

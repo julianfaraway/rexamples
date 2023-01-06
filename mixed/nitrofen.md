@@ -1,7 +1,7 @@
 Poisson GLMM
 ================
 [Julian Faraway](https://julianfaraway.github.io/)
-27 September 2022
+1/6/23
 
 - <a href="#data-and-model" id="toc-data-and-model">Data and Model</a>
 - <a href="#lme4" id="toc-lme4">LME4</a>
@@ -202,10 +202,10 @@ imod$summary.fixed |> kable()
 
 |                   |     mean |      sd | 0.025quant | 0.5quant | 0.975quant |     mode | kld |
 |:------------------|---------:|--------:|-----------:|---------:|-----------:|---------:|----:|
-| (Intercept)       |  1.34783 | 0.15816 |    1.03374 |  1.34912 |    1.65465 |  1.35167 |   0 |
-| I(conc/300)       |  0.35874 | 0.27837 |   -0.18935 |  0.35935 |    0.90333 |  0.36055 |   0 |
-| brood             |  0.57926 | 0.05910 |    0.46421 |  0.57895 |    0.69603 |  0.57835 |   0 |
-| I(conc/300):brood | -0.79022 | 0.11554 |   -1.01807 | -0.78979 |   -0.56485 | -0.78891 |   0 |
+| (Intercept)       |  1.34483 | 0.15849 |    1.03312 |  1.34505 |    1.65530 |  1.34550 |   0 |
+| I(conc/300)       |  0.35704 | 0.27889 |   -0.19112 |  0.35732 |    0.90360 |  0.35785 |   0 |
+| brood             |  0.58031 | 0.05912 |    0.46453 |  0.58025 |    0.69642 |  0.58014 |   0 |
+| I(conc/300):brood | -0.79178 | 0.11565 |   -1.01927 | -0.79154 |   -0.56564 | -0.79106 |   0 |
 
 The posterior means are very similar to the PQL estimates. We can get
 plots of the posteriors of the fixed effects:
@@ -237,13 +237,13 @@ hpd = inla.tmarginal(function(x) 1/sqrt(x), imod$marginals.hyperpar[[1]])
 inla.zmarginal(hpd)
 ```
 
-    Mean            0.278126 
-    Stdev           0.0567699 
-    Quantile  0.025 0.17271 
-    Quantile  0.25  0.238949 
-    Quantile  0.5   0.275491 
-    Quantile  0.75  0.314419 
-    Quantile  0.975 0.397459 
+    Mean            0.277971 
+    Stdev           0.0566431 
+    Quantile  0.025 0.173482 
+    Quantile  0.25  0.23878 
+    Quantile  0.5   0.27527 
+    Quantile  0.75  0.3141 
+    Quantile  0.975 0.397345 
 
 Again the result is very similar to the PQL output although notice that
 INLA provides some assessment of uncertainty in this value in contrast
@@ -295,7 +295,7 @@ We can look at the STAN code that `brms` used with:
 stancode(bmod)
 ```
 
-    // generated with brms 2.17.0
+    // generated with brms 2.18.0
     functions {
     }
     data {
@@ -338,7 +338,8 @@ stancode(bmod)
       // likelihood including constants
       if (!prior_only) {
         // initialize linear predictor term
-        vector[N] mu = Intercept + rep_vector(0.0, N);
+        vector[N] mu = rep_vector(0.0, N);
+        mu += Intercept;
         for (n in 1:N) {
           // add more terms to the linear predictor
           mu[n] += r_1_1[J_1[n]] * Z_1_1[n];
@@ -373,14 +374,14 @@ summary(bmod)
     Group-Level Effects: 
     ~id (Number of levels: 50) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.31      0.06     0.21     0.44 1.00     1247     2105
+    sd(Intercept)     0.31      0.06     0.21     0.45 1.00     1200     1758
 
     Population-Level Effects: 
                     Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept           1.34      0.17     1.01     1.66 1.00     1629     2399
-    IconcD300           0.36      0.29    -0.22     0.92 1.00     1578     2317
-    brood               0.58      0.06     0.47     0.70 1.00     2051     2855
-    IconcD300:brood    -0.80      0.12    -1.04    -0.57 1.00     1777     2367
+    Intercept           1.34      0.16     1.03     1.66 1.01     1560     2193
+    IconcD300           0.36      0.28    -0.18     0.90 1.01     1609     2495
+    brood               0.58      0.06     0.47     0.70 1.00     2032     2387
+    IconcD300:brood    -0.80      0.11    -1.03    -0.57 1.00     1803     2647
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -542,34 +543,34 @@ sessionInfo()
     LAPACK: /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRlapack.dylib
 
     locale:
-    [1] en_GB.UTF-8/en_GB.UTF-8/en_GB.UTF-8/C/en_GB.UTF-8/en_GB.UTF-8
+    [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 
     attached base packages:
     [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-40   nlme_3.1-159  brms_2.18.0   Rcpp_1.0.9    knitr_1.40    INLA_22.09.26 sp_1.5-0      foreach_1.5.2
-     [9] lme4_1.1-30   Matrix_1.5-1  ggplot2_3.3.6
+     [1] mgcv_1.8-41   nlme_3.1-161  brms_2.18.0   Rcpp_1.0.9    knitr_1.41    INLA_22.12.16 sp_1.5-1      foreach_1.5.2
+     [9] lme4_1.1-31   Matrix_1.5-3  ggplot2_3.4.0
 
     loaded via a namespace (and not attached):
-      [1] minqa_1.2.4          colorspace_2.0-3     ellipsis_0.3.2       ggridges_0.5.4       markdown_1.1        
-      [6] base64enc_0.1-3      rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         rstan_2.26.13       
-     [11] DT_0.25              fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18    
-     [16] splines_4.2.1        shinythemes_1.2.0    bayesplot_1.9.0      jsonlite_1.8.0       nloptr_2.0.3        
-     [21] shiny_1.7.2          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0       
-     [26] cli_3.4.1            later_1.3.0          htmltools_0.5.3      prettyunits_1.1.1    tools_4.2.1         
+      [1] minqa_1.2.5          colorspace_2.0-3     ellipsis_0.3.2       markdown_1.4         base64enc_0.1-3     
+      [6] rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         rstan_2.26.13        MatrixModels_0.5-1  
+     [11] DT_0.26              fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18    
+     [16] splines_4.2.1        shinythemes_1.2.0    bayesplot_1.10.0     jsonlite_1.8.4       nloptr_2.0.3        
+     [21] shiny_1.7.4          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0       
+     [26] cli_3.5.0            later_1.3.0          htmltools_0.5.4      prettyunits_1.1.1    tools_4.2.1         
      [31] igraph_1.3.5         coda_0.19-4          gtable_0.3.1         glue_1.6.2           reshape2_1.4.4      
-     [36] dplyr_1.0.10         posterior_1.3.1      V8_4.2.1             vctrs_0.4.1          svglite_2.1.0       
-     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.33            stringr_1.4.1       
-     [46] ps_1.7.1             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.2      gtools_3.9.3        
-     [51] MASS_7.3-58.1        zoo_1.8-11           scales_1.2.1         colourpicker_1.1.1   promises_1.2.0.1    
-     [56] Brobdingnag_1.2-7    inline_0.3.19        shinystan_2.6.0      yaml_2.3.5           curl_4.3.2          
-     [61] gridExtra_2.3        loo_2.5.1            StanHeaders_2.26.13  stringi_1.7.8        highr_0.9           
-     [66] dygraphs_1.1.1.6     checkmate_2.1.0      boot_1.3-28          pkgbuild_1.3.1       systemfonts_1.0.4   
-     [71] rlang_1.0.6          pkgconfig_2.0.3      matrixStats_0.62.0   distributional_0.3.1 evaluate_0.16       
-     [76] lattice_0.20-45      purrr_0.3.4          rstantools_2.2.0     htmlwidgets_1.5.4    labeling_0.4.2      
-     [81] tidyselect_1.1.2     processx_3.7.0       plyr_1.8.7           magrittr_2.0.3       R6_2.5.1            
-     [86] generics_0.1.3       DBI_1.1.3            pillar_1.8.1         withr_2.5.0          xts_0.12.1          
-     [91] abind_1.4-5          tibble_3.1.8         crayon_1.5.1         utf8_1.2.2           rmarkdown_2.16      
-     [96] grid_4.2.1           callr_3.7.2          threejs_0.3.3        digest_0.6.29        xtable_1.8-4        
-    [101] httpuv_1.6.6         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       
+     [36] dplyr_1.0.10         posterior_1.3.1      V8_4.2.2             vctrs_0.5.1          svglite_2.1.0       
+     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.36            stringr_1.5.0       
+     [46] ps_1.7.2             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.3      gtools_3.9.4        
+     [51] MASS_7.3-58.1        zoo_1.8-11           scales_1.2.1         colourpicker_1.2.0   promises_1.2.0.1    
+     [56] Brobdingnag_1.2-9    inline_0.3.19        shinystan_2.6.0      yaml_2.3.6           curl_4.3.3          
+     [61] gridExtra_2.3        loo_2.5.1            StanHeaders_2.26.13  stringi_1.7.8        highr_0.10          
+     [66] dygraphs_1.1.1.6     checkmate_2.1.0      boot_1.3-28.1        pkgbuild_1.4.0       rlang_1.0.6         
+     [71] pkgconfig_2.0.3      systemfonts_1.0.4    matrixStats_0.63.0   distributional_0.3.1 evaluate_0.19       
+     [76] lattice_0.20-45      rstantools_2.2.0     htmlwidgets_1.6.0    labeling_0.4.2       tidyselect_1.2.0    
+     [81] processx_3.8.0       plyr_1.8.8           magrittr_2.0.3       R6_2.5.1             generics_0.1.3      
+     [86] DBI_1.1.3            pillar_1.8.1         withr_2.5.0          xts_0.12.2           abind_1.4-5         
+     [91] tibble_3.1.8         crayon_1.5.2         utf8_1.2.2           rmarkdown_2.19       grid_4.2.1          
+     [96] callr_3.7.3          threejs_0.3.3        digest_0.6.31        xtable_1.8-4         httpuv_1.6.7        
+    [101] RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       
