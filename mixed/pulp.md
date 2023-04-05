@@ -1,7 +1,7 @@
 One Way Anova with a random effect
 ================
 [Julian Faraway](https://julianfaraway.github.io/)
-1/5/23
+4/5/23
 
 - <a href="#data" id="toc-data">Data</a>
 - <a href="#questions" id="toc-questions">Questions</a>
@@ -384,7 +384,7 @@ imod$summary.hyperpar |> kable()
 |                                         |       mean |         sd | 0.025quant |   0.5quant | 0.975quant |      mode |
 |:----------------------------------------|-----------:|-----------:|-----------:|-----------:|-----------:|----------:|
 | Precision for the Gaussian observations |     6.8903 |     2.1299 |     3.4852 |     6.6368 |     11.791 |    6.1554 |
-| Precision for operator                  | 17503.6091 | 17052.1190 |  1101.4491 | 12305.1159 |  62746.833 | 2980.4603 |
+| Precision for operator                  | 17504.1469 | 17051.8380 |  1101.7099 | 12305.8966 |  62746.492 | 2981.3404 |
 
 Precision for the operator term is unreasonably high. This implies a
 strong belief that there is no variation between the operators which we
@@ -411,12 +411,12 @@ summary(imod)
 
     Fixed effects:
                 mean    sd 0.025quant 0.5quant 0.975quant mode   kld
-    (Intercept) 60.4 0.306     59.777     60.4     61.023 60.4 0.063
+    (Intercept) 60.4 0.306     59.774     60.4     61.026 60.4 0.059
 
     Model hyperparameters:
                                              mean    sd 0.025quant 0.5quant 0.975quant mode
-    Precision for the Gaussian observations 10.64  3.52      5.105    10.20      18.79 9.35
-    Precision for operator                  12.80 21.17      0.447     6.42      64.63 1.05
+    Precision for the Gaussian observations 10.65  3.52      5.106    10.20      18.81 9.35
+    Precision for operator                  12.74 20.63      0.481     6.52      63.35 1.15
 
      is computed 
 
@@ -441,8 +441,8 @@ rbind(sigalpha, sigepsilon)
 ```
 
                mean    sd       quant0.025 quant0.25 quant0.5 quant0.75 quant0.975 mode   
-    sigalpha   0.49651 0.36302  0.1247     0.26012   0.39265  0.61217   1.4769     0.26352
-    sigepsilon 0.31916 0.053599 0.23127    0.28077   0.31277  0.35106   0.441      0.29916
+    sigalpha   0.48835 0.34812  0.12583    0.26007   0.38996  0.60265   1.4264     0.26504
+    sigepsilon 0.3191  0.053609 0.23116    0.28071   0.31272  0.35101   0.44094    0.29913
 
 The posterior mode is most comparable with the (RE)ML estimates computed
 above. In this respect, the results are similar.
@@ -455,10 +455,10 @@ imod$summary.random$operator |> kable()
 
 | ID  |     mean |      sd | 0.025quant | 0.5quant | 0.975quant |     mode |     kld |
 |:----|---------:|--------:|-----------:|---------:|-----------:|---------:|--------:|
-| a   | -0.13061 | 0.32000 |   -0.79695 | -0.11965 |    0.49262 | -0.08817 | 0.05373 |
-| b   | -0.27742 | 0.32489 |   -0.96936 | -0.26127 |    0.32290 | -0.23372 | 0.05087 |
-| c   |  0.17955 | 0.32132 |   -0.43607 |  0.16633 |    0.85445 |  0.13496 | 0.05288 |
-| d   |  0.22842 | 0.32280 |   -0.37922 |  0.21334 |    0.91163 |  0.18605 | 0.05214 |
+| a   | -0.13063 | 0.32019 |   -0.79984 | -0.11960 |    0.49535 | -0.08799 | 0.04964 |
+| b   | -0.27746 | 0.32512 |   -0.97235 | -0.26118 |    0.32551 | -0.23350 | 0.04693 |
+| c   |  0.17958 | 0.32151 |   -0.43875 |  0.16625 |    0.85736 |  0.13448 | 0.04885 |
+| d   |  0.22847 | 0.32302 |   -0.38191 |  0.21329 |    0.91461 |  0.18576 | 0.04812 |
 
 Plot the posterior densities for the two SD terms:
 
@@ -491,7 +491,7 @@ We can compute the probability that the operator SD is smaller than 0.1:
 inla.pmarginal(0.1, sigmaalpha)
 ```
 
-    [1] 0.0090507
+    [1] 0.0085291
 
 The probability is small but not entirely negligible.
 
@@ -597,12 +597,12 @@ summary(imod)
 
     Fixed effects:
                 mean    sd 0.025quant 0.5quant 0.975quant mode kld
-    (Intercept) 60.4 0.169     60.057     60.4     60.743 60.4   0
+    (Intercept) 60.4 0.172      60.05     60.4      60.75 60.4   0
 
     Model hyperparameters:
                                              mean    sd 0.025quant 0.5quant 0.975quant mode
-    Precision for the Gaussian observations 10.56  3.53       5.04    10.11      18.77 9.23
-    Precision for operator                  24.73 32.04       2.24    15.12     106.27 5.84
+    Precision for the Gaussian observations 10.56  3.51       5.05    10.12      18.70 9.26
+    Precision for operator                  25.10 34.61       2.21    14.81     111.99 5.70
 
      is computed 
 
@@ -620,9 +620,9 @@ sigepsilon = c(inla.zmarginal(sigmaepsilon, silent = TRUE),
 rbind(sigalpha, sigepsilon) 
 ```
 
-               mean    sd       quant0.025 quant0.25 quant0.5 quant0.75 quant0.975 mode  
-    sigalpha   0.28859 0.14725  0.097426   0.18418   0.25692  0.35701   0.66308    0.202 
-    sigepsilon 0.32061 0.054292 0.23141    0.28174   0.31422  0.35296   0.44388    0.3007
+               mean    sd       quant0.025 quant0.25 quant0.5 quant0.75 quant0.975 mode   
+    sigalpha   0.29077 0.14866  0.095096   0.18461   0.25985  0.36156   0.66617    0.20377
+    sigepsilon 0.32048 0.054035 0.23185    0.28178   0.31405  0.35264   0.4433     0.30036
 
 We get a similar result to the truncated normal prior used earlier
 although the operator SD is generally smaller.
@@ -644,7 +644,7 @@ We can compute the probability that the operator SD is smaller than 0.1:
 inla.pmarginal(0.1, sigmaalpha)
 ```
 
-    [1] 0.028262
+    [1] 0.03128
 
 The probability is small but not insubstantial.
 
@@ -745,7 +745,7 @@ system.time(fit <- sampling(sm, data=pulpdat))
 ```
 
        user  system elapsed 
-      3.584   0.198   1.374 
+      3.422   0.241   1.306 
 
 By default, we use 2000 iterations but repeated with independent starts
 4 times giving 4 chains. We can thin but do not by default. The warmup
@@ -762,7 +762,7 @@ system.time(fit <- sampling(sm, data=pulpdat, iter=100000))
 ```
 
        user  system elapsed 
-     35.999   2.823  17.099 
+     34.390   3.116  17.356 
 
 The same underlying problems remain but the inference will now be more
 reliable.
@@ -841,7 +841,7 @@ print(fit, pars=c("mu","sigmaalpha","sigmaepsilon","a"))
     a[3]         60.57       0 0.15 60.27 60.47 60.57 60.67 60.87 115742    1
     a[4]         60.61       0 0.16 60.30 60.51 60.61 60.72 60.93 104986    1
 
-    Samples were drawn using NUTS(diag_e) at Thu Jan  5 12:06:57 2023.
+    Samples were drawn using NUTS(diag_e) at Wed Apr  5 13:59:31 2023.
     For each parameter, n_eff is a crude measure of effective sample size,
     and Rhat is the potential scale reduction factor on split chains (at 
     convergence, Rhat=1).
@@ -953,7 +953,7 @@ We can look at the STAN code that `brms` used with:
 stancode(bmod)
 ```
 
-    // generated with brms 2.18.0
+    // generated with brms 2.19.0
     functions {
     }
     data {
@@ -1038,15 +1038,15 @@ summary(bmod)
     Group-Level Effects: 
     ~operator (Number of levels: 4) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.48      0.41     0.06     1.83 1.03      140       35
+    sd(Intercept)     0.45      0.32     0.06     1.38 1.00     1120      326
 
     Population-Level Effects: 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept    60.37      0.30    59.42    60.92 1.02      228       34
+    Intercept    60.39      0.25    59.81    60.92 1.01      858      246
 
     Family Specific Parameters: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma     0.36      0.07     0.25     0.52 1.00     5202     9974
+    sigma     0.36      0.07     0.25     0.52 1.00     3806     3293
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -1060,7 +1060,7 @@ bps = posterior_samples(bmod)
 mean(bps$sd_operator__Intercept < 0.1)
 ```
 
-    [1] 0.048
+    [1] 0.05105
 
 A somewhat higher value than seen previously. The priors used here put
 greater weight on smaller values of the SD.
@@ -1337,29 +1337,28 @@ sessionInfo()
     [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-41         nlme_3.1-161        brms_2.18.0         Rcpp_1.0.9          rstan_2.26.13      
-     [6] StanHeaders_2.26.13 knitr_1.41          INLA_22.12.16       sp_1.5-1            foreach_1.5.2      
-    [11] lme4_1.1-31         Matrix_1.5-3        ggplot2_3.4.0       faraway_1.0.9      
+     [1] mgcv_1.8-42         nlme_3.1-162        brms_2.19.0         Rcpp_1.0.10         rstan_2.26.13      
+     [6] StanHeaders_2.26.13 knitr_1.42          INLA_22.12.16       sp_1.6-0            foreach_1.5.2      
+    [11] lme4_1.1-32         Matrix_1.5-3        ggplot2_3.4.2       faraway_1.0.9      
 
     loaded via a namespace (and not attached):
-      [1] minqa_1.2.5          colorspace_2.0-3     ellipsis_0.3.2       markdown_1.4         base64enc_0.1-3     
-      [6] rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         DT_0.26              fansi_1.0.3         
-     [11] mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18     splines_4.2.1        shinythemes_1.2.0   
-     [16] bayesplot_1.10.0     jsonlite_1.8.4       nloptr_2.0.3         shiny_1.7.4          compiler_4.2.1      
-     [21] backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0        cli_3.5.0            later_1.3.0         
-     [26] htmltools_0.5.4      prettyunits_1.1.1    tools_4.2.1          igraph_1.3.5         coda_0.19-4         
-     [31] gtable_0.3.1         glue_1.6.2           reshape2_1.4.4       dplyr_1.0.10         posterior_1.3.1     
-     [36] V8_4.2.2             vctrs_0.5.1          svglite_2.1.0        iterators_1.0.14     crosstalk_1.2.0     
-     [41] tensorA_0.36.2       xfun_0.36            stringr_1.5.0        ps_1.7.2             mime_0.12           
-     [46] miniUI_0.1.1.1       lifecycle_1.0.3      gtools_3.9.4         MASS_7.3-58.1        zoo_1.8-11          
-     [51] scales_1.2.1         colourpicker_1.2.0   promises_1.2.0.1     Brobdingnag_1.2-9    inline_0.3.19       
-     [56] shinystan_2.6.0      yaml_2.3.6           curl_4.3.3           gridExtra_2.3        loo_2.5.1           
-     [61] stringi_1.7.8        highr_0.10           dygraphs_1.1.1.6     checkmate_2.1.0      boot_1.3-28.1       
-     [66] pkgbuild_1.4.0       rlang_1.0.6          pkgconfig_2.0.3      systemfonts_1.0.4    matrixStats_0.63.0  
-     [71] distributional_0.3.1 evaluate_0.19        lattice_0.20-45      rstantools_2.2.0     htmlwidgets_1.6.0   
-     [76] labeling_0.4.2       processx_3.8.0       tidyselect_1.2.0     plyr_1.8.8           magrittr_2.0.3      
-     [81] R6_2.5.1             generics_0.1.3       DBI_1.1.3            pillar_1.8.1         withr_2.5.0         
-     [86] xts_0.12.2           abind_1.4-5          tibble_3.1.8         crayon_1.5.2         utf8_1.2.2          
-     [91] rmarkdown_2.19       grid_4.2.1           callr_3.7.3          threejs_0.3.3        digest_0.6.31       
-     [96] xtable_1.8-4         httpuv_1.6.7         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0       
-    [101] shinyjs_2.1.0       
+     [1] minqa_1.2.5          colorspace_2.1-0     ellipsis_0.3.2       markdown_1.5         base64enc_0.1-3     
+     [6] rstudioapi_0.14      farver_2.1.1         Deriv_4.1.3          MatrixModels_0.5-1   DT_0.27             
+    [11] fansi_1.0.4          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-19     splines_4.2.1       
+    [16] shinythemes_1.2.0    bayesplot_1.10.0     jsonlite_1.8.4       nloptr_2.0.3         shiny_1.7.4         
+    [21] compiler_4.2.1       backports_1.4.1      fastmap_1.1.1        cli_3.6.1            later_1.3.0         
+    [26] htmltools_0.5.5      prettyunits_1.1.1    tools_4.2.1          igraph_1.4.1         coda_0.19-4         
+    [31] gtable_0.3.3         glue_1.6.2           reshape2_1.4.4       dplyr_1.1.1          posterior_1.4.1     
+    [36] V8_4.2.2             vctrs_0.6.1          svglite_2.1.1        iterators_1.0.14     crosstalk_1.2.0     
+    [41] tensorA_0.36.2       xfun_0.38            stringr_1.5.0        ps_1.7.4             mime_0.12           
+    [46] miniUI_0.1.1.1       lifecycle_1.0.3      gtools_3.9.4         MASS_7.3-58.3        zoo_1.8-11          
+    [51] scales_1.2.1         colourpicker_1.2.0   promises_1.2.0.1     Brobdingnag_1.2-9    inline_0.3.19       
+    [56] shinystan_2.6.0      yaml_2.3.7           curl_5.0.0           gridExtra_2.3        loo_2.6.0           
+    [61] stringi_1.7.12       dygraphs_1.1.1.6     checkmate_2.1.0      boot_1.3-28.1        pkgbuild_1.4.0      
+    [66] rlang_1.1.0          pkgconfig_2.0.3      systemfonts_1.0.4    matrixStats_0.63.0   distributional_0.3.2
+    [71] evaluate_0.20        lattice_0.20-45      rstantools_2.3.1     htmlwidgets_1.6.2    labeling_0.4.2      
+    [76] processx_3.8.0       tidyselect_1.2.0     plyr_1.8.8           magrittr_2.0.3       R6_2.5.1            
+    [81] generics_0.1.3       pillar_1.9.0         withr_2.5.0          xts_0.13.0           abind_1.4-5         
+    [86] tibble_3.2.1         crayon_1.5.2         utf8_1.2.3           rmarkdown_2.21       grid_4.2.1          
+    [91] callr_3.7.3          threejs_0.3.3        digest_0.6.31        xtable_1.8-4         httpuv_1.6.9        
+    [96] RcppParallel_5.1.7   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       
