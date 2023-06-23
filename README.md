@@ -29,3 +29,5 @@ of the models.
 - [Poisson reponse model](mixed/nitrofen.md) - the `nitrofen` data
 - [Binary response model](mixed/ohio.md) - the `ohio` data
 
+- [Cmdstan version of pulp analysis](mixed/pulpcmdstan.md)
+
