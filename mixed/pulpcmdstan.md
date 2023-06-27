@@ -100,11 +100,11 @@ fit <- mod$sample(
     Chain 3 Iteration:    1 / 2000 [  0%]  (Warmup) 
     Chain 4 Iteration:    1 / 2000 [  0%]  (Warmup) 
     Chain 1 Iteration:  500 / 2000 [ 25%]  (Warmup) 
-    Chain 1 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
-    Chain 1 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
     Chain 2 Iteration:  500 / 2000 [ 25%]  (Warmup) 
     Chain 2 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
     Chain 2 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 1 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+    Chain 1 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
     Chain 1 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
     Chain 1 Iteration: 2000 / 2000 [100%]  (Sampling) 
     Chain 2 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
@@ -196,5 +196,13 @@ fit$summary("sigmaalpha", tailprob = ~ mean(. <= 0.1))
       <chr>         <num>
     1 sigmaalpha   0.0575
 
-Results not noticeably different from the rstan version. Runs faster and
-worked with the most recent version of Stan.
+- Results not noticeably different from the rstan version.
+- Previous versions of Stan used `n_eff` while this version uses
+  `ess_bulk` and `ess_tail`
+- Previous version of Stan was rerun with much longer chains because
+  default choice seemed inadequate but this current version is not so
+  bad with the defaul
+- Runs faster (much shorter chains) and worked with the most recent
+  version of Stan.
+- Seems that cmdstan is a better choice than rstan (but will brms keep
+  up?)

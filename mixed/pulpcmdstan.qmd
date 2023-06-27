@@ -147,7 +147,12 @@ Compute the lower tail probability.
 fit$summary("sigmaalpha", tailprob = ~ mean(. <= 0.1))
 ```
 
-Results not noticeably different from the rstan version. Runs faster and worked with the most recent version of Stan.
+- Results not noticeably different from the rstan version. 
+- Previous versions of Stan used `n_eff` while this version uses `ess_bulk`
+and `ess_tail`
+- Previous version of Stan was rerun with much longer chains because default choice seemed inadequate but this current version is not so bad with the defaul
+- Runs faster (much shorter chains) and worked with the most recent version of Stan.
+- Seems that cmdstan is a better choice than rstan (but will brms keep up?)
 
 
 
