@@ -27,7 +27,8 @@ ggplot2::theme_set(ggplot2::theme_bw())
 library(faraway)
 library(cmdstanr)
 library(ggplot2)
-library(bayesplot)
+library(posterior)
+register_knitr_engine(override = FALSE)
 ```
 
 # Data
@@ -43,17 +44,40 @@ ggplot(pulp, aes(x=operator, y=bright))+geom_point(position = position_jitter(wi
 
 # CMDSTAN
 
-- Load in the STAN file without compiling
-- Look at it
-- Update a deprecated expression (fixing this in the source would break rstan version)
-- Now compile it
-
-```{r}
-mod <- cmdstan_model("../stancode/pulp.stan", compile = FALSE)
-mod$print()
-mod$format(canonicalize = TRUE)
-mod$compile()
+STAN chunk will be compiled to 'mod'. Chunk header is:
 ```
+cmdstan, output.var="mod", override = FALSE
+```
+
+```{cmdstan, output.var="mod", override = FALSE}
+data {
+  int<lower=0> N;
+  int<lower=0> J;
+  array[N] int<lower=1,upper=J> predictor;
+  array[N] real response;
+}
+parameters {
+  vector[J] eta;
+  real mu;
+  real<lower=0> sigmaalpha;
+  real<lower=0> sigmaepsilon;
+}
+transformed parameters {
+  vector[J] a;
+  vector[N] yhat;
+
+  a = mu + sigmaalpha * eta;
+
+  for (i in 1:N)
+    yhat[i] = a[predictor[i]];
+}
+model {
+  eta ~ normal(0, 1);
+
+  response ~ normal(yhat, sigmaepsilon);
+}
+```
+
 
 Put the data into a format it can be used:
 
@@ -82,16 +106,39 @@ Get summary on the parameters of interest.
 fit$summary(c("mu","sigmaalpha","sigmaepsilon","a"))
 ```
 
+Extract the draws into a convenient dataframe format:
+
+```{r}
+draws_df <- fit$draws(format = "df")
+```
+
+Check the diagnostics on the most problematic parameter:
+
+```{r cssadiag}
+ggplot(draws_df,
+       aes(x=.iteration,y=sigmaalpha,color=factor(.chain))) + geom_line() +
+  labs(color = 'Chain', x="Iteration")
+```
+
+Looks reasonably OK (other parameters less likely to be an issue)
+
+
 Show posterior densities on the two variance terms:
 
 ```{r cspulpvars}
-mcmc_dens(fit$draws(c("sigmaalpha","sigmaepsilon")),facet_args=list(scales="fixed"))
+sdf = stack(draws_df[,startsWith(colnames(draws_df),"sigma")])
+colnames(sdf) = c("bright","sigma")
+levels(sdf$sigma) = c("alpha","epsilon")
+ggplot(sdf, aes(x=bright,color=sigma)) + geom_density() + xlim(0,2)
 ```
 
 Show posteriors on the random effect terms:
 
 ```{r cspulpre}
-mcmc_dens(fit$draws(c("a")),facet_args=list(scales="fixed"))
+adf = stack(draws_df[,startsWith(colnames(draws_df),"a")])
+colnames(adf) = c("bright","operator")
+levels(adf$operator) = letters[1:4]
+ggplot(adf, aes(x=bright,color=operator)) + geom_density()
 ```
 
 Compute the lower tail probability.
