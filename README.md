@@ -28,6 +28,3 @@ of the models.
 - [Multiple Response Models](mixed/jspmultiple.md) - the `jsp` data
 - [Poisson reponse model](mixed/nitrofen.md) - the `nitrofen` data
 - [Binary response model](mixed/ohio.md) - the `ohio` data
-
-- [Cmdstan version of pulp analysis](mixed/pulpcmdstan.md)
-

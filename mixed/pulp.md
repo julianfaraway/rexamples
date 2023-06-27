@@ -1,42 +1,29 @@
-One Way Anova with a random effect
-================
+# One Way Anova with a random effect
 [Julian Faraway](https://julianfaraway.github.io/)
-4/5/23
+2023-06-27
 
-- <a href="#data" id="toc-data">Data</a>
-- <a href="#questions" id="toc-questions">Questions</a>
-- <a href="#linear-model-with-fixed-effects"
-  id="toc-linear-model-with-fixed-effects">Linear model with fixed
-  effects</a>
-- <a href="#likelihood-inference" id="toc-likelihood-inference">Likelihood
-  inference</a>
-  - <a href="#hypothesis-testing" id="toc-hypothesis-testing">Hypothesis
-    testing</a>
-  - <a href="#confidence-intervals" id="toc-confidence-intervals">Confidence
-    intervals</a>
-  - <a href="#random-effects" id="toc-random-effects">Random effects</a>
-- <a href="#inla" id="toc-inla">INLA</a>
-  - <a href="#halfnormal-prior-on-the-sds"
-    id="toc-halfnormal-prior-on-the-sds">Halfnormal prior on the SDs</a>
-  - <a href="#informative-gamma-priors-on-the-precisions"
-    id="toc-informative-gamma-priors-on-the-precisions">Informative gamma
-    priors on the precisions</a>
-  - <a href="#penalized-complexity-prior"
-    id="toc-penalized-complexity-prior">Penalized Complexity Prior</a>
-- <a href="#stan" id="toc-stan">STAN</a>
-  - <a href="#diagnostics" id="toc-diagnostics">Diagnostics</a>
-  - <a href="#output-summaries" id="toc-output-summaries">Output
-    summaries</a>
-  - <a href="#posterior-distributions"
-    id="toc-posterior-distributions">Posterior Distributions</a>
-  - <a href="#tail-probability" id="toc-tail-probability">Tail
-    probability</a>
-- <a href="#brms" id="toc-brms">BRMS</a>
-- <a href="#mgcv" id="toc-mgcv">MGCV</a>
-  - <a href="#ginla" id="toc-ginla">GINLA</a>
-- <a href="#discussion" id="toc-discussion">Discussion</a>
-- <a href="#package-version-info" id="toc-package-version-info">Package
-  version info</a>
+- [Data](#data)
+- [Questions](#questions)
+- [Linear model with fixed effects](#linear-model-with-fixed-effects)
+- [Likelihood inference](#likelihood-inference)
+  - [Hypothesis testing](#hypothesis-testing)
+  - [Confidence intervals](#confidence-intervals)
+  - [Random effects](#random-effects)
+- [INLA](#inla)
+  - [Halfnormal prior on the SDs](#halfnormal-prior-on-the-sds)
+  - [Informative gamma priors on the
+    precisions](#informative-gamma-priors-on-the-precisions)
+  - [Penalized Complexity Prior](#penalized-complexity-prior)
+- [STAN](#stan)
+  - [Diagnostics](#diagnostics)
+  - [Output summaries](#output-summaries)
+  - [Posterior Distributions](#posterior-distributions)
+  - [Tail probability](#tail-probability)
+- [BRMS](#brms)
+- [MGCV](#mgcv)
+  - [GINLA](#ginla)
+- [Discussion](#discussion)
+- [Package version info](#package-version-info)
 
 See the [introduction](../index.md) for an overview.
 
@@ -51,9 +38,10 @@ library(ggplot2)
 library(lme4)
 library(INLA)
 library(knitr)
-library(rstan, quietly=TRUE)
+library(cmdstanr)
 library(brms)
 library(mgcv)
+register_knitr_engine(override = FALSE)
 ```
 
 # Data
@@ -681,48 +669,55 @@ between a pair of operators.
 # STAN
 
 [STAN](https://mc-stan.org/) performs Bayesian inference using MCMC.
+There are two ways to access Stan from within R - `rstan` and
+`cmdstanr`. Previously I have used `rstan` but there have been some
+difficulties in updating the interface with Stan such that only an older
+version of Stan can be used and I cannot get `rstan` to work with R
+version 4.3. Although updates to fix this have been promised, I am
+switching to `cmdstanr` for this section because it works and works with
+the most recent version of Stan.
 
-Set up STAN to use multiple cores. Set the random number seed for
-reproducibility.
+You see below the Stan code to fit our model. Rmarkdown allows the use
+of Stan chunks (elsewhere I have R chunks). The chunk header looks like
+this.
 
-``` r
-rstan_options(auto_write = TRUE)
-options(mc.cores = parallel::detectCores())
-set.seed(123)
+STAN chunk will be compiled to ‘mod’. Chunk header is:
+
+    cmdstan, output.var="mod", override = FALSE
+
+An alternative approach would be to have the Stan code in a separate
+file. This might be more convenient in practice but we use the chunk
+approach since we can easily see the code. Compilation of the Stan code
+will now occur.
+
+``` stan
+data {
+  int<lower=0> N;
+  int<lower=0> J;
+  array[N] int<lower=1,upper=J> predictor;
+  array[N] real response;
+}
+parameters {
+  vector[J] eta;
+  real mu;
+  real<lower=0> sigmaalpha;
+  real<lower=0> sigmaepsilon;
+}
+transformed parameters {
+  vector[J] a;
+  vector[N] yhat;
+
+  a = mu + sigmaalpha * eta;
+
+  for (i in 1:N)
+    yhat[i] = a[predictor[i]];
+}
+model {
+  eta ~ normal(0, 1);
+
+  response ~ normal(yhat, sigmaepsilon);
+}
 ```
-
-We need a STAN command file `pulp.stan` which we view here:
-
-``` r
-writeLines(readLines("../stancode/pulp.stan"))
-```
-
-    data {
-      int<lower=0> N;
-      int<lower=0> J;
-      int<lower=1,upper=J> predictor[N];
-      vector[N] response;
-    }
-    parameters {
-      vector[J] eta;
-      real mu;
-      real<lower=0> sigmaalpha;
-      real<lower=0> sigmaepsilon;
-    }
-    transformed parameters {
-      vector[J] a;
-      vector[N] yhat;
-
-      a = mu + sigmaalpha * eta;
-
-      for (i in 1:N)
-        yhat[i] = a[predictor[i]];
-    }
-    model {
-      eta ~ normal(0, 1);
-
-      response ~ normal(yhat, sigmaepsilon);
-    }
 
 We have used uninformative priors for the overall mean and the two
 variances. Prepare data in a format consistent with the command file.
@@ -736,173 +731,144 @@ pulpdat <- list(N=nrow(pulp),
                 predictor=as.numeric(pulp$operator))
 ```
 
-Break the fitting process into three steps:
+Do the MCMC sampling:
 
 ``` r
-rt <- stanc(file="../stancode/pulp.stan")
-suppressMessages(sm <- stan_model(stanc_ret = rt, verbose=FALSE))
-system.time(fit <- sampling(sm, data=pulpdat))
+fit <- mod$sample(
+  data = pulpdat, 
+  seed = 123, 
+  chains = 4, 
+  parallel_chains = 4,
+  refresh = 500 # print update every 500 iters
+)
 ```
 
-       user  system elapsed 
-      3.422   0.241   1.306 
+    Running MCMC with 4 parallel chains...
+
+    Chain 1 Iteration:    1 / 2000 [  0%]  (Warmup) 
+    Chain 2 Iteration:    1 / 2000 [  0%]  (Warmup) 
+    Chain 3 Iteration:    1 / 2000 [  0%]  (Warmup) 
+    Chain 4 Iteration:    1 / 2000 [  0%]  (Warmup) 
+    Chain 1 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+    Chain 1 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+    Chain 1 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 2 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+    Chain 2 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+    Chain 2 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 2 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 3 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+    Chain 1 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 1 Iteration: 2000 / 2000 [100%]  (Sampling) 
+    Chain 2 Iteration: 2000 / 2000 [100%]  (Sampling) 
+    Chain 4 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+    Chain 4 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+    Chain 4 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 1 finished in 0.4 seconds.
+    Chain 2 finished in 0.4 seconds.
+    Chain 3 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+    Chain 3 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 4 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 4 Iteration: 2000 / 2000 [100%]  (Sampling) 
+    Chain 4 finished in 0.5 seconds.
+    Chain 3 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 3 Iteration: 2000 / 2000 [100%]  (Sampling) 
+    Chain 3 finished in 0.7 seconds.
+
+    All 4 chains finished successfully.
+    Mean chain execution time: 0.5 seconds.
+    Total execution time: 0.8 seconds.
 
 By default, we use 2000 iterations but repeated with independent starts
 4 times giving 4 chains. We can thin but do not by default. The warmup
-period is half the number of observations (which is very conservative in
-this instance).
+period is half the number of observations.
 
 We get warning messages about the fit. Since the default number of 2000
 iterations runs in seconds, we can simply run a lot more iterations.
 This is rather lazy and would not be viable for more expensive
-computations, but sometimes CPU effort is preferred to mental effort.
-
-``` r
-system.time(fit <- sampling(sm, data=pulpdat, iter=100000))
-```
-
-       user  system elapsed 
-     34.390   3.116  17.356 
-
-The same underlying problems remain but the inference will now be more
-reliable.
+computations, but sometimes CPU effort is preferred to mental effort. We
+stick with the default here.
 
 ## Diagnostics
 
-Diagnostics to check the convergence are worthwhile. We plot the sampled
-$\mu$ in the four chains, choosing only every 100th observation (the
-plot becomes very dense if we show everything). The warm-up period is
-excluded.
+Diagnostics to check the convergence are worthwhile.
+
+Extract the draws into a convenient dataframe format:
 
 ``` r
-pname <- "mu"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-mdf |> dplyr::filter(iterations %% 100 == 0) |> 
-ggplot(aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+draws_df <- fit$draws(format = "df")
 ```
 
-![](figs/pulpmudiag-1..svg)
+Check the diagnostics on the most problematic parameter:
+
+``` r
+ggplot(draws_df,
+       aes(x=.iteration,y=sigmaalpha,color=factor(.chain))) + geom_line() +
+  labs(color = 'Chain', x="Iteration")
+```
+
+![](figs/cssadiag-1..svg)
 
 We see the traces of the four chains overlaid in different colors. The
 chains appear roughly stationary although there are some occasional
-larger excursions (which is why we needed more iterations).
+larger excursions (which is why we prefer more iterations).
 
-The similar plots can be produced for the two variance terms although
-note that STAN uses the standard deviations (which we also prefer). Here
-is the group (operator) SD:
-
-``` r
-pname <- "sigmaalpha"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-mdf |> dplyr::filter(iterations %% 100 == 0) |> 
-  ggplot(aes(x=iterations,y=value,color=chains)) + 
-  geom_line() + ylab(mdf$parameters[1])
-```
-
-![](figs/pulpalphadiag-1..svg)
-
-This looks acceptable. We expect that the distribution will be
-asymmetric so this is no concern. The chains stay away from zero (or
-close to it). Here’s the same plot for the error SD.
-
-``` r
-pname <- "sigmaepsilon"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-mdf |> dplyr::filter(iterations %% 100 == 0) |> 
-  ggplot(aes(x=iterations,y=value,color=chains)) + 
-  geom_line() + ylab(mdf$parameters[1])
-```
-
-![](figs/pulpepsdiag-1..svg)
-
-Again this looks satisfactory.
+The similar plots can be produced for other parameters although these
+are less likely to give us trouble.
 
 ## Output summaries
 
 We consider only the parameters of immediate interest:
 
 ``` r
-print(fit, pars=c("mu","sigmaalpha","sigmaepsilon","a"))
+fit$summary(c("mu","sigmaalpha","sigmaepsilon","a"))
 ```
 
-    Inference for Stan model: pulp.
-    4 chains, each with iter=1e+05; warmup=50000; thin=1; 
-    post-warmup draws per chain=50000, total post-warmup draws=2e+05.
+    # A tibble: 7 × 10
+      variable       mean median     sd    mad      q5    q95  rhat ess_bulk ess_tail
+      <chr>         <num>  <num>  <num>  <num>   <num>  <num> <num>    <num>    <num>
+    1 mu           60.4   60.4   0.291  0.206  59.9    60.8    1.01     532.     201.
+    2 sigmaalpha    0.464  0.363 0.391  0.243   0.0944  1.18   1.01     556.     457.
+    3 sigmaepsilon  0.360  0.350 0.0701 0.0629  0.265   0.486  1.00    1328.    1039.
+    4 a[1]         60.3   60.3   0.150  0.145  60.0    60.5    1.00    3121.    2838.
+    5 a[2]         60.1   60.1   0.165  0.165  59.9    60.4    1.00    1998.    2225.
+    6 a[3]         60.6   60.6   0.154  0.148  60.3    60.8    1.01    2424.    2530.
+    7 a[4]         60.6   60.6   0.162  0.162  60.3    60.9    1.00    2169.    2060.
 
-                  mean se_mean   sd  2.5%   25%   50%   75% 97.5%  n_eff Rhat
-    mu           60.40       0 0.27 59.83 60.27 60.40 60.53 61.00   7427    1
-    sigmaalpha    0.47       0 0.37  0.06  0.23  0.36  0.58  1.51   7102    1
-    sigmaepsilon  0.36       0 0.07  0.25  0.31  0.35  0.40  0.53  55513    1
-    a[1]         60.28       0 0.15 59.97 60.18 60.28 60.38 60.57 131584    1
-    a[2]         60.14       0 0.17 59.82 60.03 60.14 60.25 60.47  78181    1
-    a[3]         60.57       0 0.15 60.27 60.47 60.57 60.67 60.87 115742    1
-    a[4]         60.61       0 0.16 60.30 60.51 60.61 60.72 60.93 104986    1
-
-    Samples were drawn using NUTS(diag_e) at Wed Apr  5 13:59:31 2023.
-    For each parameter, n_eff is a crude measure of effective sample size,
-    and Rhat is the potential scale reduction factor on split chains (at 
-    convergence, Rhat=1).
-
-We see the posterior mean, SE and SD of the samples. We see some
-quantiles from which we could construct a 95% credible interval (for
-example). The `n_eff` is a rough measure of the sample size taking into
-account the correlation in the samples. The effective sample sizes for
-the mean and operator SD primary parameters is not large (considering
-the number of iterations) although adequate enough for most purposes.
-The Rhat statistic is known as the potential scale reduction factor.
-Values much greater than one indicate that additional samples would
-significantly improve the inference. In this case, the factors are all
-one so we feel no inclination to draw more samples.
-
-We can also get the posterior means alone.
-
-``` r
-(get_posterior_mean(fit, pars=c("mu","sigmaalpha","sigmaepsilon","a")))
-```
-
-                 mean-chain:1 mean-chain:2 mean-chain:3 mean-chain:4 mean-all chains
-    mu               60.40358     60.40883     60.39329     60.40545        60.40279
-    sigmaalpha        0.48095      0.45193      0.45943      0.47472         0.46676
-    sigmaepsilon      0.35915      0.35833      0.35936      0.35982         0.35917
-    a[1]             60.27689     60.27644     60.27768     60.27623        60.27681
-    a[2]             60.13874     60.13906     60.13953     60.13985        60.13930
-    a[3]             60.56881     60.56912     60.56754     60.56921        60.56867
-    a[4]             60.61337     60.61283     60.61370     60.61463        60.61363
-
-We see that we get this information for each chain as well as overall.
-This gives a sense of why running more than one chain might be helpful
-in assessing the uncertainty in the posterior inference.
+We see the posterior mean, median, SD and MAD of the samples. We see
+some quantiles from which we could construct a 95% credible interval
+(for example). The `ess` are rough measures of the sample size taking
+into account the correlation in the samples. The effective sample sizes
+for the mean and operator SD primary parameters is not large
+(considering the number of iterations) although adequate enough for most
+purposes. The Rhat statistic is known as the potential scale reduction
+factor. Values much greater than one indicate that additional samples
+would significantly improve the inference. In this case, the factors are
+all close to one so we feel no inclination to draw more samples.
 
 ## Posterior Distributions
 
-We can use `extract` to get at various components of the STAN fit. We
-plot the posterior densities for the SDs:
+Show posterior densities on the two variance terms:
 
 ``` r
-postsig <- rstan::extract(fit, pars=c("sigmaalpha","sigmaepsilon"))
-ref <- reshape2::melt(postsig,value.name="bright")
-ggplot(ref,aes(x=bright, color=L1))+
-  geom_density()+
-  xlim(0,2) +
-  guides(color=guide_legend(title="SD"))
+sdf = stack(draws_df[,startsWith(colnames(draws_df),"sigma")])
+colnames(sdf) = c("bright","sigma")
+levels(sdf$sigma) = c("alpha","epsilon")
+ggplot(sdf, aes(x=bright,color=sigma)) + geom_density() + xlim(0,2)
 ```
 
-![](figs/pulppdae-1..svg)
+![](figs/cspulpvars-1..svg)
 
 We see that the error SD can be localized much more than the operator
 SD. We can also look at the operator random effects:
 
 ``` r
-opre <- rstan::extract(fit, pars="a")
-ref <- reshape2::melt(opre, value.name="bright")
-ref[,2] <- (LETTERS[1:4])[ref[,2]]
-ggplot(data=ref,aes(x=bright, color=Var2))+geom_density()+guides(color=guide_legend(title="operator"))
+adf = stack(draws_df[,startsWith(colnames(draws_df),"a")])
+colnames(adf) = c("bright","operator")
+levels(adf$operator) = letters[1:4]
+ggplot(adf, aes(x=bright,color=operator)) + geom_density()
 ```
 
-![](figs/pulpstanre-1..svg)
+![](figs/cspulpre-1..svg)
 
 We see that the four operator distributions overlap.
 
@@ -913,13 +879,16 @@ between operators and answered this question with a computation of the
 probability that the operator SD is less than 0.1. We computed the
 proportion of sampled values less than 0.1.
 
+Compute the lower tail probability.
+
 ``` r
-muc <- rstan::extract(fit, pars="sigmaalpha",  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-mean(mdf$value < 0.1)
+fit$summary("sigmaalpha", tailprob = ~ mean(. <= 0.1))
 ```
 
-    [1] 0.053485
+    # A tibble: 1 × 2
+      variable   tailprob
+      <chr>         <num>
+    1 sigmaalpha   0.0575
 
 This is a somewhat larger probability than seen previously. The value
 obtained is sensitive to the choice of prior on the error SD. This can
@@ -935,11 +904,13 @@ functionality.
 Fitting the model is very similar to `lmer` as seen above:
 
 ``` r
-suppressMessages(bmod <- brm(bright ~ 1+(1|operator), pulp))
+suppressMessages(bmod <- brm(bright ~ 1+(1|operator), pulp, backend = "cmdstanr"))
 ```
 
-We get some warnings but not as severe as seen with our STAN fit above.
-We can obtain some posterior densities and diagnostics with:
+Notice that we have specified the `cmdstanr` to be used internally due
+to the problems with the default choice of `rstan`. We get some warnings
+but not as severe as seen with our STAN fit above. We can obtain some
+posterior densities and diagnostics with:
 
 ``` r
 plot(bmod)
@@ -955,35 +926,37 @@ stancode(bmod)
 
     // generated with brms 2.19.0
     functions {
+      
     }
     data {
-      int<lower=1> N;  // total number of observations
-      vector[N] Y;  // response variable
+      int<lower=1> N; // total number of observations
+      vector[N] Y; // response variable
       // data for group-level effects of ID 1
-      int<lower=1> N_1;  // number of grouping levels
-      int<lower=1> M_1;  // number of coefficients per level
-      int<lower=1> J_1[N];  // grouping indicator per observation
+      int<lower=1> N_1; // number of grouping levels
+      int<lower=1> M_1; // number of coefficients per level
+      array[N] int<lower=1> J_1; // grouping indicator per observation
       // group-level predictor values
       vector[N] Z_1_1;
-      int prior_only;  // should the likelihood be ignored?
+      int prior_only; // should the likelihood be ignored?
     }
     transformed data {
+      
     }
     parameters {
-      real Intercept;  // temporary intercept for centered predictors
-      real<lower=0> sigma;  // dispersion parameter
-      vector<lower=0>[M_1] sd_1;  // group-level standard deviations
-      vector[N_1] z_1[M_1];  // standardized group-level effects
+      real Intercept; // temporary intercept for centered predictors
+      real<lower=0> sigma; // dispersion parameter
+      vector<lower=0>[M_1] sd_1; // group-level standard deviations
+      array[M_1] vector[N_1] z_1; // standardized group-level effects
     }
     transformed parameters {
-      vector[N_1] r_1_1;  // actual group-level effects
-      real lprior = 0;  // prior contributions to the log posterior
-      r_1_1 = (sd_1[1] * (z_1[1]));
+      vector[N_1] r_1_1; // actual group-level effects
+      real lprior = 0; // prior contributions to the log posterior
+      r_1_1 = sd_1[1] * z_1[1];
       lprior += student_t_lpdf(Intercept | 3, 60.5, 2.5);
       lprior += student_t_lpdf(sigma | 3, 0, 2.5)
-        - 1 * student_t_lccdf(0 | 3, 0, 2.5);
+                - 1 * student_t_lccdf(0 | 3, 0, 2.5);
       lprior += student_t_lpdf(sd_1 | 3, 0, 2.5)
-        - 1 * student_t_lccdf(0 | 3, 0, 2.5);
+                - 1 * student_t_lccdf(0 | 3, 0, 2.5);
     }
     model {
       // likelihood including constants
@@ -991,7 +964,7 @@ stancode(bmod)
         // initialize linear predictor term
         vector[N] mu = rep_vector(0.0, N);
         mu += Intercept;
-        for (n in 1:N) {
+        for (n in 1 : N) {
           // add more terms to the linear predictor
           mu[n] += r_1_1[J_1[n]] * Z_1_1[n];
         }
@@ -1017,7 +990,7 @@ need to increase the number of iterations for more accurate estimation
 of tail probabilities.
 
 ``` r
-bmod <- brm(bright ~ 1+(1|operator), pulp, iter=10000, cores = 4)
+bmod <- brm(bright ~ 1+(1|operator), pulp, iter=10000, cores = 4, backend = "cmdstanr")
 ```
 
 Because the STAN programme was compiled earlier, this takes much less
@@ -1038,17 +1011,17 @@ summary(bmod)
     Group-Level Effects: 
     ~operator (Number of levels: 4) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.45      0.32     0.06     1.38 1.00     1120      326
+    sd(Intercept)     0.46      0.36     0.05     1.45 1.00     1142      671
 
     Population-Level Effects: 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept    60.39      0.25    59.81    60.92 1.01      858      246
+    Intercept    60.40      0.28    59.77    60.97 1.00     1015      488
 
     Family Specific Parameters: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma     0.36      0.07     0.25     0.52 1.00     3806     3293
+    sigma     0.36      0.07     0.25     0.53 1.00     6286     8555
 
-    Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+    Draws were sampled using sample(hmc). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
     scale reduction factor on split chains (at convergence, Rhat = 1).
 
@@ -1056,13 +1029,13 @@ We now have better effective sample sizes. We can estimate the tail
 probability as before
 
 ``` r
-bps = posterior_samples(bmod)
+bps = as_draws_df(bmod)
 mean(bps$sd_operator__Intercept < 0.1)
 ```
 
-    [1] 0.05105
+    [1] 0.05515
 
-A somewhat higher value than seen previously. The priors used here put
+A similar value to that seen previously. The priors used here put
 greater weight on smaller values of the SD.
 
 # MGCV
@@ -1271,10 +1244,13 @@ computations.
     reinstalling large pieces of software. Fortunately, I could see that
     the errors and warnings could be ignored. *Update: Now that I run
     the same code again a few months later, the errors and warnings have
-    gone away. I don’t know why. They might come back.* After several
-    decades of fiddling with computers to get software to work, I
-    (mostly) possess the patience and experience to deal with this sort
-    of problem. That’s far from true for many potential users.
+    gone away. I don’t know why. They might come back.* *Update no.2:
+    After updating R to version 4.3, Stan and BRMS stopped working.
+    After much research and experimentation, I found that the solution
+    was to switch from `rstan` to `cmdstanr`.* After several decades of
+    fiddling with computers to get software to work, I (mostly) possess
+    the patience and experience to deal with these sorts of problems.
+    That’s far from true for many potential users.
 
 7.  Both STAN and INLA are being actively developed. Of course, it’s
     good to know that functionality and performance are being improved.
@@ -1298,13 +1274,13 @@ computations.
     `rstanarm`) allow less advanced users to skip these complications.
 
 9.  Fitting Bayesian models is more likely to go wrong than GLMM models.
-    For our STAN model, there were insufficient iterations. We did get a
-    warning that suggested the solution of more iterations. Some
-    warnings remained but we knew that is was safe to ignore them. With
-    the INLA model, the default prior led to some unbelievable results.
-    It took some knowledge to know the solution was to use a more
-    informative prior (and this would have been another solution to the
-    STAN fitting problem.) There were less problems in using `lme4`
+    For our STAN model, there were perhaps insufficient iterations. We
+    did get a warning that suggested the solution of more iterations.
+    Some warnings remained but we knew that is was safe to ignore them.
+    With the INLA model, the default prior led to some unbelievable
+    results. It took some knowledge to know the solution was to use a
+    more informative prior (and this would have been another solution to
+    the STAN fitting problem.) There were less problems in using `lme4`
     although the bootstrapping does throw large numbers of warnings when
     the parameter estimate falls on the boundary. Again we had to know
     it was safe to let this pass. All this requires some expertise and
@@ -1322,43 +1298,45 @@ we could do without.
 sessionInfo()
 ```
 
-    R version 4.2.1 (2022-06-23)
-    Platform: x86_64-apple-darwin17.0 (64-bit)
-    Running under: macOS Big Sur ... 10.16
+    R version 4.3.1 (2023-06-16)
+    Platform: x86_64-apple-darwin20 (64-bit)
+    Running under: macOS Ventura 13.4
 
     Matrix products: default
-    BLAS:   /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRblas.0.dylib
-    LAPACK: /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRlapack.dylib
+    BLAS:   /Library/Frameworks/R.framework/Versions/4.3-x86_64/Resources/lib/libRblas.0.dylib 
+    LAPACK: /Library/Frameworks/R.framework/Versions/4.3-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.11.0
 
     locale:
     [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+    time zone: Europe/London
+    tzcode source: internal
 
     attached base packages:
     [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-42         nlme_3.1-162        brms_2.19.0         Rcpp_1.0.10         rstan_2.26.13      
-     [6] StanHeaders_2.26.13 knitr_1.42          INLA_22.12.16       sp_1.6-0            foreach_1.5.2      
-    [11] lme4_1.1-32         Matrix_1.5-3        ggplot2_3.4.2       faraway_1.0.9      
+     [1] mgcv_1.8-42     nlme_3.1-162    brms_2.19.0     Rcpp_1.0.10     cmdstanr_0.5.3  knitr_1.43      INLA_23.05.30-1
+     [8] sp_2.0-0        foreach_1.5.2   lme4_1.1-33     Matrix_1.5-4.1  ggplot2_3.4.2   faraway_1.0.8  
 
     loaded via a namespace (and not attached):
-     [1] minqa_1.2.5          colorspace_2.1-0     ellipsis_0.3.2       markdown_1.5         base64enc_0.1-3     
-     [6] rstudioapi_0.14      farver_2.1.1         Deriv_4.1.3          MatrixModels_0.5-1   DT_0.27             
-    [11] fansi_1.0.4          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-19     splines_4.2.1       
-    [16] shinythemes_1.2.0    bayesplot_1.10.0     jsonlite_1.8.4       nloptr_2.0.3         shiny_1.7.4         
-    [21] compiler_4.2.1       backports_1.4.1      fastmap_1.1.1        cli_3.6.1            later_1.3.0         
-    [26] htmltools_0.5.5      prettyunits_1.1.1    tools_4.2.1          igraph_1.4.1         coda_0.19-4         
-    [31] gtable_0.3.3         glue_1.6.2           reshape2_1.4.4       dplyr_1.1.1          posterior_1.4.1     
-    [36] V8_4.2.2             vctrs_0.6.1          svglite_2.1.1        iterators_1.0.14     crosstalk_1.2.0     
-    [41] tensorA_0.36.2       xfun_0.38            stringr_1.5.0        ps_1.7.4             mime_0.12           
-    [46] miniUI_0.1.1.1       lifecycle_1.0.3      gtools_3.9.4         MASS_7.3-58.3        zoo_1.8-11          
-    [51] scales_1.2.1         colourpicker_1.2.0   promises_1.2.0.1     Brobdingnag_1.2-9    inline_0.3.19       
-    [56] shinystan_2.6.0      yaml_2.3.7           curl_5.0.0           gridExtra_2.3        loo_2.6.0           
-    [61] stringi_1.7.12       dygraphs_1.1.1.6     checkmate_2.1.0      boot_1.3-28.1        pkgbuild_1.4.0      
-    [66] rlang_1.1.0          pkgconfig_2.0.3      systemfonts_1.0.4    matrixStats_0.63.0   distributional_0.3.2
-    [71] evaluate_0.20        lattice_0.20-45      rstantools_2.3.1     htmlwidgets_1.6.2    labeling_0.4.2      
-    [76] processx_3.8.0       tidyselect_1.2.0     plyr_1.8.8           magrittr_2.0.3       R6_2.5.1            
-    [81] generics_0.1.3       pillar_1.9.0         withr_2.5.0          xts_0.13.0           abind_1.4-5         
-    [86] tibble_3.2.1         crayon_1.5.2         utf8_1.2.3           rmarkdown_2.21       grid_4.2.1          
-    [91] callr_3.7.3          threejs_0.3.3        digest_0.6.31        xtable_1.8-4         httpuv_1.6.9        
-    [96] RcppParallel_5.1.7   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       
+     [1] gridExtra_2.3        inline_0.3.19        rlang_1.1.1          magrittr_2.0.3       matrixStats_1.0.0   
+     [6] compiler_4.3.1       loo_2.6.0            systemfonts_1.0.4    callr_3.7.3          vctrs_0.6.3         
+    [11] reshape2_1.4.4       stringr_1.5.0        pkgconfig_2.0.3      crayon_1.5.2         fastmap_1.1.1       
+    [16] backports_1.4.1      ellipsis_0.3.2       labeling_0.4.2       utf8_1.2.3           threejs_0.3.3       
+    [21] promises_1.2.0.1     rmarkdown_2.22       markdown_1.7         ps_1.7.5             nloptr_2.0.3        
+    [26] xfun_0.39            jsonlite_1.8.5       later_1.3.1          Deriv_4.1.3          prettyunits_1.1.1   
+    [31] R6_2.5.1             dygraphs_1.1.1.6     stringi_1.7.12       StanHeaders_2.26.27  boot_1.3-28.1       
+    [36] rstan_2.21.8         iterators_1.0.14     zoo_1.8-12           base64enc_0.1-3      bayesplot_1.10.0    
+    [41] httpuv_1.6.11        splines_4.3.1        igraph_1.5.0         tidyselect_1.2.0     rstudioapi_0.14     
+    [46] abind_1.4-5          yaml_2.3.7           codetools_0.2-19     miniUI_0.1.1.1       processx_3.8.1      
+    [51] pkgbuild_1.4.1       lattice_0.21-8       tibble_3.2.1         plyr_1.8.8           shiny_1.7.4         
+    [56] withr_2.5.0          bridgesampling_1.1-2 posterior_1.4.1      coda_0.19-4          evaluate_0.21       
+    [61] RcppParallel_5.1.7   xts_0.13.1           pillar_1.9.0         tensorA_0.36.2       checkmate_2.2.0     
+    [66] DT_0.28              stats4_4.3.1         shinyjs_2.1.0        distributional_0.3.2 generics_0.1.3      
+    [71] rstantools_2.3.1     munsell_0.5.0        scales_1.2.1         minqa_1.2.5          gtools_3.9.4        
+    [76] xtable_1.8-4         glue_1.6.2           tools_4.3.1          shinystan_2.6.0      data.table_1.14.8   
+    [81] colourpicker_1.2.0   mvtnorm_1.2-2        grid_4.3.1           crosstalk_1.2.0      colorspace_2.1-0    
+    [86] cli_3.6.1            fansi_1.0.4          svglite_2.1.1        Brobdingnag_1.2-9    dplyr_1.1.2         
+    [91] gtable_0.3.3         digest_0.6.31        htmlwidgets_1.6.2    farver_2.1.1         htmltools_0.5.5     
+    [96] lifecycle_1.0.3      mime_0.12            shinythemes_1.2.0    MASS_7.3-60         
