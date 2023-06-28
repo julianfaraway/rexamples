@@ -2,8 +2,8 @@
 title: Randomized Block Design
 author: "[Julian Faraway](https://julianfaraway.github.io/)"
 date: "`r format(Sys.time(), '%d %B %Y')`"
-output: 
-  github_document:
+format: 
+  gfm:
     toc: true
 ---
 
@@ -36,7 +36,8 @@ library(ggplot2)
 library(lme4)
 library(INLA)
 library(knitr)
-library(rstan, quietly=TRUE)
+library(cmdstanr)
+register_knitr_engine(override = FALSE)
 library(brms)
 library(mgcv)
 ```
@@ -337,20 +338,47 @@ The probability is still very small.
 # STAN
 
 [STAN](https://mc-stan.org/) performs Bayesian inference using
-MCMC.
+MCMC. I use `cmdstanr` to access Stan from R.
 
-Set up STAN to use multiple cores. Set the random number seed for reproducibility.
+You see below the Stan code to fit our model. Rmarkdown allows the use
+of Stan chunks (elsewhere I have R chunks). The chunk header looks
+like this. 
 
-```{r}
-rstan_options(auto_write = TRUE)
-options(mc.cores = parallel::detectCores())
-set.seed(123)
+STAN chunk will be compiled to 'mod'. Chunk header is:
+```
+cmdstan, output.var="mod", override = FALSE
 ```
 
-We need to use a STAN command file [penicillin.stan](../stancode/penicillin.stan) which we view here:
+```{cmdstan, output.var="mod", override = FALSE}
+data {
+  int<lower=0> N;
+  int<lower=0> Nt;
+  int<lower=0> Nb;
+  array[N] int<lower=1,upper=Nt> treat;
+  array[N] int<lower=1,upper=Nb> blk;
+  vector[N] y;
+}
+parameters {
+  vector[Nb] eta;
+  vector[Nt] trt;
+  real<lower=0> sigmablk;
+  real<lower=0> sigmaepsilon;
+}
+transformed parameters {
+  vector[Nb] bld;
+  vector[N] yhat;
 
-```{r}
-writeLines(readLines("../stancode/penicillin.stan"))
+  bld = sigmablk * eta;
+
+  for (i in 1:N)
+    yhat[i] = trt[treat[i]]+bld[blk[i]];
+
+}
+model {
+  eta ~ normal(0, 1);
+
+  y ~ normal(yhat, sigmaepsilon);
+}
 ```
 
 We have used uninformative priors for the treatment effects and the two variances.
@@ -362,73 +390,60 @@ blk <- as.numeric(penicillin$blend)
 penidat <- list(N=nrow(penicillin), Nt=max(ntreat), Nb=max(blk), treat=ntreat, blk=blk, y=penicillin$yield)
 ```
 
+Do the MCMC sampling:
 
-```{r penistancomp, cache=TRUE}
-rt <- stanc(file="../stancode/penicillin.stan")
-suppressMessages(sm <- stan_model(stanc_ret = rt, verbose=FALSE))
-system.time(fit <- sampling(sm, data=penidat))
+```{r}
+fit <- mod$sample(
+  data = penidat, 
+  seed = 123, 
+  chains = 4, 
+  parallel_chains = 4,
+  refresh = 500 # print update every 500 iters
+)
 ```
 
 We get some warnings but nothing too serious.
 
 ## Diagnostics
 
-Plot the chains for the block SD
 
-```{r penisigmablk}
-pname <- "sigmablk"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+Extract the draws into a convenient dataframe format:
+
+```{r}
+draws_df <- fit$draws(format = "df")
 ```
 
-which is satistfactory. The same for the error SD:
+Check the diagnostics on the most problematic parameter:
 
-```{r penisigmaepsilon}
-pname <- "sigmaepsilon"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```{r cspeniblkdiag}
+ggplot(draws_df,
+       aes(x=.iteration,y=sigmablk,color=factor(.chain))) + geom_line() +
+  labs(color = 'Chain', x="Iteration")
 ```
 
-which also looks reasonable.
+which is satisfactory. 
 
 ## Output summaries
 
-Examine the output:
+We consider only the parameters of immediate interest:
 
 ```{r}
-fit
+fit$summary(c("trt","sigmablk","sigmaepsilon","bld"))
 ```
 
-We are not interested in the `yhat` values. In bigger datasets, there might be a lot
-of these so we can select which parameters we view:
-
-```{r}
-print(fit, pars=c("trt","sigmablk","sigmaepsilon","bld"))
-```
-
-We see the posterior mean, SE and SD of the samples. We see some quantiles from which we could construct a 95% credible
-interval (for example). The `n_eff` is a rough measure of the sample size taking into account the correlation in the
-samples. The effective sample sizes for the primary parameters is adequate for most purposes.  The $\hat R$ statistics are good.
-
-We can also get the posterior means alone.
-
-```{r}
-(get_posterior_mean(fit, pars=c("eta","trt","sigmablk","sigmaepsilon","bld")))
-```
-
-We see that we get this information for each chain as well as overall. This gives a sense of why running more
-than one chain might be helpful in assessing the uncertainty in the posterior inference.
+We see that the posterior block SD and error SD are similar in mean but the former
+is more variable. The effective sample size are adequate (although it would easy
+to do more given the rapid computation).
 
 ## Posterior Distributions
 
-We can use extract to get at various components of the STAN fit.
+We plot the block and error SDs posteriors:
 
-```{r penistanpdsig}
-postsig <- rstan::extract(fit, pars=c("sigmablk","sigmaepsilon"))
-ref <- reshape2::melt(postsig,value.name="yield")
-ggplot(data=ref,aes(x=yield, color=L1))+geom_density()+guides(color=guide_legend(title="SD"))
+```{r cspenivars}
+sdf = stack(draws_df[,startsWith(colnames(draws_df),"sigma")])
+colnames(sdf) = c("yield","sigma")
+levels(sdf$sigma) = c("block","epsilon")
+ggplot(sdf, aes(x=yield,color=sigma)) + geom_density() 
 ```
 
 We see that the error SD can be localized much more than the block SD.
@@ -436,28 +451,30 @@ We can compute the chance that the block SD is less than one. We've chosen 1 as 
 so an SD of less than one would not be particularly noticeable.
 
 ```{r}
-mean(postsig$sigmablk < 1)
+fit$summary("sigmablk", tailprob = ~ mean(. <= 1))
 ```
 
 We see that this probability is small and would be smaller if we had specified a lower threshold.
 
 We can also look at the blend effects:
 
-```{r penistanblendrf}
-opre <- rstan::extract(fit, pars="bld")
-ref <- reshape2::melt(opre, value.name="yield")
-ggplot(data=ref,aes(x=yield, color=factor(Var2)))+geom_density()+guides(color=guide_legend(title="blend"))
+```{r cspeniblend}
+sdf = stack(draws_df[,startsWith(colnames(draws_df),"bld")])
+colnames(sdf) = c("yield","blend")
+levels(sdf$blend) = as.character(1:5)
+ggplot(sdf, aes(x=yield,color=blend)) + geom_density() 
 ```
 
 We see that all five blend distributions clearly overlap zero.
 We can also look at the treatment effects:
 
-```{r penistantrt}
-opre <- rstan::extract(fit, pars="trt")
-ref <- reshape2::melt(opre, value.name="yield")
-ref[,2] <- (LETTERS[1:4])[ref[,2]]
-ggplot(data=ref,aes(x=yield, color=factor(Var2)))+geom_density()+guides(color=guide_legend(title="treatment"))
+```{r cspenitrt}
+sdf = stack(draws_df[,startsWith(colnames(draws_df),"trt")])
+colnames(sdf) = c("yield","trt")
+levels(sdf$trt) = LETTERS[1:4]
+ggplot(sdf, aes(x=yield,color=trt)) + geom_density() 
 ```
+
 
 We did not include an intercept so the treatment effects are not differences from zero. We see the distributions overlap
 substantially.
@@ -470,7 +487,7 @@ a convenient wrapper to STAN functionality.
 Fitting the model is very similar to `lmer` as seen above:
 
 ```{r brmfit, cache=TRUE}
-suppressMessages(bmod <- brm(yield ~ treat + (1|blend), penicillin, cores=4))
+suppressMessages(bmod <- brm(yield ~ treat + (1|blend), penicillin, cores=4, backend = "cmdstanr"))
 ```
 
 We get some warnings but not as severe as seen with our STAN fit
@@ -506,11 +523,11 @@ the STAN version but not in an important way.
 We can estimate the tail probability as before
 
 ```{r}
-bps = posterior_samples(bmod)
+bps = as_draws_df(bmod)
 mean(bps$sd_blend__Intercept < 1)
 ```
 
-A somewhat higher value than seen previously. The priors used here put
+About the same as seen previously. The priors used here put
 greater weight on smaller values of the SD.
 
 # MGCV

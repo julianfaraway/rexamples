@@ -1,33 +1,25 @@
-Randomized Block Design
-================
+# Randomized Block Design
 [Julian Faraway](https://julianfaraway.github.io/)
-05 January 2023
+2023-06-28
 
-- <a href="#data" id="toc-data">Data</a>
-- <a href="#questions" id="toc-questions">Questions</a>
-- <a href="#linear-model" id="toc-linear-model">Linear Model</a>
-- <a href="#mixed-effect-model" id="toc-mixed-effect-model">Mixed Effect
-  Model</a>
-- <a href="#inla" id="toc-inla">INLA</a>
-  - <a href="#half-normal-priors-on-the-sds"
-    id="toc-half-normal-priors-on-the-sds">Half-normal priors on the SDs</a>
-  - <a href="#informative-gamma-priors-on-the-precisions"
-    id="toc-informative-gamma-priors-on-the-precisions">Informative gamma
-    priors on the precisions</a>
-  - <a href="#penalized-complexity-prior"
-    id="toc-penalized-complexity-prior">Penalized Complexity Prior</a>
-- <a href="#stan" id="toc-stan">STAN</a>
-  - <a href="#diagnostics" id="toc-diagnostics">Diagnostics</a>
-  - <a href="#output-summaries" id="toc-output-summaries">Output
-    summaries</a>
-  - <a href="#posterior-distributions"
-    id="toc-posterior-distributions">Posterior Distributions</a>
-- <a href="#brms" id="toc-brms">BRMS</a>
-- <a href="#mgcv" id="toc-mgcv">MGCV</a>
-  - <a href="#ginla" id="toc-ginla">GINLA</a>
-- <a href="#discussion" id="toc-discussion">Discussion</a>
-- <a href="#package-version-info" id="toc-package-version-info">Package
-  version info</a>
+- [Data](#data)
+- [Questions](#questions)
+- [Linear Model](#linear-model)
+- [Mixed Effect Model](#mixed-effect-model)
+- [INLA](#inla)
+  - [Half-normal priors on the SDs](#half-normal-priors-on-the-sds)
+  - [Informative gamma priors on the
+    precisions](#informative-gamma-priors-on-the-precisions)
+  - [Penalized Complexity Prior](#penalized-complexity-prior)
+- [STAN](#stan)
+  - [Diagnostics](#diagnostics)
+  - [Output summaries](#output-summaries)
+  - [Posterior Distributions](#posterior-distributions)
+- [BRMS](#brms)
+- [MGCV](#mgcv)
+  - [GINLA](#ginla)
+- [Discussion](#discussion)
+- [Package version info](#package-version-info)
 
 See the [introduction](../index.md) for an overview.
 
@@ -42,7 +34,8 @@ library(ggplot2)
 library(lme4)
 library(INLA)
 library(knitr)
-library(rstan, quietly=TRUE)
+library(cmdstanr)
+register_knitr_engine(override = FALSE)
 library(brms)
 library(mgcv)
 ```
@@ -68,13 +61,13 @@ summary(penicillin)
 ggplot(penicillin,aes(x=blend,y=yield,group=treat,linetype=treat))+geom_line()
 ```
 
-![](figs/peni-1..svg)<!-- -->
+![](figs/peni-1..svg)
 
 ``` r
 ggplot(penicillin,aes(x=treat,y=yield,group=blend,linetype=blend))+geom_line()
 ```
 
-![](figs/peni-2..svg)<!-- -->
+![](figs/peni-2..svg)
 
 The production of penicillin uses a raw material, corn steep liquor,
 which is quite variable and can only be made in blends sufficient for
@@ -271,7 +264,7 @@ for(i in 1:1000){
 mean(lrstatf > 2.7629)
 ```
 
-    [1] 0.039
+    [1] 0.043
 
 The result falls just below the 5% level for significance. Because of
 resampling variability, we should repeat with more boostrap samples. At
@@ -301,16 +294,16 @@ summary(result)
 ```
 
     Fixed effects:
-                  mean   sd 0.025quant 0.5quant 0.975quant   mode kld
-    (Intercept) 84.045 2.39     79.325   84.043     88.779 84.039   0
-    treatB       0.949 3.38     -5.743    0.952      7.626  0.956   0
-    treatC       4.926 3.38     -1.769    4.930     11.600  4.936   0
-    treatD       1.943 3.38     -4.749    1.946      8.619  1.951   0
+                  mean    sd 0.025quant 0.5quant 0.975quant   mode kld
+    (Intercept) 84.047 2.421     79.264   84.044     88.842 84.045   0
+    treatB       0.948 3.424     -5.832    0.950      7.713  0.950   0
+    treatC       4.924 3.424     -1.860    4.928     11.686  4.927   0
+    treatD       1.942 3.424     -4.839    1.945      8.706  1.944   0
 
     Model hyperparameters:
-                                                mean       sd 0.025quant 0.5quant 0.975quant     mode
-    Precision for the Gaussian observations 3.70e-02 1.20e-02      0.017 3.50e-02   6.50e-02    0.032
-    Precision for blend                     1.82e+04 1.76e+04   1191.169 1.28e+04   6.47e+04 3256.096
+                                               mean       sd 0.025quant 0.5quant 0.975quant   mode
+    Precision for the Gaussian observations 3.7e-02 1.30e-02    1.8e-02 3.60e-02   6.70e-02  0.036
+    Precision for blend                     2.3e+04 2.49e+04    1.7e+03 1.53e+04   8.87e+04 92.349
 
      is computed 
 
@@ -331,15 +324,15 @@ summary(result)
 
     Fixed effects:
                   mean    sd 0.025quant 0.5quant 0.975quant   mode kld
-    (Intercept) 84.029 2.775     78.511   84.028     89.553 84.026   0
-    treatB       0.967 2.699     -4.394    0.970      6.315  0.973   0
-    treatC       4.953 2.699     -0.411    4.956     10.297  4.961   0
-    treatD       1.964 2.699     -3.398    1.966      7.311  1.970   0
+    (Intercept) 84.029 2.766     78.529   84.028     89.536 84.029   0
+    treatB       0.967 2.715     -4.426    0.969      6.346  0.969   0
+    treatC       4.952 2.715     -0.444    4.955     10.328  4.955   0
+    treatD       1.963 2.715     -3.430    1.966      7.342  1.965   0
 
     Model hyperparameters:
                                              mean    sd 0.025quant 0.5quant 0.975quant  mode
-    Precision for the Gaussian observations 0.062 0.023      0.027    0.059      0.117 0.052
-    Precision for blend                     0.107 0.127      0.013    0.069      0.436 0.032
+    Precision for the Gaussian observations 0.064 0.024      0.028    0.060      0.121 0.062
+    Precision for blend                     0.101 0.115      0.013    0.067      0.401 0.061
 
      is computed 
 
@@ -357,15 +350,15 @@ colnames(restab) = c("mu","B-A","C-A","D-A","blend","error",levels(penicillin$bl
 data.frame(restab) |> kable()
 ```
 
-|            | mu     | B.A      | C.A      | D.A     | blend  | error   | Blend1   | Blend2   | Blend3   | Blend4   | Blend5  |
-|:-----------|:-------|:---------|:---------|:--------|:-------|:--------|:---------|:---------|:---------|:---------|:--------|
-| mean       | 84.029 | 0.96743  | 4.9527   | 1.9638  | 4.1465 | 4.2244  | 4.3615   | -2.1799  | -0.72654 | 1.4532   | -2.9069 |
-| sd         | 2.7731 | 2.6976   | 2.6976   | 2.6976  | 1.8773 | 0.80126 | 2.8352   | 2.6305   | 2.5663   | 2.5907   | 2.6852  |
-| quant0.025 | 78.509 | -4.3945  | -0.41238 | -3.399  | 1.5262 | 2.932   | -0.66829 | -7.7063  | -6.0169  | -3.551   | -8.5612 |
-| quant0.25  | 82.264 | -0.77745 | 3.2084   | 0.21902 | 2.7911 | 3.6499  | 2.3971   | -3.7969  | -2.2717  | -0.17543 | -4.5783 |
-| quant0.5   | 84.021 | 0.96314  | 4.9495   | 1.9597  | 3.8019 | 4.122   | 4.2457   | -2.0498  | -0.66213 | 1.33     | -2.7743 |
-| quant0.75  | 85.78  | 2.7019   | 6.6879   | 3.6984  | 5.1071 | 4.6939  | 6.1495   | -0.46606 | 0.82147  | 3.0143   | -1.096  |
-| quant0.975 | 89.541 | 6.3031   | 10.285   | 7.2987  | 8.7704 | 6.0656  | 10.274   | 2.7466   | 4.3487   | 6.8458   | 1.9834  |
+|            | mu     | B.A      | C.A     | D.A     | blend  | error   | Blend1   | Blend2   | Blend3   | Blend4   | Blend5  |
+|:-----------|:-------|:---------|:--------|:--------|:-------|:--------|:---------|:---------|:---------|:---------|:--------|
+| mean       | 84.029 | 0.96707  | 4.9522  | 1.9633  | 4.2033 | 4.1666  | 4.3137   | -2.1561  | -0.71861 | 1.4373   | -2.8751 |
+| sd         | 2.7633 | 2.7127   | 2.7128  | 2.7127  | 1.8778 | 0.78733 | 2.8285   | 2.6148   | 2.5477   | 2.5732   | 2.672   |
+| quant0.025 | 78.529 | -4.4253  | -0.4433 | -3.4298 | 1.59   | 2.8761  | -0.67902 | -7.6627  | -5.9798  | -3.526   | -8.5146 |
+| quant0.25  | 82.269 | -0.78751 | 3.1982  | 0.20892 | 2.8516 | 3.6028  | 2.3412   | -3.7615  | -2.2488  | -0.18053 | -4.5377 |
+| quant0.5   | 84.022 | 0.9628   | 4.949   | 1.9593  | 3.854  | 4.0742  | 4.1905   | -2.0191  | -0.65279 | 1.3096   | -2.7351 |
+| quant0.75  | 85.776 | 2.7113   | 6.697   | 3.7077  | 5.157  | 4.6339  | 6.1014   | -0.45159 | 0.81706  | 2.9849   | -1.0686 |
+| quant0.975 | 89.522 | 6.3329   | 10.315  | 7.3284  | 8.841  | 5.9576  | 10.222   | 2.7274   | 4.319    | 6.8054   | 1.9715  |
 
 Also construct a plot the SD posteriors:
 
@@ -374,7 +367,7 @@ ddf <- data.frame(rbind(sigmaalpha,sigmaepsilon),errterm=gl(2,nrow(sigmaalpha),l
 ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("yield")+ylab("density")+xlim(0,15)
 ```
 
-![](figs/penipdsd-1..svg)<!-- -->
+![](figs/penipdsd-1..svg)
 
 Posterior for the blend SD is more diffuse than the error SD. Posterior
 for the blend SD has zero density at zero.
@@ -396,7 +389,7 @@ We can compute the probability that the operator SD is smaller than 1:
 inla.pmarginal(1, sigmaalpha)
 ```
 
-    [1] 0.0017951
+    [1] 0.0010724
 
 The probability is very small.
 
@@ -421,15 +414,15 @@ summary(result)
 
     Fixed effects:
                   mean    sd 0.025quant 0.5quant 0.975quant   mode kld
-    (Intercept) 84.028 2.879     78.319   84.027     89.743 84.025   0
-    treatB       0.969 2.649     -4.288    0.971      6.213  0.974   0
-    treatC       4.954 2.649     -0.305    4.957     10.196  4.962   0
-    treatD       1.965 2.649     -3.292    1.967      7.209  1.971   0
+    (Intercept) 84.029 2.892     78.293   84.028     89.770 84.028   0
+    treatB       0.968 2.683     -4.356    0.970      6.280  0.970   0
+    treatC       4.953 2.683     -0.374    4.956     10.262  4.956   0
+    treatD       1.964 2.683     -3.361    1.966      7.275  1.966   0
 
     Model hyperparameters:
                                              mean    sd 0.025quant 0.5quant 0.975quant  mode
-    Precision for the Gaussian observations 0.063 0.023      0.027    0.059      0.117 0.053
-    Precision for blend                     0.068 0.054      0.011    0.053      0.210 0.030
+    Precision for the Gaussian observations 0.064 0.025      0.028    0.060      0.123 0.061
+    Precision for blend                     0.072 0.057      0.012    0.057      0.223 0.060
 
      is computed 
 
@@ -446,15 +439,15 @@ colnames(restab) = c("mu","B-A","C-A","D-A","blend","error",levels(penicillin$bl
 data.frame(restab) |> kable()
 ```
 
-|            | mu     | B.A      | C.A      | D.A     | blend  | error   | Blend1   | Blend2   | Blend3   | Blend4   | Blend5  |
-|:-----------|:-------|:---------|:---------|:--------|:-------|:--------|:---------|:---------|:---------|:---------|:--------|
-| mean       | 84.028 | 0.96861  | 4.9545   | 1.9651  | 4.689  | 4.2073  | 4.6884   | -2.3437  | -0.78104 | 1.5628   | -3.125  |
-| sd         | 2.8786 | 2.6476   | 2.6476   | 2.6476  | 1.8321 | 0.79899 | 2.8325   | 2.7517   | 2.7275   | 2.7369   | 2.7727  |
-| quant0.025 | 78.317 | -4.2885  | -0.30548 | -3.2927 | 2.1934 | 2.9267  | -0.63564 | -7.9765  | -6.273   | -3.778   | -8.8375 |
-| quant0.25  | 82.216 | -0.74849 | 3.2379   | 0.24811 | 3.3889 | 3.6341  | 2.8534   | -4.0223  | -2.4547  | -0.15054 | -4.8152 |
-| quant0.5   | 84.02  | 0.96425  | 4.951    | 1.9609  | 4.3146 | 4.1021  | 4.586    | -2.2929  | -0.76759 | 1.5159   | -3.0588 |
-| quant0.75  | 85.825 | 2.6754   | 6.6618   | 3.672   | 5.5833 | 4.6732  | 6.4033   | -0.61979 | 0.89913  | 3.2219   | -1.3722 |
-| quant0.975 | 89.731 | 6.2009   | 10.184   | 7.1967  | 9.2838 | 6.0503  | 10.564   | 2.9554   | 4.5876   | 7.1099   | 2.16    |
+|            | mu     | B.A      | C.A     | D.A     | blend  | error   | Blend1   | Blend2  | Blend3   | Blend4   | Blend5  |
+|:-----------|:-------|:---------|:--------|:--------|:-------|:--------|:---------|:--------|:---------|:---------|:--------|
+| mean       | 84.029 | 0.96784  | 4.9533  | 1.9642  | 4.5338 | 4.1625  | 4.6551   | -2.3269 | -0.77545 | 1.5517   | -3.1027 |
+| sd         | 2.8893 | 2.6805   | 2.6805  | 2.6805  | 1.7544 | 0.78904 | 2.8393   | 2.7563  | 2.7315   | 2.7412   | 2.7779  |
+| quant0.025 | 78.295 | -4.356   | -0.3734 | -3.3603 | 2.1248 | 2.8541  | -0.67398 | -7.9765 | -6.2796  | -3.7967  | -8.8347 |
+| quant0.25  | 82.208 | -0.77063 | 3.2154  | 0.22588 | 3.287  | 3.598   | 2.8127   | -4.0082 | -2.4517  | -0.16542 | -4.7957 |
+| quant0.5   | 84.021 | 0.96347  | 4.9499  | 1.9601  | 4.1817 | 4.0761  | 4.5511   | -2.2751 | -0.76163 | 1.504    | -3.0352 |
+| quant0.75  | 85.834 | 2.6959   | 6.682   | 3.6924  | 5.3983 | 4.6353  | 6.3732   | -0.5987 | 0.90791  | 3.2133   | -1.3447 |
+| quant0.975 | 89.754 | 6.2665   | 10.249  | 7.2622  | 8.9184 | 5.9434  | 10.557   | 2.9786  | 4.602    | 7.1132   | 2.188   |
 
 Make the plots:
 
@@ -463,7 +456,7 @@ ddf <- data.frame(rbind(sigmaalpha,sigmaepsilon),errterm=gl(2,nrow(sigmaalpha),l
 ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("yield")+ylab("density")+xlim(0,15)
 ```
 
-![](figs/penigam-1..svg)<!-- -->
+![](figs/penigam-1..svg)
 
 Posterior for blend SD has no weight near zero.
 
@@ -473,7 +466,7 @@ We can compute the probability that the operator SD is smaller than 1:
 inla.pmarginal(1, sigmaalpha)
 ```
 
-    [1] 2.7311e-05
+    [1] 2.6757e-05
 
 The probability is very small.
 
@@ -496,15 +489,15 @@ summary(result)
 
     Fixed effects:
                   mean    sd 0.025quant 0.5quant 0.975quant   mode kld
-    (Intercept) 84.030 2.609     78.852   84.029     89.213 84.027   0
-    treatB       0.967 2.726     -4.450    0.969      6.369  0.973   0
-    treatC       4.952 2.726     -0.468    4.955     10.351  4.961   0
-    treatD       1.963 2.726     -3.455    1.966      7.365  1.970   0
+    (Intercept) 84.030 2.637     78.797   84.029     89.271 84.029   0
+    treatB       0.966 2.765     -4.529    0.968      6.446  0.968   0
+    treatC       4.950 2.765     -0.548    4.954     10.427  4.953   0
+    treatD       1.962 2.765     -3.534    1.965      7.441  1.964   0
 
     Model hyperparameters:
                                              mean    sd 0.025quant 0.5quant 0.975quant  mode
-    Precision for the Gaussian observations 0.062 0.024      0.026    0.059      0.119 0.052
-    Precision for blend                     0.159 0.210      0.016    0.096      0.690 0.041
+    Precision for the Gaussian observations 0.064 0.024      0.028    0.060      0.122 0.060
+    Precision for blend                     0.138 0.167      0.016    0.088      0.569 0.077
 
      is computed 
 
@@ -523,13 +516,13 @@ data.frame(restab) |> kable()
 
 |            | mu     | B.A      | C.A      | D.A     | blend  | error   | Blend1   | Blend2   | Blend3   | Blend4   | Blend5   |
 |:-----------|:-------|:---------|:---------|:--------|:-------|:--------|:---------|:---------|:---------|:---------|:---------|
-| mean       | 84.03  | 0.9668   | 4.9518   | 1.963   | 3.5467 | 4.2309  | 3.9511   | -1.9767  | -0.65885 | 1.3181   | -2.6372  |
-| sd         | 2.6078 | 2.724    | 2.724    | 2.724   | 1.7024 | 0.83336 | 2.7195   | 2.4166   | 2.3197   | 2.3568   | 2.4979   |
-| quant0.025 | 78.852 | -4.4509  | -0.46927 | -3.4555 | 1.212  | 2.9115  | -0.64925 | -7.1301  | -5.5023  | -3.1579  | -7.9589  |
-| quant0.25  | 82.361 | -0.79113 | 3.1945   | 0.20529 | 2.3173 | 3.6326  | 1.9821   | -3.4635  | -2.0285  | -0.16232 | -4.2048  |
-| quant0.5   | 84.022 | 0.96258  | 4.9487   | 1.9591  | 3.2234 | 4.1154  | 3.8485   | -1.8045  | -0.55866 | 1.1479   | -2.4754  |
-| quant0.75  | 85.684 | 2.7144   | 6.7001   | 3.7108  | 4.4044 | 4.7118  | 5.695    | -0.35614 | 0.7063   | 2.7249   | -0.87208 |
-| quant0.975 | 89.201 | 6.357    | 10.339   | 7.3525  | 7.7664 | 6.1674  | 9.6233   | 2.4081   | 3.9115   | 6.3007   | 1.711    |
+| mean       | 84.03  | 0.96586  | 4.9504   | 1.962   | 3.6957 | 4.1815  | 3.9335   | -1.9668  | -0.65547 | 1.3113   | -2.6233  |
+| sd         | 2.6344 | 2.7623   | 2.7623   | 2.7623  | 1.7136 | 0.79235 | 2.7297   | 2.4345   | 2.3398   | 2.3762   | 2.5142   |
+| quant0.025 | 78.798 | -4.5283  | -0.54716 | -3.533  | 1.3349 | 2.8687  | -0.68688 | -7.1652  | -5.5419  | -3.2052  | -7.9915  |
+| quant0.25  | 82.345 | -0.81832 | 3.1669   | 0.17798 | 2.4618 | 3.6147  | 1.9534   | -3.4579  | -2.0351  | -0.18014 | -4.1947  |
+| quant0.5   | 84.023 | 0.96162  | 4.9473   | 1.958   | 3.371  | 4.0943  | 3.8086   | -1.7908  | -0.56255 | 1.1441   | -2.4521  |
+| quant0.75  | 85.702 | 2.7396   | 6.7249   | 3.7359  | 4.5582 | 4.656   | 5.6811   | -0.34807 | 0.72739  | 2.7249   | -0.86314 |
+| quant0.975 | 89.256 | 6.4325   | 10.414   | 7.4278  | 7.9427 | 5.9709  | 9.6527   | 2.4591   | 3.9556   | 6.338    | 1.7675   |
 
 Make the plots:
 
@@ -538,7 +531,7 @@ ddf <- data.frame(rbind(sigmaalpha,sigmaepsilon),errterm=gl(2,nrow(sigmaalpha),l
 ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("yield")+ylab("density")+xlim(0,15)
 ```
 
-![](figs/penipc-1..svg)<!-- -->
+![](figs/penipc-1..svg)
 
 Posterior for blend SD has no weight at zero. Results are comparable to
 previous analyses.
@@ -554,7 +547,7 @@ ggplot(rdf,aes(x=x,y=y,group=blend, color=blend)) +
   xlab("") + ylab("Density") 
 ```
 
-![](figs/penirandeffpden-1..svg)<!-- -->
+![](figs/penirandeffpden-1..svg)
 
 There is substantial overlap and we cannot distinguish the blends.
 
@@ -564,59 +557,54 @@ We can compute the probability that the operator SD is smaller than 1:
 inla.pmarginal(1, sigmaalpha)
 ```
 
-    [1] 0.0094577
+    [1] 0.0048721
 
 The probability is still very small.
 
 # STAN
 
-[STAN](https://mc-stan.org/) performs Bayesian inference using MCMC.
+[STAN](https://mc-stan.org/) performs Bayesian inference using MCMC. I
+use `cmdstanr` to access Stan from R.
 
-Set up STAN to use multiple cores. Set the random number seed for
-reproducibility.
+You see below the Stan code to fit our model. Rmarkdown allows the use
+of Stan chunks (elsewhere I have R chunks). The chunk header looks like
+this.
 
-``` r
-rstan_options(auto_write = TRUE)
-options(mc.cores = parallel::detectCores())
-set.seed(123)
+STAN chunk will be compiled to ‘mod’. Chunk header is:
+
+    cmdstan, output.var="mod", override = FALSE
+
+``` stan
+data {
+  int<lower=0> N;
+  int<lower=0> Nt;
+  int<lower=0> Nb;
+  array[N] int<lower=1,upper=Nt> treat;
+  array[N] int<lower=1,upper=Nb> blk;
+  vector[N] y;
+}
+parameters {
+  vector[Nb] eta;
+  vector[Nt] trt;
+  real<lower=0> sigmablk;
+  real<lower=0> sigmaepsilon;
+}
+transformed parameters {
+  vector[Nb] bld;
+  vector[N] yhat;
+
+  bld = sigmablk * eta;
+
+  for (i in 1:N)
+    yhat[i] = trt[treat[i]]+bld[blk[i]];
+
+}
+model {
+  eta ~ normal(0, 1);
+
+  y ~ normal(yhat, sigmaepsilon);
+}
 ```
-
-We need to use a STAN command file
-[penicillin.stan](../stancode/penicillin.stan) which we view here:
-
-``` r
-writeLines(readLines("../stancode/penicillin.stan"))
-```
-
-    data {
-      int<lower=0> N;
-      int<lower=0> Nt;
-      int<lower=0> Nb;
-      int<lower=1,upper=Nt> treat[N];
-      int<lower=1,upper=Nb> blk[N];
-      vector[N] y;
-    }
-    parameters {
-      vector[Nb] eta;
-      vector[Nt] trt;
-      real<lower=0> sigmablk;
-      real<lower=0> sigmaepsilon;
-    }
-    transformed parameters {
-      vector[Nb] bld;
-      vector[N] yhat;
-
-      bld <- sigmablk * eta;
-
-      for (i in 1:N)
-        yhat[i] <- trt[treat[i]]+bld[blk[i]];
-
-    }
-    model {
-      eta ~ normal(0, 1);
-
-      y ~ normal(yhat, sigmaepsilon);
-    }
 
 We have used uninformative priors for the treatment effects and the two
 variances. We prepare data in a format consistent with the command file.
@@ -628,174 +616,114 @@ blk <- as.numeric(penicillin$blend)
 penidat <- list(N=nrow(penicillin), Nt=max(ntreat), Nb=max(blk), treat=ntreat, blk=blk, y=penicillin$yield)
 ```
 
+Do the MCMC sampling:
+
 ``` r
-rt <- stanc(file="../stancode/penicillin.stan")
-suppressMessages(sm <- stan_model(stanc_ret = rt, verbose=FALSE))
-system.time(fit <- sampling(sm, data=penidat))
+fit <- mod$sample(
+  data = penidat, 
+  seed = 123, 
+  chains = 4, 
+  parallel_chains = 4,
+  refresh = 500 # print update every 500 iters
+)
 ```
 
-       user  system elapsed 
-      1.840   0.238   0.861 
+    Running MCMC with 4 parallel chains...
+
+    Chain 1 Iteration:    1 / 2000 [  0%]  (Warmup) 
+    Chain 1 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+    Chain 2 Iteration:    1 / 2000 [  0%]  (Warmup) 
+    Chain 3 Iteration:    1 / 2000 [  0%]  (Warmup) 
+    Chain 3 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+    Chain 3 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+    Chain 3 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 3 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 3 Iteration: 2000 / 2000 [100%]  (Sampling) 
+    Chain 4 Iteration:    1 / 2000 [  0%]  (Warmup) 
+    Chain 4 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+    Chain 4 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+    Chain 4 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 1 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+    Chain 1 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 1 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 1 Iteration: 2000 / 2000 [100%]  (Sampling) 
+    Chain 1 finished in 0.2 seconds.
+    Chain 3 finished in 0.2 seconds.
+    Chain 2 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+    Chain 2 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+    Chain 2 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 2 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 2 Iteration: 2000 / 2000 [100%]  (Sampling) 
+    Chain 4 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 4 Iteration: 2000 / 2000 [100%]  (Sampling) 
+    Chain 2 finished in 0.2 seconds.
+    Chain 4 finished in 0.2 seconds.
+
+    All 4 chains finished successfully.
+    Mean chain execution time: 0.2 seconds.
+    Total execution time: 0.4 seconds.
 
 We get some warnings but nothing too serious.
 
 ## Diagnostics
 
-Plot the chains for the block SD
+Extract the draws into a convenient dataframe format:
 
 ``` r
-pname <- "sigmablk"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+draws_df <- fit$draws(format = "df")
 ```
 
-![](figs/penisigmablk-1..svg)<!-- -->
-
-which is satistfactory. The same for the error SD:
+Check the diagnostics on the most problematic parameter:
 
 ``` r
-pname <- "sigmaepsilon"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+ggplot(draws_df,
+       aes(x=.iteration,y=sigmablk,color=factor(.chain))) + geom_line() +
+  labs(color = 'Chain', x="Iteration")
 ```
 
-![](figs/penisigmaepsilon-1..svg)<!-- -->
+![](figs/cspeniblkdiag-1..svg)
 
-which also looks reasonable.
+which is satisfactory.
 
 ## Output summaries
 
-Examine the output:
+We consider only the parameters of immediate interest:
 
 ``` r
-fit
+fit$summary(c("trt","sigmablk","sigmaepsilon","bld"))
 ```
 
-    Inference for Stan model: penicillin.
-    4 chains, each with iter=2000; warmup=1000; thin=1; 
-    post-warmup draws per chain=1000, total post-warmup draws=4000.
+    # A tibble: 11 × 10
+       variable       mean median    sd   mad     q5   q95  rhat ess_bulk ess_tail
+       <chr>         <num>  <num> <num> <num>  <num> <num> <num>    <num>    <num>
+     1 trt[1]       83.9   84.0    3.35  3.08 78.4   89.3   1.01     798.     415.
+     2 trt[2]       85.0   85.1    3.43  3.09 79.5   90.5   1.01     783.     570.
+     3 trt[3]       89.0   89.0    3.32  3.00 83.5   94.4   1.00     777.     413.
+     4 trt[4]       86.0   86.0    3.35  3.04 80.8   91.4   1.00     789.     555.
+     5 sigmablk      4.85   4.18   3.35  2.51  0.787 11.1   1.01     626.     935.
+     6 sigmaepsilon  5.00   4.79   1.20  1.07  3.41   7.26  1.00    1157.    2245.
+     7 bld[1]        4.04   3.66   3.44  3.31 -0.503 10.2   1.00     771.     537.
+     8 bld[2]       -1.94  -1.69   3.08  2.63 -7.16   2.56  1.00     749.     536.
+     9 bld[3]       -0.670 -0.569  3.02  2.37 -5.75   4.01  1.00     734.     525.
+    10 bld[4]        1.37   1.06   3.09  2.58 -3.11   6.56  1.00     834.     503.
+    11 bld[5]       -2.63  -2.33   3.22  2.95 -8.12   1.91  1.01     708.     589.
 
-                   mean se_mean   sd   2.5%    25%    50%    75%  97.5% n_eff Rhat
-    eta[1]         0.90    0.03 0.75  -0.52   0.40   0.88   1.38   2.39   885 1.01
-    eta[2]        -0.50    0.02 0.67  -1.83  -0.92  -0.50  -0.07   0.85  1189 1.00
-    eta[3]        -0.18    0.02 0.67  -1.44  -0.63  -0.21   0.24   1.20  1087 1.00
-    eta[4]         0.28    0.03 0.69  -1.06  -0.17   0.25   0.72   1.70   725 1.00
-    eta[5]        -0.65    0.02 0.68  -2.03  -1.07  -0.65  -0.19   0.70  1621 1.00
-    trt[1]        84.34    0.18 3.56  77.58  82.08  84.20  86.42  92.44   396 1.00
-    trt[2]        85.41    0.17 3.42  78.91  83.21  85.24  87.46  92.84   412 1.00
-    trt[3]        89.31    0.17 3.53  82.44  87.13  89.16  91.33  96.89   422 1.00
-    trt[4]        86.23    0.17 3.50  79.45  84.02  86.11  88.27  94.13   405 1.00
-    sigmablk       5.12    0.15 3.44   0.60   2.84   4.34   6.54  14.43   543 1.00
-    sigmaepsilon   4.94    0.03 1.14   3.27   4.11   4.76   5.56   7.58  1305 1.01
-    bld[1]         3.84    0.16 3.41  -2.43   1.49   3.69   5.93  11.20   457 1.00
-    bld[2]        -2.40    0.16 3.34 -10.11  -4.31  -1.99  -0.22   3.26   439 1.00
-    bld[3]        -1.02    0.17 3.25  -8.53  -2.73  -0.77   0.83   5.51   373 1.00
-    bld[4]         1.06    0.17 3.33  -6.20  -0.62   0.95   2.99   7.66   376 1.00
-    bld[5]        -3.07    0.17 3.49 -11.01  -5.00  -2.62  -0.64   2.67   433 1.00
-    yhat[1]       88.18    0.08 3.28  81.40  86.07  88.29  90.38  94.16  1892 1.00
-    yhat[2]       89.25    0.07 3.20  82.54  87.22  89.29  91.39  95.25  2036 1.00
-    yhat[3]       93.15    0.08 3.28  86.42  91.05  93.30  95.26  99.48  1912 1.00
-    yhat[4]       90.07    0.08 3.25  83.32  87.98  90.18  92.27  96.07  1872 1.00
-    yhat[5]       81.94    0.05 3.05  76.13  79.93  81.87  83.95  87.98  3531 1.00
-    yhat[6]       83.01    0.06 2.99  77.24  81.04  82.99  85.00  88.86  2910 1.00
-    yhat[7]       86.92    0.06 2.98  81.09  85.00  86.88  88.80  92.93  2707 1.00
-    yhat[8]       83.83    0.06 2.94  77.92  81.96  83.89  85.73  89.50  2833 1.00
-    yhat[9]       83.32    0.05 2.91  77.69  81.45  83.28  85.19  89.29  4100 1.00
-    yhat[10]      84.39    0.05 2.86  78.79  82.54  84.40  86.19  90.19  3946 1.00
-    yhat[11]      88.30    0.05 2.89  82.70  86.41  88.31  90.20  93.98  3331 1.00
-    yhat[12]      85.21    0.05 2.88  79.71  83.39  85.20  87.04  91.05  3760 1.00
-    yhat[13]      85.40    0.05 3.01  79.45  83.46  85.40  87.36  91.13  3831 1.00
-    yhat[14]      86.47    0.05 2.92  80.74  84.58  86.49  88.42  92.30  3623 1.00
-    yhat[15]      90.38    0.05 3.02  84.35  88.39  90.44  92.36  96.48  3375 1.00
-    yhat[16]      87.29    0.05 2.95  81.46  85.35  87.34  89.18  93.07  3629 1.00
-    yhat[17]      81.27    0.06 3.14  75.20  79.19  81.20  83.26  87.62  2813 1.00
-    yhat[18]      82.34    0.06 3.01  76.63  80.37  82.30  84.25  88.57  2313 1.00
-    yhat[19]      86.25    0.06 3.05  80.48  84.21  86.18  88.24  92.34  2769 1.00
-    yhat[20]      83.16    0.06 3.10  77.20  81.16  83.16  85.17  89.39  2442 1.00
-    lp__         -39.97    0.14 3.55 -47.90 -42.21 -39.53 -37.33 -34.22   628 1.01
-
-    Samples were drawn using NUTS(diag_e) at Fri Jul  8 14:16:30 2022.
-    For each parameter, n_eff is a crude measure of effective sample size,
-    and Rhat is the potential scale reduction factor on split chains (at 
-    convergence, Rhat=1).
-
-We are not interested in the `yhat` values. In bigger datasets, there
-might be a lot of these so we can select which parameters we view:
-
-``` r
-print(fit, pars=c("trt","sigmablk","sigmaepsilon","bld"))
-```
-
-    Inference for Stan model: penicillin.
-    4 chains, each with iter=2000; warmup=1000; thin=1; 
-    post-warmup draws per chain=1000, total post-warmup draws=4000.
-
-                  mean se_mean   sd   2.5%   25%   50%   75% 97.5% n_eff Rhat
-    trt[1]       84.34    0.18 3.56  77.58 82.08 84.20 86.42 92.44   396 1.00
-    trt[2]       85.41    0.17 3.42  78.91 83.21 85.24 87.46 92.84   412 1.00
-    trt[3]       89.31    0.17 3.53  82.44 87.13 89.16 91.33 96.89   422 1.00
-    trt[4]       86.23    0.17 3.50  79.45 84.02 86.11 88.27 94.13   405 1.00
-    sigmablk      5.12    0.15 3.44   0.60  2.84  4.34  6.54 14.43   543 1.00
-    sigmaepsilon  4.94    0.03 1.14   3.27  4.11  4.76  5.56  7.58  1305 1.01
-    bld[1]        3.84    0.16 3.41  -2.43  1.49  3.69  5.93 11.20   457 1.00
-    bld[2]       -2.40    0.16 3.34 -10.11 -4.31 -1.99 -0.22  3.26   439 1.00
-    bld[3]       -1.02    0.17 3.25  -8.53 -2.73 -0.77  0.83  5.51   373 1.00
-    bld[4]        1.06    0.17 3.33  -6.20 -0.62  0.95  2.99  7.66   376 1.00
-    bld[5]       -3.07    0.17 3.49 -11.01 -5.00 -2.62 -0.64  2.67   433 1.00
-
-    Samples were drawn using NUTS(diag_e) at Fri Jul  8 14:16:30 2022.
-    For each parameter, n_eff is a crude measure of effective sample size,
-    and Rhat is the potential scale reduction factor on split chains (at 
-    convergence, Rhat=1).
-
-We see the posterior mean, SE and SD of the samples. We see some
-quantiles from which we could construct a 95% credible interval (for
-example). The `n_eff` is a rough measure of the sample size taking into
-account the correlation in the samples. The effective sample sizes for
-the primary parameters is adequate for most purposes. The $\hat R$
-statistics are good.
-
-We can also get the posterior means alone.
-
-``` r
-(get_posterior_mean(fit, pars=c("eta","trt","sigmablk","sigmaepsilon","bld")))
-```
-
-                 mean-chain:1 mean-chain:2 mean-chain:3 mean-chain:4 mean-all chains
-    eta[1]            0.98545      0.88283      0.86691      0.86062         0.89895
-    eta[2]           -0.47231     -0.50814     -0.53743     -0.46924        -0.49678
-    eta[3]           -0.16854     -0.18353     -0.18305     -0.19936        -0.18362
-    eta[4]            0.32535      0.26566      0.25906      0.25247         0.27564
-    eta[5]           -0.64658     -0.66543     -0.65055     -0.61887        -0.64536
-    trt[1]           84.00386     84.50604     84.38091     84.46764        84.33961
-    trt[2]           85.12645     85.50641     85.41954     85.58571        85.40953
-    trt[3]           88.97437     89.41534     89.33478     89.53429        89.31469
-    trt[4]           86.01129     86.33928     86.40588     86.16627        86.23068
-    sigmablk          4.82224      5.23179      5.43834      4.98856         5.12023
-    sigmaepsilon      4.84526      4.98889      4.89715      5.04419         4.94387
-    bld[1]            4.11536      3.80878      3.86032      3.56211         3.83664
-    bld[2]           -2.08514     -2.58631     -2.62383     -2.29810        -2.39834
-    bld[3]           -0.82229     -1.13483     -1.08247     -1.02825        -1.01696
-    bld[4]            1.30725      0.92984      1.06581      0.95115         1.06351
-    bld[5]           -2.76032     -3.32024     -3.20931     -2.98423        -3.06852
-
-We see that we get this information for each chain as well as overall.
-This gives a sense of why running more than one chain might be helpful
-in assessing the uncertainty in the posterior inference.
+We see that the posterior block SD and error SD are similar in mean but
+the former is more variable. The effective sample size are adequate
+(although it would easy to do more given the rapid computation).
 
 ## Posterior Distributions
 
-We can use extract to get at various components of the STAN fit.
+We plot the block and error SDs posteriors:
 
 ``` r
-postsig <- rstan::extract(fit, pars=c("sigmablk","sigmaepsilon"))
-ref <- reshape2::melt(postsig,value.name="yield")
-ggplot(data=ref,aes(x=yield, color=L1))+geom_density()+guides(color=guide_legend(title="SD"))
+sdf = stack(draws_df[,startsWith(colnames(draws_df),"sigma")])
+colnames(sdf) = c("yield","sigma")
+levels(sdf$sigma) = c("block","epsilon")
+ggplot(sdf, aes(x=yield,color=sigma)) + geom_density() 
 ```
 
-![](figs/penistanpdsig-1..svg)<!-- -->
+![](figs/cspenivars-1..svg)
 
 We see that the error SD can be localized much more than the block SD.
 We can compute the chance that the block SD is less than one. We’ve
@@ -803,10 +731,13 @@ chosen 1 as the response is only measured to the nearest integer so an
 SD of less than one would not be particularly noticeable.
 
 ``` r
-mean(postsig$sigmablk < 1)
+fit$summary("sigmablk", tailprob = ~ mean(. <= 1))
 ```
 
-    [1] 0.04875
+    # A tibble: 1 × 2
+      variable tailprob
+      <chr>       <num>
+    1 sigmablk   0.0632
 
 We see that this probability is small and would be smaller if we had
 specified a lower threshold.
@@ -814,24 +745,25 @@ specified a lower threshold.
 We can also look at the blend effects:
 
 ``` r
-opre <- rstan::extract(fit, pars="bld")
-ref <- reshape2::melt(opre, value.name="yield")
-ggplot(data=ref,aes(x=yield, color=factor(Var2)))+geom_density()+guides(color=guide_legend(title="blend"))
+sdf = stack(draws_df[,startsWith(colnames(draws_df),"bld")])
+colnames(sdf) = c("yield","blend")
+levels(sdf$blend) = as.character(1:5)
+ggplot(sdf, aes(x=yield,color=blend)) + geom_density() 
 ```
 
-![](figs/penistanblendrf-1..svg)<!-- -->
+![](figs/cspeniblend-1..svg)
 
 We see that all five blend distributions clearly overlap zero. We can
 also look at the treatment effects:
 
 ``` r
-opre <- rstan::extract(fit, pars="trt")
-ref <- reshape2::melt(opre, value.name="yield")
-ref[,2] <- (LETTERS[1:4])[ref[,2]]
-ggplot(data=ref,aes(x=yield, color=factor(Var2)))+geom_density()+guides(color=guide_legend(title="treatment"))
+sdf = stack(draws_df[,startsWith(colnames(draws_df),"trt")])
+colnames(sdf) = c("yield","trt")
+levels(sdf$trt) = LETTERS[1:4]
+ggplot(sdf, aes(x=yield,color=trt)) + geom_density() 
 ```
 
-![](figs/penistantrt-1..svg)<!-- -->
+![](figs/cspenitrt-1..svg)
 
 We did not include an intercept so the treatment effects are not
 differences from zero. We see the distributions overlap substantially.
@@ -845,7 +777,7 @@ functionality.
 Fitting the model is very similar to `lmer` as seen above:
 
 ``` r
-suppressMessages(bmod <- brm(yield ~ treat + (1|blend), penicillin, cores=4))
+suppressMessages(bmod <- brm(yield ~ treat + (1|blend), penicillin, cores=4, backend = "cmdstanr"))
 ```
 
 We get some warnings but not as severe as seen with our STAN fit above.
@@ -855,7 +787,9 @@ We can obtain some posterior densities and diagnostics with:
 plot(bmod)
 ```
 
-![](figs/penibrmsdiag-1..svg)<!-- -->![](figs/penibrmsdiag-2..svg)<!-- -->
+![](figs/penibrmsdiag-1..svg)
+
+![](figs/penibrmsdiag-2..svg)
 
 Looks OK.
 
@@ -865,54 +799,56 @@ We can look at the STAN code that `brms` used with:
 stancode(bmod)
 ```
 
-    // generated with brms 2.17.0
+    // generated with brms 2.19.0
     functions {
+      
     }
     data {
-      int<lower=1> N;  // total number of observations
-      vector[N] Y;  // response variable
-      int<lower=1> K;  // number of population-level effects
-      matrix[N, K] X;  // population-level design matrix
+      int<lower=1> N; // total number of observations
+      vector[N] Y; // response variable
+      int<lower=1> K; // number of population-level effects
+      matrix[N, K] X; // population-level design matrix
       // data for group-level effects of ID 1
-      int<lower=1> N_1;  // number of grouping levels
-      int<lower=1> M_1;  // number of coefficients per level
-      int<lower=1> J_1[N];  // grouping indicator per observation
+      int<lower=1> N_1; // number of grouping levels
+      int<lower=1> M_1; // number of coefficients per level
+      array[N] int<lower=1> J_1; // grouping indicator per observation
       // group-level predictor values
       vector[N] Z_1_1;
-      int prior_only;  // should the likelihood be ignored?
+      int prior_only; // should the likelihood be ignored?
     }
     transformed data {
       int Kc = K - 1;
-      matrix[N, Kc] Xc;  // centered version of X without an intercept
-      vector[Kc] means_X;  // column means of X before centering
-      for (i in 2:K) {
-        means_X[i - 1] = mean(X[, i]);
-        Xc[, i - 1] = X[, i] - means_X[i - 1];
+      matrix[N, Kc] Xc; // centered version of X without an intercept
+      vector[Kc] means_X; // column means of X before centering
+      for (i in 2 : K) {
+        means_X[i - 1] = mean(X[ : , i]);
+        Xc[ : , i - 1] = X[ : , i] - means_X[i - 1];
       }
     }
     parameters {
-      vector[Kc] b;  // population-level effects
-      real Intercept;  // temporary intercept for centered predictors
-      real<lower=0> sigma;  // dispersion parameter
-      vector<lower=0>[M_1] sd_1;  // group-level standard deviations
-      vector[N_1] z_1[M_1];  // standardized group-level effects
+      vector[Kc] b; // population-level effects
+      real Intercept; // temporary intercept for centered predictors
+      real<lower=0> sigma; // dispersion parameter
+      vector<lower=0>[M_1] sd_1; // group-level standard deviations
+      array[M_1] vector[N_1] z_1; // standardized group-level effects
     }
     transformed parameters {
-      vector[N_1] r_1_1;  // actual group-level effects
-      real lprior = 0;  // prior contributions to the log posterior
-      r_1_1 = (sd_1[1] * (z_1[1]));
+      vector[N_1] r_1_1; // actual group-level effects
+      real lprior = 0; // prior contributions to the log posterior
+      r_1_1 = sd_1[1] * z_1[1];
       lprior += student_t_lpdf(Intercept | 3, 87, 5.9);
       lprior += student_t_lpdf(sigma | 3, 0, 5.9)
-        - 1 * student_t_lccdf(0 | 3, 0, 5.9);
+                - 1 * student_t_lccdf(0 | 3, 0, 5.9);
       lprior += student_t_lpdf(sd_1 | 3, 0, 5.9)
-        - 1 * student_t_lccdf(0 | 3, 0, 5.9);
+                - 1 * student_t_lccdf(0 | 3, 0, 5.9);
     }
     model {
       // likelihood including constants
       if (!prior_only) {
         // initialize linear predictor term
-        vector[N] mu = Intercept + rep_vector(0.0, N);
-        for (n in 1:N) {
+        vector[N] mu = rep_vector(0.0, N);
+        mu += Intercept;
+        for (n in 1 : N) {
           // add more terms to the linear predictor
           mu[n] += r_1_1[J_1[n]] * Z_1_1[n];
         }
@@ -950,20 +886,20 @@ summary(bmod)
     Group-Level Effects: 
     ~blend (Number of levels: 5) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     3.76      2.07     0.44     8.76 1.00     1116      920
+    sd(Intercept)     3.82      2.34     0.37     9.85 1.01      752      717
 
     Population-Level Effects: 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept    84.26      2.80    78.71    89.74 1.00     1675     2167
-    treatB        0.95      3.09    -5.10     7.09 1.00     2170     2352
-    treatC        4.87      3.21    -1.45    11.27 1.00     2377     2310
-    treatD        1.97      3.18    -4.65     8.30 1.00     2080     2213
+    Intercept    84.18      2.79    78.60    89.95 1.00     1354      970
+    treatB        0.90      3.15    -5.45     7.08 1.00     2352     2158
+    treatC        4.96      3.13    -1.37    11.08 1.00     2464     2550
+    treatD        1.91      3.13    -4.58     7.91 1.00     2448     2294
 
     Family Specific Parameters: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma     4.81      1.09     3.17     7.40 1.00     1706     2285
+    sigma     4.80      1.05     3.23     7.38 1.00     1263     1937
 
-    Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+    Draws were sampled using sample(hmc). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
     scale reduction factor on split chains (at convergence, Rhat = 1).
 
@@ -973,14 +909,14 @@ version but not in an important way.
 We can estimate the tail probability as before
 
 ``` r
-bps = posterior_samples(bmod)
+bps = as_draws_df(bmod)
 mean(bps$sd_blend__Intercept < 1)
 ```
 
-    [1] 0.0655
+    [1] 0.07625
 
-A somewhat higher value than seen previously. The priors used here put
-greater weight on smaller values of the SD.
+About the same as seen previously. The priors used here put greater
+weight on smaller values of the SD.
 
 # MGCV
 
@@ -1009,10 +945,10 @@ summary(gmod)
 
     Parametric coefficients:
                 Estimate Std. Error t value Pr(>|t|)
-    (Intercept)    84.00       2.47   33.94  3.5e-14
-    treatB          1.00       2.74    0.36    0.721
-    treatC          5.00       2.74    1.82    0.091
-    treatD          2.00       2.74    0.73    0.479
+    (Intercept)    84.00       2.48   33.94  3.5e-14
+    treatB          1.00       2.75    0.36    0.721
+    treatC          5.00       2.75    1.82    0.091
+    treatD          2.00       2.75    0.73    0.479
 
     Approximate significance of smooth terms:
               edf Ref.df   F p-value
@@ -1071,7 +1007,7 @@ We get the posterior density for the intercept as:
 plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="yield",ylab="density")
 ```
 
-![](figs/peniginlaint-1..svg)<!-- -->
+![](figs/peniginlaint-1..svg)
 
 and for the treatment effects as:
 
@@ -1082,7 +1018,7 @@ matplot(xmat, ymat,type="l",xlab="yield",ylab="density")
 legend("right",c("B","C","D"),col=1:3,lty=1:3)
 ```
 
-![](figs/peniginlateff-1..svg)<!-- -->
+![](figs/peniginlateff-1..svg)
 
 ``` r
 xmat = t(gimod$beta[5:9,])
@@ -1091,7 +1027,7 @@ matplot(xmat, ymat,type="l",xlab="yield",ylab="density")
 legend("right",paste0("blend",1:5),col=1:5,lty=1:5)
 ```
 
-![](figs/peniginlareff-1..svg)<!-- -->
+![](figs/peniginlareff-1..svg)
 
 It is not straightforward to obtain the posterior densities of the
 hyperparameters.
@@ -1115,44 +1051,45 @@ tail. This is concerning.
 sessionInfo()
 ```
 
-    R version 4.2.1 (2022-06-23)
-    Platform: x86_64-apple-darwin17.0 (64-bit)
-    Running under: macOS Big Sur ... 10.16
+    R version 4.3.1 (2023-06-16)
+    Platform: x86_64-apple-darwin20 (64-bit)
+    Running under: macOS Ventura 13.4.1
 
     Matrix products: default
-    BLAS:   /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRblas.0.dylib
-    LAPACK: /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRlapack.dylib
+    BLAS:   /Library/Frameworks/R.framework/Versions/4.3-x86_64/Resources/lib/libRblas.0.dylib 
+    LAPACK: /Library/Frameworks/R.framework/Versions/4.3-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.11.0
 
     locale:
     [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+    time zone: Europe/London
+    tzcode source: internal
 
     attached base packages:
     [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-41         nlme_3.1-161        brms_2.18.0         Rcpp_1.0.9          rstan_2.26.13      
-     [6] StanHeaders_2.26.13 knitr_1.41          INLA_22.12.16       sp_1.5-1            foreach_1.5.2      
-    [11] lme4_1.1-31         Matrix_1.5-3        ggplot2_3.4.0       faraway_1.0.9      
+     [1] mgcv_1.8-42     nlme_3.1-162    brms_2.19.0     Rcpp_1.0.10     cmdstanr_0.5.3  knitr_1.43      INLA_23.05.30-1
+     [8] sp_2.0-0        foreach_1.5.2   lme4_1.1-33     Matrix_1.5-4.1  ggplot2_3.4.2   faraway_1.0.8  
 
     loaded via a namespace (and not attached):
-      [1] minqa_1.2.5          colorspace_2.0-3     ellipsis_0.3.2       markdown_1.4         base64enc_0.1-3     
-      [6] rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         DT_0.26              fansi_1.0.3         
-     [11] mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18     splines_4.2.1        shinythemes_1.2.0   
-     [16] bayesplot_1.10.0     jsonlite_1.8.4       nloptr_2.0.3         shiny_1.7.4          compiler_4.2.1      
-     [21] backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0        cli_3.5.0            later_1.3.0         
-     [26] htmltools_0.5.4      prettyunits_1.1.1    tools_4.2.1          igraph_1.3.5         coda_0.19-4         
-     [31] gtable_0.3.1         glue_1.6.2           reshape2_1.4.4       dplyr_1.0.10         posterior_1.3.1     
-     [36] V8_4.2.2             vctrs_0.5.1          svglite_2.1.0        iterators_1.0.14     crosstalk_1.2.0     
-     [41] tensorA_0.36.2       xfun_0.36            stringr_1.5.0        ps_1.7.2             mime_0.12           
-     [46] miniUI_0.1.1.1       lifecycle_1.0.3      gtools_3.9.4         MASS_7.3-58.1        zoo_1.8-11          
-     [51] scales_1.2.1         colourpicker_1.2.0   promises_1.2.0.1     Brobdingnag_1.2-9    inline_0.3.19       
-     [56] shinystan_2.6.0      yaml_2.3.6           curl_4.3.3           gridExtra_2.3        loo_2.5.1           
-     [61] stringi_1.7.8        highr_0.10           dygraphs_1.1.1.6     checkmate_2.1.0      boot_1.3-28.1       
-     [66] pkgbuild_1.4.0       rlang_1.0.6          pkgconfig_2.0.3      systemfonts_1.0.4    matrixStats_0.63.0  
-     [71] distributional_0.3.1 evaluate_0.19        lattice_0.20-45      rstantools_2.2.0     htmlwidgets_1.6.0   
-     [76] labeling_0.4.2       processx_3.8.0       tidyselect_1.2.0     plyr_1.8.8           magrittr_2.0.3      
-     [81] R6_2.5.1             generics_0.1.3       DBI_1.1.3            pillar_1.8.1         withr_2.5.0         
-     [86] xts_0.12.2           abind_1.4-5          tibble_3.1.8         crayon_1.5.2         utf8_1.2.2          
-     [91] rmarkdown_2.19       grid_4.2.1           callr_3.7.3          threejs_0.3.3        digest_0.6.31       
-     [96] xtable_1.8-4         httpuv_1.6.7         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0       
-    [101] shinyjs_2.1.0       
+     [1] gridExtra_2.3        inline_0.3.19        rlang_1.1.1          magrittr_2.0.3       matrixStats_1.0.0   
+     [6] compiler_4.3.1       loo_2.6.0            systemfonts_1.0.4    callr_3.7.3          vctrs_0.6.3         
+    [11] reshape2_1.4.4       stringr_1.5.0        pkgconfig_2.0.3      crayon_1.5.2         fastmap_1.1.1       
+    [16] backports_1.4.1      ellipsis_0.3.2       labeling_0.4.2       utf8_1.2.3           threejs_0.3.3       
+    [21] promises_1.2.0.1     rmarkdown_2.22       markdown_1.7         ps_1.7.5             nloptr_2.0.3        
+    [26] xfun_0.39            jsonlite_1.8.5       later_1.3.1          Deriv_4.1.3          prettyunits_1.1.1   
+    [31] R6_2.5.1             dygraphs_1.1.1.6     stringi_1.7.12       StanHeaders_2.26.27  boot_1.3-28.1       
+    [36] rstan_2.21.8         iterators_1.0.14     zoo_1.8-12           base64enc_0.1-3      bayesplot_1.10.0    
+    [41] httpuv_1.6.11        splines_4.3.1        igraph_1.5.0         tidyselect_1.2.0     rstudioapi_0.14     
+    [46] abind_1.4-5          yaml_2.3.7           codetools_0.2-19     miniUI_0.1.1.1       processx_3.8.1      
+    [51] pkgbuild_1.4.1       lattice_0.21-8       tibble_3.2.1         plyr_1.8.8           shiny_1.7.4         
+    [56] withr_2.5.0          bridgesampling_1.1-2 posterior_1.4.1      coda_0.19-4          evaluate_0.21       
+    [61] RcppParallel_5.1.7   xts_0.13.1           pillar_1.9.0         tensorA_0.36.2       checkmate_2.2.0     
+    [66] DT_0.28              stats4_4.3.1         shinyjs_2.1.0        distributional_0.3.2 generics_0.1.3      
+    [71] rstantools_2.3.1     munsell_0.5.0        scales_1.2.1         minqa_1.2.5          gtools_3.9.4        
+    [76] xtable_1.8-4         glue_1.6.2           tools_4.3.1          shinystan_2.6.0      data.table_1.14.8   
+    [81] colourpicker_1.2.0   mvtnorm_1.2-2        grid_4.3.1           crosstalk_1.2.0      colorspace_2.1-0    
+    [86] cli_3.6.1            fansi_1.0.4          svglite_2.1.1        Brobdingnag_1.2-9    dplyr_1.1.2         
+    [91] gtable_0.3.3         digest_0.6.31        htmlwidgets_1.6.2    farver_2.1.1         htmltools_0.5.5     
+    [96] lifecycle_1.0.3      mime_0.12            shinythemes_1.2.0    MASS_7.3-60         
