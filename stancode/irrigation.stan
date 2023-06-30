@@ -1,9 +1,9 @@
 data {
   int<lower=0> N;
-  int<lower=1,upper=8> field[N];
-  int<lower=1,upper=4> irrigation[N];
-  int<lower=1,upper=2> variety[N];
-  vector[N] y;
+  array[N] int<lower=1,upper=8> field;
+  array[N] int<lower=1,upper=4> irrigation;
+  array[N] int<lower=1,upper=2> variety;
+  array[N] real y;
 }
 transformed data { // need to manually create dummy variables
   vector[N] irmeth2;

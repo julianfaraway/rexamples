@@ -1,29 +1,22 @@
-Split Plot Design
-================
+# Split Plot Design
 [Julian Faraway](https://julianfaraway.github.io/)
-05 January 2023
+2023-06-30
 
-- <a href="#data" id="toc-data">Data</a>
-- <a href="#mixed-effect-model" id="toc-mixed-effect-model">Mixed Effect
-  Model</a>
-- <a href="#inla" id="toc-inla">INLA</a>
-  - <a href="#informative-gamma-priors-on-the-precisions"
-    id="toc-informative-gamma-priors-on-the-precisions">Informative Gamma
-    priors on the precisions</a>
-  - <a href="#penalized-complexity-prior"
-    id="toc-penalized-complexity-prior">Penalized Complexity Prior</a>
-- <a href="#stan" id="toc-stan">STAN</a>
-  - <a href="#diagnostics" id="toc-diagnostics">Diagnostics</a>
-  - <a href="#output-summaries" id="toc-output-summaries">Output
-    summaries</a>
-  - <a href="#posterior-distributions"
-    id="toc-posterior-distributions">Posterior Distributions</a>
-- <a href="#brms" id="toc-brms">BRMS</a>
-- <a href="#mgcv" id="toc-mgcv">MGCV</a>
-- <a href="#ginla" id="toc-ginla">GINLA</a>
-- <a href="#discussion" id="toc-discussion">Discussion</a>
-- <a href="#package-version-info" id="toc-package-version-info">Package
-  version info</a>
+- [Data](#data)
+- [Mixed Effect Model](#mixed-effect-model)
+- [INLA](#inla)
+  - [Informative Gamma priors on the
+    precisions](#informative-gamma-priors-on-the-precisions)
+  - [Penalized Complexity Prior](#penalized-complexity-prior)
+- [STAN](#stan)
+  - [Diagnostics](#diagnostics)
+  - [Output summaries](#output-summaries)
+  - [Posterior Distributions](#posterior-distributions)
+- [BRMS](#brms)
+- [MGCV](#mgcv)
+- [GINLA](#ginla)
+- [Discussion](#discussion)
+- [Package version info](#package-version-info)
 
 See the [introduction](index.md) for an overview.
 
@@ -40,7 +33,8 @@ library(pbkrtest)
 library(RLRsim)
 library(INLA)
 library(knitr)
-library(rstan, quietly=TRUE)
+library(cmdstanr)
+register_knitr_engine(override = FALSE)
 library(brms)
 library(mgcv)
 ```
@@ -75,7 +69,7 @@ summary(irrigation)
 ggplot(irrigation, aes(y=yield, x=field, shape=variety, color=irrigation)) + geom_point()
 ```
 
-![](figs/irriplot-1..svg)<!-- -->
+![](figs/irriplot-1..svg)
 
 # Mixed Effect Model
 
@@ -210,7 +204,7 @@ RLRsim::exactRLRT(lmod)
         (p-value based on 10000 simulated values)
 
     data:  
-    RLRT = 6.11, p-value = 0.0094
+    RLRT = 6.11, p-value = 0.0097
 
 We can see that there is a significant variation among the fields.
 
@@ -239,16 +233,16 @@ summary(result)
 
     Fixed effects:
                    mean    sd 0.025quant 0.5quant 0.975quant   mode kld
-    (Intercept)  38.464 2.650     33.180   38.459     43.786 38.451   0
-    irrigationi2  0.954 3.723     -6.523    0.961      8.388  0.970   0
-    irrigationi3  0.557 3.723     -6.919    0.563      7.992  0.572   0
-    irrigationi4  4.032 3.723     -3.457    4.042     11.455  4.056   0
-    varietyv2     0.750 0.590     -0.427    0.750      1.926  0.750   0
+    (Intercept)  38.465 2.667     33.144   38.459     43.825 38.461   0
+    irrigationi2  0.954 3.746     -6.577    0.961      8.439  0.958   0
+    irrigationi3  0.556 3.746     -6.972    0.563      8.043  0.561   0
+    irrigationi4  4.031 3.746     -3.511    4.042     11.505  4.038   0
+    varietyv2     0.750 0.596     -0.439    0.750      1.938  0.750   0
 
     Model hyperparameters:
                                              mean    sd 0.025quant 0.5quant 0.975quant  mode
-    Precision for the Gaussian observations 0.891 0.425      0.295    0.816      1.929 0.664
-    Precision for field                     0.098 0.062      0.023    0.084      0.259 0.057
+    Precision for the Gaussian observations 0.919 0.446      0.309    0.834      2.020 0.729
+    Precision for field                     0.102 0.065      0.024    0.087      0.268 0.090
 
      is computed 
 
@@ -269,13 +263,13 @@ data.frame(restab)
 ```
 
                    mu     ir2     ir3     ir4       v2  alpha epsilon
-    mean       38.465 0.95444 0.55728  4.0324  0.74976 3.6701  1.1513
-    sd         2.6497  3.7224  3.7224  3.7225  0.58948 1.1824 0.28443
-    quant0.025 33.179 -6.5247 -6.9204 -3.4581 -0.42704 1.9744 0.72238
-    quant0.25  36.839 -1.3134 -1.7108  1.7667  0.38261 2.8251 0.94707
-    quant0.5   38.452 0.95189 0.55428  4.0333  0.74832 3.4523  1.1049
-    quant0.75  40.069  3.2121  2.8147  6.2923    1.114 4.2838  1.3076
-    quant0.975 43.776  8.3728   7.977   11.44   1.9235 6.5695  1.8309
+    mean       38.465 0.95396 0.55684  4.0316  0.74975 3.5932  1.1344
+    sd         2.6652  3.7441  3.7441  3.7442  0.59506 1.1424 0.27803
+    quant0.025 33.146 -6.5727 -6.9683 -3.5067 -0.43866 1.9361 0.70564
+    quant0.25  36.833 -1.3234 -1.7208  1.7565  0.37923 2.7758 0.93483
+    quant0.5   38.452 0.95148  0.5539  4.0327   0.7483 3.3894  1.0926
+    quant0.75  40.076  3.2213  2.8238  6.3013   1.1174 4.1933  1.2903
+    quant0.975  43.81  8.4184  8.0227  11.485   1.9351 6.3789  1.7908
 
 Also construct a plot the SD posteriors:
 
@@ -284,7 +278,7 @@ ddf <- data.frame(rbind(sigmaalpha,sigmaepsilon),errterm=gl(2,nrow(sigmaalpha),l
 ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("yield")+ylab("density")+xlim(0,10)
 ```
 
-![](figs/plotsdsirri-1..svg)<!-- -->
+![](figs/plotsdsirri-1..svg)
 
 Posteriors look OK.
 
@@ -309,16 +303,16 @@ summary(result)
 
     Fixed effects:
                    mean    sd 0.025quant 0.5quant 0.975quant   mode kld
-    (Intercept)  38.481 3.172     32.148   38.472     44.879 38.460   0
-    irrigationi2  0.935 4.465     -8.068    0.946      9.862  0.960   0
-    irrigationi3  0.539 4.465     -8.461    0.549      9.469  0.562   0
-    irrigationi4  4.002 4.465     -5.021    4.020     12.911  4.041   0
-    varietyv2     0.750 0.578     -0.401    0.750      1.901  0.750   0
+    (Intercept)  38.483 3.236     32.016   38.473     45.018 38.477   0
+    irrigationi2  0.932 4.556     -8.264    0.944     10.050  0.940   0
+    irrigationi3  0.536 4.556     -8.657    0.547      9.657  0.543   0
+    irrigationi4  3.998 4.556     -5.219    4.016     13.096  4.010   0
+    varietyv2     0.750 0.582     -0.410    0.750      1.910  0.750   0
 
     Model hyperparameters:
                                              mean    sd 0.025quant 0.5quant 0.975quant  mode
-    Precision for the Gaussian observations 0.893 0.422      0.298    0.819      1.923 0.669
-    Precision for field                     0.068 0.045      0.014    0.057      0.183 0.037
+    Precision for the Gaussian observations 0.925 0.443      0.313    0.841      2.013 0.738
+    Precision for field                     0.071 0.049      0.015    0.059      0.197 0.063
 
      is computed 
 
@@ -334,14 +328,14 @@ colnames(restab) = c("mu","ir2","ir3","ir4","v2","alpha","epsilon")
 data.frame(restab)
 ```
 
-                   mu     ir2     ir3     ir4      v2  alpha epsilon
-    mean       38.482 0.93522 0.53938   4.003 0.74976 4.4883  1.1486
-    sd         3.1733  4.4666  4.4666  4.4669 0.57753 1.5666 0.28161
-    quant0.025 32.147 -8.0683 -8.4615 -5.0212 -0.4017  2.347  0.7235
-    quant0.25  36.571 -1.7328 -2.1292  1.3388  0.3874  3.375 0.94638
-    quant0.5   38.464 0.93491  0.5383  4.0087 0.74836 4.1651  1.1028
-    quant0.75  40.363  3.5948  3.1984  6.6666  1.1093 5.2595  1.3036
-    quant0.975 44.867  9.8444  9.4511  12.893  1.8982 8.4125  1.8211
+                   mu     ir2     ir3     ir4       v2  alpha epsilon
+    mean       38.484 0.93277  0.5371  3.9992  0.74975 4.3712   1.129
+    sd         3.2352  4.5541   4.554  4.5544  0.58142 1.4895 0.27434
+    quant0.025 32.021 -8.2565 -8.6494 -5.2117 -0.40984 2.2602 0.70672
+    quant0.25  36.538 -1.7856 -2.1818  1.2849  0.38505 3.3082 0.93208
+    quant0.5   38.465 0.93267 0.53619  4.0054  0.74835 4.0901  1.0874
+    quant0.75    40.4  3.6426  3.2463  6.7132   1.1116 5.1335  1.2826
+    quant0.975 45.001  10.024  9.6314  13.071   1.9063 8.0433  1.7774
 
 Make the plots:
 
@@ -350,7 +344,7 @@ ddf <- data.frame(rbind(sigmaalpha,sigmaepsilon),errterm=gl(2,nrow(sigmaalpha),l
 ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("yield")+ylab("density")+xlim(0,10)
 ```
 
-![](figs/irrigam-1..svg)<!-- -->
+![](figs/irrigam-1..svg)
 
 Posteriors look OK.
 
@@ -373,16 +367,16 @@ summary(result)
 
     Fixed effects:
                    mean    sd 0.025quant 0.5quant 0.975quant   mode kld
-    (Intercept)  38.472 2.897     32.691   38.466     44.291 38.457   0
-    irrigationi2  0.945 4.075     -7.241    0.953      9.086  0.963   0
-    irrigationi3  0.549 4.075     -7.636    0.555      8.691  0.566   0
-    irrigationi4  4.019 4.076     -4.179    4.030     12.148  4.046   0
-    varietyv2     0.750 0.580     -0.407    0.750      1.906  0.750   0
+    (Intercept)  38.473 2.932     32.621   38.467     44.365 38.468   0
+    irrigationi2  0.944 4.125     -7.344    0.951      9.185  0.950   0
+    irrigationi3  0.547 4.125     -7.739    0.554      8.790  0.553   0
+    irrigationi4  4.017 4.125     -4.283    4.028     12.247  4.025   0
+    varietyv2     0.750 0.587     -0.422    0.750      1.921  0.750   0
 
     Model hyperparameters:
                                              mean    sd 0.025quant 0.5quant 0.975quant  mode
-    Precision for the Gaussian observations 0.891 0.422      0.297    0.817      1.920 0.667
-    Precision for field                     0.079 0.050      0.019    0.067      0.206 0.047
+    Precision for the Gaussian observations 0.925 0.448      0.315    0.839      2.033 0.732
+    Precision for field                     0.081 0.052      0.020    0.069      0.217 0.071
 
      is computed 
 
@@ -398,14 +392,14 @@ colnames(restab) = c("mu","ir2","ir3","ir4","v2","alpha","epsilon")
 data.frame(restab)
 ```
 
-                   mu     ir2     ir3     ir4       v2  alpha epsilon
-    mean       38.472 0.94532 0.54873  4.0189  0.74976 4.0766  1.1504
-    sd          2.896  4.0737  4.0737  4.0739  0.57994 1.2872 0.28263
-    quant0.025  32.69 -7.2422 -7.6372 -4.1804 -0.40675 2.2112 0.72412
-    quant0.25  36.677 -1.5653 -1.9622  1.5105  0.38638 3.1557 0.94746
-    quant0.5   38.459 0.94261 0.54554  4.0199  0.74835  3.846  1.1043
-    quant0.75  40.245  3.4447  3.0478  6.5206   1.1103 4.7522  1.3058
-    quant0.975 44.279   9.068  8.6729   12.13   1.9033  7.217  1.8257
+                   mu     ir2     ir3    ir4       v2  alpha epsilon
+    mean       38.473 0.94403 0.54752  4.017  0.74974  4.015  1.1292
+    sd         2.9295  4.1209  4.1209  4.121  0.58691 1.2581 0.27401
+    quant0.025 32.622 -7.3409 -7.7359  -4.28 -0.42121 2.1544  0.7034
+    quant0.25  36.657 -1.5958 -1.9926 1.4794  0.38208  3.113 0.93254
+    quant0.5   38.459 0.94141  0.5444 4.0182  0.74833 3.8038  1.0893
+    quant0.75  40.267  3.4726  3.0758 6.5479   1.1146 4.6895   1.284
+    quant0.975 44.349  9.1628  8.7678 12.224   1.9176 7.0523  1.7733
 
 Make the plots:
 
@@ -414,77 +408,144 @@ ddf <- data.frame(rbind(sigmaalpha,sigmaepsilon),errterm=gl(2,nrow(sigmaalpha),l
 ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("yield")+ylab("density")+xlim(0,10)
 ```
 
-![](figs/irripc-1..svg)<!-- -->
+![](figs/irripc-1..svg)
 
 Posteriors look OK. Not much difference between the three priors tried
 here.
 
 # STAN
 
-[STAN](https://mc-stan.org/) performs Bayesian inference using MCMC. Set
-up STAN to use multiple cores. Set the random number seed for
-reproducibility.
+[STAN](https://mc-stan.org/) performs Bayesian inference using MCMC.
 
-``` r
-rstan_options(auto_write = TRUE)
-options(mc.cores = parallel::detectCores())
-set.seed(123)
+I use `cmdstanr` to access Stan from R.
+
+You see below the Stan code to fit our model. Rmarkdown allows the use
+of Stan chunks (elsewhere I have R chunks). The chunk header looks like
+this.
+
+STAN chunk will be compiled to ‘mod’. Chunk header is:
+
+    cmdstan, output.var="mod", override = FALSE
+
+``` stan
+data {
+  int<lower=0> N;
+  array[N] int<lower=1,upper=8> field;
+  array[N] int<lower=1,upper=4> irrigation;
+  array[N] int<lower=1,upper=2> variety;
+  array[N] real y;
+}
+transformed data { // need to manually create dummy variables
+  vector[N] irmeth2;
+  vector[N] irmeth3;
+  vector[N] irmeth4;
+  vector[N] var2;
+  for (i in 1:N) {
+    irmeth2[i] = irrigation[i] == 2;
+    irmeth3[i] = irrigation[i] == 3;
+    irmeth4[i] = irrigation[i] == 4;
+    var2[i] = variety[i] == 2;
+  }
+}
+parameters {
+  vector[8] eta;
+  real mu;
+  real ir2;
+  real ir3;
+  real ir4;
+  real va2;
+  real<lower=0> sigmaf;
+  real<lower=0> sigmay;
+}
+transformed parameters {
+  vector[8] fld;
+  vector[N] yhat;
+
+  fld = sigmaf * eta;
+
+  for (i in 1:N)
+    yhat[i] = mu+ir2*irmeth2[i]+ir3*irmeth3[i]+ir4*irmeth4[i]+va2*var2[i]+fld[field[i]];
+
+}
+model {
+  eta ~ normal(0, 1);
+
+  y ~ normal(yhat, sigmay);
+}
 ```
 
-Fit the model. Requires use of STAN command file
-[irrigation.stan](../stancode/irrigation.stan). We have used
-uninformative priors for the fixed effects and the two variances.
-Prepare data in a format consistent with the command file. Needs to be a
-list.
+We have used uninformative priors for the fixed effects and the two
+variances. Prepare data in a format consistent with the command file.
+Needs to be a list.
 
 ``` r
 irridat <- with(irrigation,list(N=length(yield), y=yield, field=as.numeric(field), irrigation=as.numeric(irrigation), variety=as.numeric(variety)))
 ```
 
-Fit the model in three steps:
+Do the MCMC sampling:
 
 ``` r
-rt <- stanc(file="../stancode/irrigation.stan")
-sm <- stan_model(stanc_ret = rt, verbose=FALSE)
-system.time(fit <- sampling(sm, data=irridat))
+fit <- mod$sample(
+  data = irridat, 
+  seed = 123, 
+  chains = 4, 
+  parallel_chains = 4,
+  refresh = 500 # print update every 500 iters
+)
 ```
 
-       user  system elapsed 
-      4.773   0.258   1.742 
+    Running MCMC with 4 parallel chains...
 
-We get several kinds of warning. The easiest way to solve this is simply
-running more iterations.
+    Chain 1 Iteration:    1 / 2000 [  0%]  (Warmup) 
+    Chain 2 Iteration:    1 / 2000 [  0%]  (Warmup) 
+    Chain 3 Iteration:    1 / 2000 [  0%]  (Warmup) 
+    Chain 3 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+    Chain 4 Iteration:    1 / 2000 [  0%]  (Warmup) 
+    Chain 1 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+    Chain 2 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+    Chain 3 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+    Chain 3 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 4 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+    Chain 1 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+    Chain 1 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 2 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+    Chain 2 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 4 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+    Chain 4 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 1 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 2 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 3 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 1 Iteration: 2000 / 2000 [100%]  (Sampling) 
+    Chain 2 Iteration: 2000 / 2000 [100%]  (Sampling) 
+    Chain 3 Iteration: 2000 / 2000 [100%]  (Sampling) 
+    Chain 4 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 1 finished in 0.6 seconds.
+    Chain 2 finished in 0.6 seconds.
+    Chain 3 finished in 0.5 seconds.
+    Chain 4 Iteration: 2000 / 2000 [100%]  (Sampling) 
+    Chain 4 finished in 0.7 seconds.
 
-``` r
-system.time(fit <- sampling(sm, data=irridat, iter=10000))
-```
-
-       user  system elapsed 
-     19.744   0.435   6.769 
+    All 4 chains finished successfully.
+    Mean chain execution time: 0.6 seconds.
+    Total execution time: 0.8 seconds.
 
 ## Diagnostics
 
-First for the error SD
+Extract the draws into a convenient dataframe format:
 
 ``` r
-pname <- "sigmay"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+draws_df <- fit$draws(format = "df")
 ```
 
-![](figs/irristansigmay-1..svg)<!-- -->
-
-which is satisfactory. The same for the field SD:
+For the field SD:
 
 ``` r
-pname <- "sigmaf"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+ggplot(draws_df,
+       aes(x=.iteration,y=sigmaf,color=factor(.chain))) + geom_line() +
+  labs(color = 'Chain', x="Iteration")
 ```
 
-![](figs/irristansigmaf-1..svg)<!-- -->
+![](figs/irristansigmaf-1..svg)
 
 which also looks reasonable.
 
@@ -493,41 +554,32 @@ which also looks reasonable.
 Examine the output for the parameters we are mostly interested in:
 
 ``` r
-print(fit, pars=c("mu","ir2","ir3","ir4","va2","sigmaf","sigmay","fld"))
+fit$summary(c("mu","ir2","ir3","ir4","va2","sigmaf","sigmay","fld"))
 ```
 
-    Inference for Stan model: irrigation.
-    4 chains, each with iter=10000; warmup=5000; thin=1; 
-    post-warmup draws per chain=5000, total post-warmup draws=20000.
+    # A tibble: 15 × 10
+       variable   mean median    sd   mad      q5   q95  rhat ess_bulk ess_tail
+       <chr>     <num>  <num> <num> <num>   <num> <num> <num>    <num>    <num>
+     1 mu       38.2   38.3   4.94  3.71   30.2   45.6   1.00    1012.     914.
+     2 ir2       1.38   1.32  7.19  5.11   -9.50  13.0   1.00    1076.    1116.
+     3 ir3       0.973  0.878 6.91  5.25   -9.14  11.7   1.01    1107.    1011.
+     4 ir4       4.28   4.05  7.41  5.14   -6.21  15.5   1.00    1166.    1237.
+     5 va2       0.726  0.732 0.821 0.700  -0.600  1.99  1.00    3331.    1687.
+     6 sigmaf    6.12   5.13  3.59  2.39    2.56  13.2   1.01     570.    1108.
+     7 sigmay    1.51   1.38  0.562 0.406   0.904  2.53  1.00     783.     967.
+     8 fld[1]   -1.81  -1.86  4.93  3.72   -9.24   6.15  1.00    1033.     901.
+     9 fld[2]   -2.38  -2.42  4.90  3.70   -9.77   5.07  1.00    1937.    2032.
+    10 fld[3]   -3.73  -3.63  4.84  3.57  -11.1    3.61  1.00    2197.    1434.
+    11 fld[4]   -2.96  -2.89  5.36  3.77  -10.9    4.85  1.00    2178.    1602.
+    12 fld[5]    2.25   2.11  4.92  3.81   -4.95  10.2   1.01     990.     912.
+    13 fld[6]    2.02   1.96  4.94  3.82   -5.36   9.79  1.00    1960.    1901.
+    14 fld[7]    3.42   3.37  4.87  3.68   -3.74  11.0   1.00    2140.    1617.
+    15 fld[8]    3.01   2.96  5.41  3.79   -4.94  11.2   1.00    2224.    1632.
 
-            mean se_mean   sd   2.5%   25%   50%   75% 97.5% n_eff Rhat
-    mu     38.38    0.07 4.93  28.10 35.91 38.44 40.89 48.57  4643    1
-    ir2     1.20    0.10 7.19 -12.78 -2.50  1.10  4.71 16.20  4743    1
-    ir3     0.69    0.10 6.92 -13.08 -2.94  0.63  4.17 15.40  4583    1
-    ir4     4.23    0.11 7.09 -10.18  0.72  4.14  7.66 19.07  4313    1
-    va2     0.73    0.01 0.80  -0.89  0.26  0.74  1.20  2.34 14633    1
-    sigmaf  6.26    0.09 3.84   2.36  3.86  5.23  7.37 16.78  1864    1
-    sigmay  1.50    0.01 0.56   0.83  1.13  1.37  1.72  2.96  3318    1
-    fld[1] -1.96    0.07 4.92 -12.22 -4.46 -1.99  0.49  8.31  4743    1
-    fld[2] -2.35    0.07 5.24 -13.61 -4.84 -2.20  0.32  7.69  5475    1
-    fld[3] -3.61    0.08 4.93 -14.04 -6.08 -3.52 -0.98  6.19  4178    1
-    fld[4] -3.05    0.08 5.15 -13.63 -5.55 -2.93 -0.47  7.26  4135    1
-    fld[5]  2.08    0.07 4.91  -8.02 -0.43  1.95  4.55 12.41  4720    1
-    fld[6]  2.07    0.07 5.24  -8.84 -0.40  2.17  4.71 12.34  5671    1
-    fld[7]  3.53    0.07 4.92  -6.66  1.00  3.51  6.09 13.55  4407    1
-    fld[8]  2.89    0.08 5.16  -7.42  0.33  2.88  5.40 13.42  4531    1
-
-    Samples were drawn using NUTS(diag_e) at Fri Jul  8 14:22:35 2022.
-    For each parameter, n_eff is a crude measure of effective sample size,
-    and Rhat is the potential scale reduction factor on split chains (at 
-    convergence, Rhat=1).
-
-We see the posterior mean, SE and SD of the samples. We see some
-quantiles from which we could construct a 95% credible interval (for
-example). The `n_eff` is a rough measure of the sample size taking into
-account the correlation in the samples. The effective sample sizes for
-the primary parameters is good enough for most purposes. The $\hat R$
-statistics are good.
+We see the posterior mean, median and SD, MAD of the samples. We see
+some quantiles from which we could construct a 95% credible interval
+(for example). The effective sample sizes for the primary parameters is
+good enough for most purposes. The $\hat R$ statistics are good.
 
 Notice that the posterior mean for field SD is substantially larger than
 seen in the mixed effect model or the previous INLA models.
@@ -537,23 +589,25 @@ seen in the mixed effect model or the previous INLA models.
 Plot the posteriors for the variance components
 
 ``` r
-postsig <- rstan::extract(fit, pars=c("sigmay","sigmaf"))
-ref <- reshape2::melt(postsig,value.name="yield")
-ggplot(data=ref,aes(x=yield, color=L1))+geom_density()+guides(color=guide_legend(title="SD"))+xlim(0,20)
+sdf = stack(draws_df[,startsWith(colnames(draws_df),"sigma")])
+colnames(sdf) = c("yield","sigma")
+levels(sdf$sigma) = c("field","epsilon")
+ggplot(sdf, aes(x=yield,color=sigma)) + geom_density() +xlim(0,20)
 ```
 
-![](figs/irristanvc-1..svg)<!-- -->
+![](figs/irristanvc-1..svg)
 
 We see that the error SD can be localized much more than the field SD.
 We can also look at the field effects:
 
 ``` r
-opre <- rstan::extract(fit, pars="fld")
-ref <- reshape2::melt(opre, value.name="yield")
-ggplot(data=ref,aes(x=yield, color=factor(Var2)))+geom_density()+guides(color=guide_legend(title="field"))
+sdf = stack(draws_df[,startsWith(colnames(draws_df),"fld")])
+colnames(sdf) = c("yield","fld")
+levels(sdf$fld) = 1:8
+ggplot(sdf, aes(x=yield,color=fld)) + geom_density() + xlim(-25,25)
 ```
 
-![](figs/irristanfld-1..svg)<!-- -->
+![](figs/irristanfld-1..svg)
 
 We are looking at the differences from the overall mean. We see that all
 eight field distributions clearly overlap zero. There is a distinction
@@ -561,13 +615,13 @@ between the first four and the second four fields. We can also look at
 the “fixed” effects:
 
 ``` r
-opre <- rstan::extract(fit, pars=c("ir2","ir3","ir4","va2"))
-ref <- reshape2::melt(opre)
-colnames(ref)[2:3] <- c("yield","fixed")
-ggplot(data=ref,aes(x=yield, color=fixed))+geom_density()
+sdf = stack(draws_df[,c("ir2","ir3","ir4","va2")])
+colnames(sdf) = c("yield","fixed")
+levels(sdf$fixed) = c("ir2","ir3","ir4","va2")
+ggplot(sdf, aes(x=yield,color=fixed)) + geom_density() + xlim(-15,15)
 ```
 
-![](figs/irristanfixed-1..svg)<!-- -->
+![](figs/irristanfixed-1..svg)
 
 We are looking at the differences from the reference level. We see that
 all four distributions clearly overlap zero although we are able to
@@ -584,7 +638,7 @@ Fitting the model is very similar to `lmer` as seen above:
 
 ``` r
 suppressMessages(bmod <- brm(yield ~ irrigation + variety + (1|field), 
-                             irrigation, iter=10000, cores=4))
+                             irrigation, iter=10000, cores=4, backend = "cmdstanr"))
 ```
 
 We get some warnings but not as severe as seen with our STAN fit above.
@@ -594,7 +648,7 @@ We can obtain some posterior densities and diagnostics with:
 plot(bmod, variable = "^s", regex=TRUE)
 ```
 
-![](figs/irribrmsdiag-1..svg)<!-- -->
+![](figs/irribrmsdiag-1..svg)
 
 We have chosen only the random effect hyperparameters since this is
 where problems will appear first. Looks OK.
@@ -605,54 +659,56 @@ We can look at the STAN code that `brms` used with:
 stancode(bmod)
 ```
 
-    // generated with brms 2.17.0
+    // generated with brms 2.19.0
     functions {
+      
     }
     data {
-      int<lower=1> N;  // total number of observations
-      vector[N] Y;  // response variable
-      int<lower=1> K;  // number of population-level effects
-      matrix[N, K] X;  // population-level design matrix
+      int<lower=1> N; // total number of observations
+      vector[N] Y; // response variable
+      int<lower=1> K; // number of population-level effects
+      matrix[N, K] X; // population-level design matrix
       // data for group-level effects of ID 1
-      int<lower=1> N_1;  // number of grouping levels
-      int<lower=1> M_1;  // number of coefficients per level
-      int<lower=1> J_1[N];  // grouping indicator per observation
+      int<lower=1> N_1; // number of grouping levels
+      int<lower=1> M_1; // number of coefficients per level
+      array[N] int<lower=1> J_1; // grouping indicator per observation
       // group-level predictor values
       vector[N] Z_1_1;
-      int prior_only;  // should the likelihood be ignored?
+      int prior_only; // should the likelihood be ignored?
     }
     transformed data {
       int Kc = K - 1;
-      matrix[N, Kc] Xc;  // centered version of X without an intercept
-      vector[Kc] means_X;  // column means of X before centering
-      for (i in 2:K) {
-        means_X[i - 1] = mean(X[, i]);
-        Xc[, i - 1] = X[, i] - means_X[i - 1];
+      matrix[N, Kc] Xc; // centered version of X without an intercept
+      vector[Kc] means_X; // column means of X before centering
+      for (i in 2 : K) {
+        means_X[i - 1] = mean(X[ : , i]);
+        Xc[ : , i - 1] = X[ : , i] - means_X[i - 1];
       }
     }
     parameters {
-      vector[Kc] b;  // population-level effects
-      real Intercept;  // temporary intercept for centered predictors
-      real<lower=0> sigma;  // dispersion parameter
-      vector<lower=0>[M_1] sd_1;  // group-level standard deviations
-      vector[N_1] z_1[M_1];  // standardized group-level effects
+      vector[Kc] b; // population-level effects
+      real Intercept; // temporary intercept for centered predictors
+      real<lower=0> sigma; // dispersion parameter
+      vector<lower=0>[M_1] sd_1; // group-level standard deviations
+      array[M_1] vector[N_1] z_1; // standardized group-level effects
     }
     transformed parameters {
-      vector[N_1] r_1_1;  // actual group-level effects
-      real lprior = 0;  // prior contributions to the log posterior
-      r_1_1 = (sd_1[1] * (z_1[1]));
+      vector[N_1] r_1_1; // actual group-level effects
+      real lprior = 0; // prior contributions to the log posterior
+      r_1_1 = sd_1[1] * z_1[1];
       lprior += student_t_lpdf(Intercept | 3, 40.1, 3.9);
       lprior += student_t_lpdf(sigma | 3, 0, 3.9)
-        - 1 * student_t_lccdf(0 | 3, 0, 3.9);
+                - 1 * student_t_lccdf(0 | 3, 0, 3.9);
       lprior += student_t_lpdf(sd_1 | 3, 0, 3.9)
-        - 1 * student_t_lccdf(0 | 3, 0, 3.9);
+                - 1 * student_t_lccdf(0 | 3, 0, 3.9);
     }
     model {
       // likelihood including constants
       if (!prior_only) {
         // initialize linear predictor term
-        vector[N] mu = Intercept + rep_vector(0.0, N);
-        for (n in 1:N) {
+        vector[N] mu = rep_vector(0.0, N);
+        mu += Intercept;
+        for (n in 1 : N) {
           // add more terms to the linear predictor
           mu[n] += r_1_1[J_1[n]] * Z_1_1[n];
         }
@@ -690,21 +746,21 @@ summary(bmod)
     Group-Level Effects: 
     ~field (Number of levels: 8) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     4.37      1.69     2.03     8.53 1.00     4661     4923
+    sd(Intercept)     4.40      1.65     2.13     8.56 1.00     6645     8987
 
     Population-Level Effects: 
                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept       38.46      3.29    31.98    45.09 1.00     8318     9317
-    irrigationi2     0.95      4.77    -8.60    10.38 1.00     8552     9576
-    irrigationi3     0.48      4.84    -9.14     9.96 1.00     8175     8593
-    irrigationi4     4.01      4.81    -5.56    13.54 1.00     8595     8481
-    varietyv2        0.75      0.80    -0.83     2.33 1.00    15520     9463
+    Intercept       38.49      3.34    31.80    45.21 1.00     8915     8496
+    irrigationi2     0.81      4.77    -9.00    10.23 1.00     8816     8892
+    irrigationi3     0.48      4.84    -9.33     9.99 1.00     9288     9576
+    irrigationi4     3.98      4.82    -5.92    13.73 1.00     8675     8640
+    varietyv2        0.75      0.78    -0.84     2.31 1.00    16645     9466
 
     Family Specific Parameters: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma     1.50      0.56     0.82     2.95 1.00     3940     3629
+    sigma     1.47      0.51     0.83     2.76 1.00     5156     6305
 
-    Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+    Draws were sampled using sample(hmc). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
     scale reduction factor on split chains (at convergence, Rhat = 1).
 
@@ -804,7 +860,7 @@ We get the posterior density for the intercept as:
 plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="yield",ylab="density")
 ```
 
-![](figs/irriginlaint-1..svg)<!-- -->
+![](figs/irriginlaint-1..svg)
 
 and for the treatment effects as:
 
@@ -815,7 +871,7 @@ matplot(xmat, ymat,type="l",xlab="yield",ylab="density")
 legend("right",c("i2","i3","i4","v2"),col=1:4,lty=1:4)
 ```
 
-![](figs/irriginlateff-1..svg)<!-- -->
+![](figs/irriginlateff-1..svg)
 
 ``` r
 xmat = t(gimod$beta[6:13,])
@@ -824,7 +880,7 @@ matplot(xmat, ymat,type="l",xlab="yield",ylab="density")
 legend("right",paste0("field",1:8),col=1:8,lty=1:8)
 ```
 
-![](figs/irriginlareff-1..svg)<!-- -->
+![](figs/irriginlareff-1..svg)
 
 It is not straightforward to obtain the posterior densities of the
 hyperparameters.
@@ -864,45 +920,47 @@ distribution of R, though this is an historic advantage for `mgcv`).
 sessionInfo()
 ```
 
-    R version 4.2.1 (2022-06-23)
-    Platform: x86_64-apple-darwin17.0 (64-bit)
-    Running under: macOS Big Sur ... 10.16
+    R version 4.3.1 (2023-06-16)
+    Platform: x86_64-apple-darwin20 (64-bit)
+    Running under: macOS Ventura 13.4.1
 
     Matrix products: default
-    BLAS:   /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRblas.0.dylib
-    LAPACK: /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRlapack.dylib
+    BLAS:   /Library/Frameworks/R.framework/Versions/4.3-x86_64/Resources/lib/libRblas.0.dylib 
+    LAPACK: /Library/Frameworks/R.framework/Versions/4.3-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.11.0
 
     locale:
     [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+    time zone: Europe/London
+    tzcode source: internal
 
     attached base packages:
     [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-41         nlme_3.1-161        brms_2.18.0         Rcpp_1.0.9          rstan_2.26.13      
-     [6] StanHeaders_2.26.13 knitr_1.41          INLA_22.12.16       sp_1.5-1            foreach_1.5.2      
-    [11] RLRsim_3.1-8        pbkrtest_0.5.1      lme4_1.1-31         Matrix_1.5-3        ggplot2_3.4.0      
-    [16] faraway_1.0.9      
+     [1] mgcv_1.8-42     nlme_3.1-162    brms_2.19.0     Rcpp_1.0.10     cmdstanr_0.5.3  knitr_1.43      INLA_23.05.30-1
+     [8] sp_2.0-0        foreach_1.5.2   RLRsim_3.1-8    pbkrtest_0.5.2  lme4_1.1-33     Matrix_1.5-4.1  ggplot2_3.4.2  
+    [15] faraway_1.0.8  
 
     loaded via a namespace (and not attached):
-      [1] minqa_1.2.5          colorspace_2.0-3     ellipsis_0.3.2       markdown_1.4         base64enc_0.1-3     
-      [6] rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         DT_0.26              fansi_1.0.3         
-     [11] mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18     splines_4.2.1        shinythemes_1.2.0   
-     [16] bayesplot_1.10.0     jsonlite_1.8.4       nloptr_2.0.3         broom_1.0.2          shiny_1.7.4         
-     [21] compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0        cli_3.5.0           
-     [26] later_1.3.0          htmltools_0.5.4      prettyunits_1.1.1    tools_4.2.1          igraph_1.3.5        
-     [31] coda_0.19-4          gtable_0.3.1         glue_1.6.2           reshape2_1.4.4       dplyr_1.0.10        
-     [36] posterior_1.3.1      V8_4.2.2             vctrs_0.5.1          svglite_2.1.0        iterators_1.0.14    
-     [41] crosstalk_1.2.0      tensorA_0.36.2       xfun_0.36            stringr_1.5.0        ps_1.7.2            
-     [46] mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.3      gtools_3.9.4         MASS_7.3-58.1       
-     [51] zoo_1.8-11           scales_1.2.1         colourpicker_1.2.0   promises_1.2.0.1     Brobdingnag_1.2-9   
-     [56] inline_0.3.19        shinystan_2.6.0      yaml_2.3.6           curl_4.3.3           gridExtra_2.3       
-     [61] loo_2.5.1            stringi_1.7.8        highr_0.10           dygraphs_1.1.1.6     checkmate_2.1.0     
-     [66] boot_1.3-28.1        pkgbuild_1.4.0       systemfonts_1.0.4    rlang_1.0.6          pkgconfig_2.0.3     
-     [71] matrixStats_0.63.0   distributional_0.3.1 evaluate_0.19        lattice_0.20-45      purrr_1.0.0         
-     [76] labeling_0.4.2       rstantools_2.2.0     htmlwidgets_1.6.0    processx_3.8.0       tidyselect_1.2.0    
-     [81] plyr_1.8.8           magrittr_2.0.3       R6_2.5.1             generics_0.1.3       DBI_1.1.3           
-     [86] pillar_1.8.1         withr_2.5.0          xts_0.12.2           abind_1.4-5          tibble_3.1.8        
-     [91] crayon_1.5.2         utf8_1.2.2           rmarkdown_2.19       grid_4.2.1           callr_3.7.3         
-     [96] threejs_0.3.3        digest_0.6.31        xtable_1.8-4         tidyr_1.2.1          httpuv_1.6.7        
-    [101] RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       
+      [1] gridExtra_2.3        inline_0.3.19        rlang_1.1.1          magrittr_2.0.3       matrixStats_1.0.0   
+      [6] compiler_4.3.1       loo_2.6.0            systemfonts_1.0.4    callr_3.7.3          vctrs_0.6.3         
+     [11] reshape2_1.4.4       stringr_1.5.0        crayon_1.5.2         pkgconfig_2.0.3      fastmap_1.1.1       
+     [16] backports_1.4.1      ellipsis_0.3.2       labeling_0.4.2       utf8_1.2.3           threejs_0.3.3       
+     [21] promises_1.2.0.1     rmarkdown_2.22       markdown_1.7         ps_1.7.5             nloptr_2.0.3        
+     [26] MatrixModels_0.5-1   purrr_1.0.1          xfun_0.39            jsonlite_1.8.5       later_1.3.1         
+     [31] Deriv_4.1.3          prettyunits_1.1.1    broom_1.0.5          R6_2.5.1             dygraphs_1.1.1.6    
+     [36] StanHeaders_2.26.27  stringi_1.7.12       boot_1.3-28.1        rstan_2.21.8         iterators_1.0.14    
+     [41] zoo_1.8-12           base64enc_0.1-3      bayesplot_1.10.0     httpuv_1.6.11        splines_4.3.1       
+     [46] igraph_1.5.0         tidyselect_1.2.0     rstudioapi_0.14      abind_1.4-5          yaml_2.3.7          
+     [51] codetools_0.2-19     miniUI_0.1.1.1       processx_3.8.1       pkgbuild_1.4.1       lattice_0.21-8      
+     [56] tibble_3.2.1         plyr_1.8.8           shiny_1.7.4          withr_2.5.0          bridgesampling_1.1-2
+     [61] posterior_1.4.1      coda_0.19-4          evaluate_0.21        RcppParallel_5.1.7   xts_0.13.1          
+     [66] pillar_1.9.0         tensorA_0.36.2       stats4_4.3.1         checkmate_2.2.0      DT_0.28             
+     [71] shinyjs_2.1.0        distributional_0.3.2 generics_0.1.3       rstantools_2.3.1     munsell_0.5.0       
+     [76] scales_1.2.1         minqa_1.2.5          gtools_3.9.4         xtable_1.8-4         glue_1.6.2          
+     [81] tools_4.3.1          shinystan_2.6.0      data.table_1.14.8    colourpicker_1.2.0   mvtnorm_1.2-2       
+     [86] grid_4.3.1           tidyr_1.3.0          crosstalk_1.2.0      colorspace_2.1-0     cli_3.6.1           
+     [91] fansi_1.0.4          svglite_2.1.1        Brobdingnag_1.2-9    dplyr_1.1.2          gtable_0.3.3        
+     [96] digest_0.6.31        htmlwidgets_1.6.2    farver_2.1.1         htmltools_0.5.5      lifecycle_1.0.3     
+    [101] mime_0.12            shinythemes_1.2.0    MASS_7.3-60         

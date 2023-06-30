@@ -2,12 +2,14 @@
 title: Split Plot Design
 author: "[Julian Faraway](https://julianfaraway.github.io/)"
 date: "`r format(Sys.time(), '%d %B %Y')`"
-output: 
-  github_document:
+format: 
+  gfm:
     toc: true
 ---
 
-```{r global_options, include=FALSE}
+```{r}
+#| label: global_options
+#| include: false
 knitr::opts_chunk$set(comment=NA, 
                       echo = TRUE,
                       fig.path="figs/",
@@ -18,7 +20,9 @@ knitr::opts_chunk$set(comment=NA,
 knitr::opts_knit$set(global.par = TRUE)
 ```
 
-```{r graphopts, include=FALSE}
+```{r}
+#| label: graphopts
+#| include: false
 par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
 ggplot2::theme_set(ggplot2::theme_bw())
 ```
@@ -38,7 +42,8 @@ library(pbkrtest)
 library(RLRsim)
 library(INLA)
 library(knitr)
-library(rstan, quietly=TRUE)
+library(cmdstanr)
+register_knitr_engine(override = FALSE)
 library(brms)
 library(mgcv)
 ```
@@ -56,7 +61,8 @@ randomly assigned.
 
 Load in and plot the data:
 
-```{r irriplot}
+```{r}
+#| label: irriplot
 data(irrigation, package="faraway")
 summary(irrigation)
 ggplot(irrigation, aes(y=yield, x=field, shape=variety, color=irrigation)) + geom_point()
@@ -147,7 +153,9 @@ inla.setOption("short.summary",TRUE)
 
 Try the default INLA fit
 
-```{r irriinladef, cache=TRUE}
+```{r}
+#| label: irriinladef
+#| cache: true
 formula <- yield ~ irrigation + variety +f(field, model="iid")
 result <- inla(formula, family="gaussian", data=irrigation)
 summary(result)
@@ -157,7 +165,8 @@ Default looks more plausible than [one way](pulp.md) and [RBD](penicillin.md) ex
 
 Compute the transforms to an SD scale for the field and error. Make a table of summary statistics for the posteriors:
 
-```{r sumstats}
+```{r}
+#| label: sumstats
 sigmaalpha <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[2]])
 sigmaepsilon <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[1]])
 restab=sapply(result$marginals.fixed, function(x) inla.zmarginal(x,silent=TRUE))
@@ -169,7 +178,8 @@ data.frame(restab)
 
 Also construct a plot the SD posteriors:
 
-```{r plotsdsirri}
+```{r}
+#| label: plotsdsirri
 ddf <- data.frame(rbind(sigmaalpha,sigmaepsilon),errterm=gl(2,nrow(sigmaalpha),labels = c("alpha","epsilon")))
 ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("yield")+ylab("density")+xlim(0,10)
 ```
@@ -185,7 +195,9 @@ variances to be lower than this variance so this is an overestimate.
 The variance of the gamma prior (for the precision) is controlled by
 the `apar` shape parameter.
 
-```{r irriinlaig, cache=TRUE}
+```{r}
+#| label: irriinlaig
+#| cache: true
 apar <- 0.5
 lmod <- lm(yield ~ irrigation+variety, data=irrigation)
 bpar <- apar*var(residuals(lmod))
@@ -197,12 +209,15 @@ summary(result)
 
 Compute the summaries as before:
 
-```{r ref.label="sumstats"}
+```{r}
+#| ref.label: sumstats
 ```
 
 Make the plots:
 
-```{r irrigam, ref.label="plotsdsirri"}
+```{r}
+#| label: irrigam
+#| ref.label: plotsdsirri
 ```
 
 Posteriors look OK.
@@ -213,7 +228,9 @@ In [Simpson et al (2015)](http://arxiv.org/abs/1403.4630v3), penalized complexit
 requires that we specify a scaling for the SDs of the random effects. We use the SD of the residuals
 of the fixed effects only model (what might be called the base model in the paper) to provide this scaling.
 
-```{r irriinlapc, cache=TRUE}
+```{r}
+#| label: irriinlapc
+#| cache: true
 lmod <- lm(yield ~ irrigation+variety, irrigation)
 sdres <- sd(residuals(lmod))
 pcprior <- list(prec = list(prior="pc.prec", param = c(3*sdres,0.01)))
@@ -224,12 +241,15 @@ summary(result)
 
 Compute the summaries as before:
 
-```{r ref.label="sumstats"}
+```{r}
+#| ref.label: sumstats
 ```
 
 Make the plots:
 
-```{r irripc, ref.label="plotsdsirri"}
+```{r}
+#| label: irripc
+#| ref.label: plotsdsirri
 ```
 
 Posteriors look OK. Not much difference between the three priors tried here.
@@ -238,54 +258,105 @@ Posteriors look OK. Not much difference between the three priors tried here.
 
 [STAN](https://mc-stan.org/) performs Bayesian inference using
 MCMC.
-Set up STAN to use multiple cores. Set the random number seed for reproducibility.
 
-```{r}
-rstan_options(auto_write = TRUE)
-options(mc.cores = parallel::detectCores())
-set.seed(123)
+I use `cmdstanr` to access Stan from R.
+
+You see below the Stan code to fit our model. Rmarkdown allows the use
+of Stan chunks (elsewhere I have R chunks). The chunk header looks
+like this. 
+
+STAN chunk will be compiled to 'mod'. Chunk header is:
+```
+cmdstan, output.var="mod", override = FALSE
 ```
 
-Fit the model. Requires use of STAN command file [irrigation.stan](../stancode/irrigation.stan). We have used uninformative priors
+```{cmdstan, output.var="mod", override = FALSE}
+data {
+  int<lower=0> N;
+  array[N] int<lower=1,upper=8> field;
+  array[N] int<lower=1,upper=4> irrigation;
+  array[N] int<lower=1,upper=2> variety;
+  array[N] real y;
+}
+transformed data { // need to manually create dummy variables
+  vector[N] irmeth2;
+  vector[N] irmeth3;
+  vector[N] irmeth4;
+  vector[N] var2;
+  for (i in 1:N) {
+    irmeth2[i] = irrigation[i] == 2;
+    irmeth3[i] = irrigation[i] == 3;
+    irmeth4[i] = irrigation[i] == 4;
+    var2[i] = variety[i] == 2;
+  }
+}
+parameters {
+  vector[8] eta;
+  real mu;
+  real ir2;
+  real ir3;
+  real ir4;
+  real va2;
+  real<lower=0> sigmaf;
+  real<lower=0> sigmay;
+}
+transformed parameters {
+  vector[8] fld;
+  vector[N] yhat;
+
+  fld = sigmaf * eta;
+
+  for (i in 1:N)
+    yhat[i] = mu+ir2*irmeth2[i]+ir3*irmeth3[i]+ir4*irmeth4[i]+va2*var2[i]+fld[field[i]];
+
+}
+model {
+  eta ~ normal(0, 1);
+
+  y ~ normal(yhat, sigmay);
+}
+```
+
+
+We have used uninformative priors
 for the fixed effects and the two variances. Prepare data in a format consistent with the command file. Needs to be a list.
 
 ```{r}
 irridat <- with(irrigation,list(N=length(yield), y=yield, field=as.numeric(field), irrigation=as.numeric(irrigation), variety=as.numeric(variety)))
 ```
 
-Fit the model in three steps:
+Do the MCMC sampling:
 
-```{r  irristan, cache=TRUE}
-rt <- stanc(file="../stancode/irrigation.stan")
-sm <- stan_model(stanc_ret = rt, verbose=FALSE)
-system.time(fit <- sampling(sm, data=irridat))
+```{r}
+fit <- mod$sample(
+  data = irridat, 
+  seed = 123, 
+  chains = 4, 
+  parallel_chains = 4,
+  refresh = 500 # print update every 500 iters
+)
 ```
 
-We get several kinds of warning. The easiest way to solve this is
-simply running more iterations.
 
-```{r irristanbigiter, cache=TRUE}
-system.time(fit <- sampling(sm, data=irridat, iter=10000))
-```
+
+
 
 ## Diagnostics
 
-First for the error SD
+Extract the draws into a convenient dataframe format:
 
-```{r irristansigmay}
-pname <- "sigmay"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```{r}
+draws_df <- fit$draws(format = "df")
 ```
 
-which is satisfactory. The same for the field SD:
 
-```{r  irristansigmaf}
-pname <- "sigmaf"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+For the field SD:
+
+```{r}
+#| label: irristansigmaf
+ggplot(draws_df,
+       aes(x=.iteration,y=sigmaf,color=factor(.chain))) + geom_line() +
+  labs(color = 'Chain', x="Iteration")
 ```
 
 which also looks reasonable.
@@ -296,12 +367,11 @@ which also looks reasonable.
 Examine the output for the parameters we are mostly interested in:
 
 ```{r}
-print(fit, pars=c("mu","ir2","ir3","ir4","va2","sigmaf","sigmay","fld"))
+fit$summary(c("mu","ir2","ir3","ir4","va2","sigmaf","sigmay","fld"))
 ```
 
-We see the posterior mean, SE and SD of the samples. We see some quantiles from which we could construct a 95% credible
-interval (for example). The `n_eff` is a rough measure of the sample size taking into account the correlation in the
-samples. The effective sample sizes for the primary parameters is good enough for most purposes.  The $\hat R$ statistics are good.
+We see the posterior mean, median and SD, MAD of the samples. We see some quantiles from which we could construct a 95% credible
+interval (for example).  The effective sample sizes for the primary parameters is good enough for most purposes.  The $\hat R$ statistics are good.
 
 Notice that the posterior mean for field SD is substantially larger
 than seen in the mixed effect model or the previous INLA models.
@@ -310,30 +380,35 @@ than seen in the mixed effect model or the previous INLA models.
 
 Plot the posteriors for the variance components
 
-```{r  irristanvc}
-postsig <- rstan::extract(fit, pars=c("sigmay","sigmaf"))
-ref <- reshape2::melt(postsig,value.name="yield")
-ggplot(data=ref,aes(x=yield, color=L1))+geom_density()+guides(color=guide_legend(title="SD"))+xlim(0,20)
+```{r}
+#| label: irristanvc
+sdf = stack(draws_df[,startsWith(colnames(draws_df),"sigma")])
+colnames(sdf) = c("yield","sigma")
+levels(sdf$sigma) = c("field","epsilon")
+ggplot(sdf, aes(x=yield,color=sigma)) + geom_density() +xlim(0,20)
 ```
 
 We see that the error SD can be localized much more than the field SD.
 We can also look at the field effects:
 
-```{r  irristanfld}
-opre <- rstan::extract(fit, pars="fld")
-ref <- reshape2::melt(opre, value.name="yield")
-ggplot(data=ref,aes(x=yield, color=factor(Var2)))+geom_density()+guides(color=guide_legend(title="field"))
+```{r}
+#| label: irristanfld
+sdf = stack(draws_df[,startsWith(colnames(draws_df),"fld")])
+colnames(sdf) = c("yield","fld")
+levels(sdf$fld) = 1:8
+ggplot(sdf, aes(x=yield,color=fld)) + geom_density() + xlim(-25,25)
 ```
 
 We are looking at the differences from the overall mean. We see that all eight field distributions clearly overlap zero. There
 is a distinction between the first four and the second four fields.
 We can also look at the "fixed" effects:
 
-```{r  irristanfixed}
-opre <- rstan::extract(fit, pars=c("ir2","ir3","ir4","va2"))
-ref <- reshape2::melt(opre)
-colnames(ref)[2:3] <- c("yield","fixed")
-ggplot(data=ref,aes(x=yield, color=fixed))+geom_density()
+```{r}
+#| label: irristanfixed
+sdf = stack(draws_df[,c("ir2","ir3","ir4","va2")])
+colnames(sdf) = c("yield","fixed")
+levels(sdf$fixed) = c("ir2","ir3","ir4","va2")
+ggplot(sdf, aes(x=yield,color=fixed)) + geom_density() + xlim(-15,15)
 ```
 
 We are looking at the differences from the reference level. We see that all four distributions clearly overlap zero
@@ -347,15 +422,18 @@ a convenient wrapper to STAN functionality.
 
 Fitting the model is very similar to `lmer` as seen above:
 
-```{r brmfit, cache=TRUE}
+```{r}
+#| label: brmfit
+#| cache: true
 suppressMessages(bmod <- brm(yield ~ irrigation + variety + (1|field), 
-                             irrigation, iter=10000, cores=4))
+                             irrigation, iter=10000, cores=4, backend = "cmdstanr"))
 ```
 
 We get some warnings but not as severe as seen with our STAN fit
 above. We can obtain some posterior densities and diagnostics with:
 
-```{r irribrmsdiag}
+```{r}
+#| label: irribrmsdiag
 plot(bmod, variable = "^s", regex=TRUE)
 ```
 
@@ -437,20 +515,23 @@ gimod = ginla(gmod)
 
 We get the posterior density for the intercept as:
 
-```{r irriginlaint}
+```{r}
+#| label: irriginlaint
 plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="yield",ylab="density")
 ```
 
 and for the treatment effects as:
 
-```{r irriginlateff}
+```{r}
+#| label: irriginlateff
 xmat = t(gimod$beta[2:5,])
 ymat = t(gimod$density[2:5,])
 matplot(xmat, ymat,type="l",xlab="yield",ylab="density")
 legend("right",c("i2","i3","i4","v2"),col=1:4,lty=1:4)
 ```
 
-```{r irriginlareff}
+```{r}
+#| label: irriginlareff
 xmat = t(gimod$beta[6:13,])
 ymat = t(gimod$density[6:13,])
 matplot(xmat, ymat,type="l",xlab="yield",ylab="density")
