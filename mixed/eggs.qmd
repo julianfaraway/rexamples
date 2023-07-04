@@ -2,12 +2,14 @@
 title: Nested Design
 author: "[Julian Faraway](https://julianfaraway.github.io/)"
 date: "`r format(Sys.time(), '%d %B %Y')`"
-output: 
-  github_document:
+format: 
+  gfm:
     toc: true
 ---
 
-```{r global_options, include=FALSE}
+```{r}
+#| label: global_options
+#| include: false
 knitr::opts_chunk$set(comment=NA, 
                       echo = TRUE,
                       fig.path="figs/",
@@ -18,7 +20,9 @@ knitr::opts_chunk$set(comment=NA,
 knitr::opts_knit$set(global.par = TRUE)
 ```
 
-```{r graphopts, include=FALSE}
+```{r}
+#| label: graphopts
+#| include: false
 par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
 ggplot2::theme_set(ggplot2::theme_bw())
 ```
@@ -38,7 +42,8 @@ library(pbkrtest)
 library(RLRsim)
 library(INLA)
 library(knitr)
-library(rstan, quietly=TRUE)
+library(cmdstanr)
+register_knitr_engine(override = FALSE)
 library(brms)
 library(mgcv)
 ```
@@ -61,7 +66,8 @@ measures on each of two samples.
 
 Load in and plot the data:
 
-```{r eggplot}
+```{r}
+#| label: eggplot
 data(eggs, package="faraway")
 summary(eggs)
 ggplot(eggs, aes(y=Fat, x=Lab, color=Technician, shape=Sample)) + geom_point(position = position_jitter(width=0.1, height=0.0))
@@ -93,7 +99,9 @@ exactRLRT(cmods, cmod, cmodr)
 We can remove the sample random effect from the model. But consider
 the confidence intervals:
 
-```{r eggsconfint, cache=TRUE}
+```{r}
+#| label: eggsconfint
+#| cache: true
 confint(cmod, method="boot")
 ```
 
@@ -126,7 +134,9 @@ eggs$labtech <- factor(paste0(eggs$Lab,eggs$Technician))
 eggs$labtechsamp <- factor(paste0(eggs$Lab,eggs$Technician,eggs$Sample))
 ```
 
-```{r eggsinladef, cache=TRUE}
+```{r}
+#| label: eggsinladef
+#| cache: true
 formula <- Fat ~ 1 + f(Lab, model="iid") + f(labtech, model="iid") + f(labtechsamp, model="iid")
 result <- inla(formula, family="gaussian", data=eggs)
 summary(result)
@@ -143,7 +153,9 @@ variances to be lower than this variance so this is an overestimate.
 The variance of the gamma prior (for the precision) is controlled by
 the `apar` shape parameter in the code.
 
-```{r eggsinlaig, cache=TRUE}
+```{r}
+#| label: eggsinlaig
+#| cache: true
 apar <- 0.5
 bpar <- apar*var(eggs$Fat)
 lgprior <- list(prec = list(prior="loggamma", param = c(apar,bpar)))
@@ -156,7 +168,8 @@ Looks more credible.
 
 Compute the transforms to an SD scale for the field and error. Make a table of summary statistics for the posteriors:
 
-```{r sumstats}
+```{r}
+#| label: sumstats
 sigmaLab <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[2]])
 sigmaTech <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[3]])
 sigmaSample <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[4]])
@@ -172,7 +185,8 @@ data.frame(restab)
 
 Also construct a plot the SD posteriors:
 
-```{r plotsdseggs}
+```{r}
+#| label: plotsdseggs
 ddf <- data.frame(rbind(sigmaLab,sigmaTech,sigmaSample,sigmaepsilon),errterm=gl(4,nrow(sigmaLab),labels = c("Lab","Tech","Samp","epsilon")))
 ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("Fat")+ylab("density")+xlim(0,0.25)
 ```
@@ -185,7 +199,9 @@ In [Simpson et al (2015)](http://arxiv.org/abs/1403.4630v3), penalized complexit
 requires that we specify a scaling for the SDs of the random effects. We use the SD of the residuals
 of the fixed effects only model (what might be called the base model in the paper) to provide this scaling.
 
-```{r eggsinlapc, cache=TRUE}
+```{r}
+#| label: eggsinlapc
+#| cache: true
 sdres <- sd(eggs$Fat)
 pcprior <- list(prec = list(prior="pc.prec", param = c(3*sdres,0.01)))
 formula = Fat ~ 1+f(Lab, model="iid", hyper = pcprior)+f(labtech, model="iid", hyper = pcprior)+f(labtechsamp,model="iid", hyper = pcprior)
@@ -195,12 +211,15 @@ summary(result)
 
 Compute the summaries as before:
 
-```{r ref.label="sumstats"}
+```{r}
+#| ref.label: sumstats
 ```
 
 Make the plots:
 
-```{r eggspc, ref.label="plotsdseggs"}
+```{r}
+#| label: eggspc
+#| ref.label: plotsdseggs
 ```
 
 Posteriors have generally smaller values for the three random effects and 
@@ -209,21 +228,65 @@ the possibility of values closer to zero is given greater weight.
 # STAN
 
 [STAN](https://mc-stan.org/) performs Bayesian inference using
-MCMC. Set up STAN to use multiple cores. Set the random number seed for reproducibility.
+MCMC. I use `cmdstanr` to access Stan from R.
 
-```{r}
-rstan_options(auto_write = TRUE)
-options(mc.cores = parallel::detectCores())
-set.seed(123)
+You see below the Stan code to fit our model. Rmarkdown allows the use
+of Stan chunks (elsewhere I have R chunks). The chunk header looks
+like this. 
+
+STAN chunk will be compiled to 'mod'. Chunk header is:
 ```
-Requires use of STAN command file [eggs.stan](../stancode/eggs.stan). We have
-used half-cauchy priors for four variances using the SD of the
-response to help with scaling. We view the code here:
-
-```{r}
-writeLines(readLines("../stancode/eggs.stan"))
+cmdstan, output.var="mod", override = FALSE
 ```
 
+```{cmdstan, output.var="mod", override = FALSE}
+data {
+     int<lower=0> Nobs;
+     int<lower=0> Nlev1;
+     int<lower=0> Nlev2;
+     int<lower=0> Nlev3;
+     array[Nobs] real y;
+     array[Nobs] int<lower=1,upper=Nlev1> levind1;
+     array[Nobs] int<lower=1,upper=Nlev2> levind2;
+     array[Nobs] int<lower=1,upper=Nlev3> levind3;
+     real<lower=0> sdscal;
+}
+parameters {
+           real mu;
+           real<lower=0> sigmalev1;
+           real<lower=0> sigmalev2;
+           real<lower=0> sigmalev3;
+           real<lower=0> sigmaeps;
+
+           vector[Nlev1] eta1;
+           vector[Nlev2] eta2;
+           vector[Nlev3] eta3;
+}
+transformed parameters {
+  vector[Nlev1] ran1;
+  vector[Nlev2] ran2;
+  vector[Nlev3] ran3;
+  vector[Nobs] yhat;
+
+  ran1  = sigmalev1 * eta1;
+  ran2  = sigmalev2 * eta2;
+  ran3  = sigmalev3 * eta3;
+
+  for (i in 1:Nobs)
+    yhat[i] = mu+ran1[levind1[i]]+ran2[levind2[i]]+ran3[levind3[i]];
+
+}
+model {
+  eta1 ~ normal(0, 1);
+  eta2 ~ normal(0, 1);
+  eta3 ~ normal(0, 1);
+  sigmalev1 ~ cauchy(0, 2.5*sdscal);
+  sigmalev2 ~ cauchy(0, 2.5*sdscal);
+  sigmalev3 ~ cauchy(0, 2.5*sdscal);
+  sigmaeps ~ cauchy(0, 2.5*sdscal);
+  y ~ normal(yhat, sigmaeps);
+}
+```
 
 ```{r}
 levind1 <- as.numeric(eggs$Lab)
@@ -241,48 +304,65 @@ eggdat <- list(Nobs=nrow(eggs),
                sdscal=sdscal)
 ```
 
-```{r eggsstancomp, cache=TRUE}
-rt <- stanc(file="../stancode/eggs.stan")
-sm <- stan_model(stanc_ret = rt, verbose=FALSE)
-system.time(fit <- sampling(sm, data=eggdat, iter=10000))
+Do the MCMC sampling:
+
+```{r}
+fit <- mod$sample(
+  data = eggdat, 
+  seed = 123, 
+  chains = 4, 
+  parallel_chains = 4,
+  refresh = 500 # print update every 500 iters
+)
 ```
 
 ## Diagnostics
 
+Extract the draws into a convenient dataframe format:
+
+```{r}
+draws_df <- fit$draws(format = "df")
+```
+
+
 For the error SD:
 
-```{r eggssigmaeps}
-pname <- "sigmaeps"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```{r}
+#| label: eggssigmaeps
+ggplot(draws_df,
+       aes(x=.iteration,y=sigmaeps,color=factor(.chain))) + geom_line() +
+  labs(color = 'Chain', x="Iteration")
 ```
+
+Looks OK
+
 
 For the Lab SD
 
-```{r eggssigmalev1}
-pname <- "sigmalev1"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```{r}
+#| label: eggssigmalev1
+ggplot(draws_df,
+       aes(x=.iteration,y=sigmalev1,color=factor(.chain))) + geom_line() +
+  labs(color = 'Chain', x="Iteration")
 ```
+
+Looks OK
 
 For the technician SD
 
-```{r eggssigmalev2}
-pname <- "sigmalev2"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```{r}
+#| label: eggssigmalev2
+ggplot(draws_df,
+       aes(x=.iteration,y=sigmalev2,color=factor(.chain))) + geom_line() +
+  labs(color = 'Chain', x="Iteration")
 ```
 
 For the sample SD
 
 ```{reggssigmalev3}
-pname <- "sigmalev3"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+ggplot(draws_df,
+       aes(x=.iteration,y=sigmalev3,color=factor(.chain))) + geom_line() +
+  labs(color = 'Chain', x="Iteration")
 ```
 
 All these are satisfactory.
@@ -293,25 +373,21 @@ All these are satisfactory.
 Display the parameters of interest:
 
 ```{r}
-print(fit,pars=c("mu","sigmalev1","sigmalev2","sigmalev3","sigmaeps"))
+fit$summary(c("mu","sigmalev1","sigmalev2","sigmalev3","sigmaeps"))
 ```
 
-We see the posterior mean, SE and SD, quantiles of the samples.
-The posterior means are somewhat different from the REML estimates seen
-in the `lmer` output.
-The `n_eff` is a rough measure of the sample size taking into account the correlation in the
-samples. The effective sample sizes for the  primary parameters  are respectable. The $\hat R$ statistics are good.
-
+About what we expect:
 
 ## Posterior Distributions
 
 We can use extract to get at various components of the STAN fit.
 
-```{r eggsstanhypsd}
-postsig <- rstan::extract(fit, pars=c("sigmalev1","sigmalev2","sigmalev3","sigmaeps"))
-ref <- reshape2::melt(postsig)
-colnames(ref)[2:3] <- c("Fat","SD")
-ggplot(data=ref,aes(x=Fat, color=SD))+geom_density()
+```{r}
+#| label: eggsstanhypsd
+sdf = stack(draws_df[,c("sigmalev1","sigmalev2","sigmalev3","sigmaeps")])
+colnames(sdf) = c("Fat","SD")
+levels(sdf$SD) = c("Lab","Technician","Sample","Error")
+ggplot(sdf, aes(x=Fat,color=SD)) + geom_density() +xlim(0,0.3)
 ```
 
 We see that the error SD can be localized much more than the other SDs. The technician SD looks to be the largest of the three. We see non-zero
@@ -329,13 +405,16 @@ equivalent specification below does far better. In the form below, the
 nesting is signalled by the form of the model specification which
 may be essential to achieve the best results.
 
-```{r brmfit, cache=TRUE}
-suppressMessages(bmod <- brm(Fat ~ 1 + (1|Lab/Technician/Sample), data=eggs,iter=10000, cores=4))
+```{r}
+#| label: brmfit
+#| cache: true
+suppressMessages(bmod <- brm(Fat ~ 1 + (1|Lab/Technician/Sample), data=eggs,iter=10000, cores=4,backend = "cmdstanr"))
 ```
 
 We get some warnings. We can obtain some posterior densities and diagnostics with:
 
-```{r eggsbrmsdiag}
+```{r}
+#| label: eggsbrmsdiag
 plot(bmod, variable = "^s", regex=TRUE)
 ```
 
@@ -426,13 +505,15 @@ gimod = ginla(gmod)
 
 We get the posterior density for the intercept as:
 
-```{r eggsginlaint}
+```{r}
+#| label: eggsginlaint
 plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="yield",ylab="fat")
 ```
 
 and for the laboratory effects as:
 
-```{r eggsginlaleff}
+```{r}
+#| label: eggsginlaleff
 xmat = t(gimod$beta[2:7,])
 ymat = t(gimod$density[2:7,])
 matplot(xmat, ymat,type="l",xlab="fat",ylab="density")
@@ -444,7 +525,8 @@ overlap with the other labs.
 
 The random effects for the technicians are:
 
-```{r eggsginlateff}
+```{r}
+#| label: eggsginlateff
 sel = 8:19
 xmat = t(gimod$beta[sel,])
 ymat = t(gimod$density[sel,])

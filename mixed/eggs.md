@@ -1,29 +1,22 @@
-Nested Design
-================
+# Nested Design
 [Julian Faraway](https://julianfaraway.github.io/)
-05 January 2023
+2023-06-30
 
-- <a href="#data" id="toc-data">Data</a>
-- <a href="#mixed-effect-model" id="toc-mixed-effect-model">Mixed Effect
-  Model</a>
-- <a href="#inla" id="toc-inla">INLA</a>
-  - <a href="#informative-gamma-priors-on-the-precisions"
-    id="toc-informative-gamma-priors-on-the-precisions">Informative Gamma
-    priors on the precisions</a>
-  - <a href="#penalized-complexity-prior"
-    id="toc-penalized-complexity-prior">Penalized Complexity Prior</a>
-- <a href="#stan" id="toc-stan">STAN</a>
-  - <a href="#diagnostics" id="toc-diagnostics">Diagnostics</a>
-  - <a href="#output-summaries" id="toc-output-summaries">Output
-    summaries</a>
-  - <a href="#posterior-distributions"
-    id="toc-posterior-distributions">Posterior Distributions</a>
-- <a href="#brms" id="toc-brms">BRMS</a>
-- <a href="#mgcv" id="toc-mgcv">MGCV</a>
-- <a href="#ginla" id="toc-ginla">GINLA</a>
-- <a href="#discussion" id="toc-discussion">Discussion</a>
-- <a href="#package-version-info" id="toc-package-version-info">Package
-  version info</a>
+- [Data](#data)
+- [Mixed Effect Model](#mixed-effect-model)
+- [INLA](#inla)
+  - [Informative Gamma priors on the
+    precisions](#informative-gamma-priors-on-the-precisions)
+  - [Penalized Complexity Prior](#penalized-complexity-prior)
+- [STAN](#stan)
+  - [Diagnostics](#diagnostics)
+  - [Output summaries](#output-summaries)
+  - [Posterior Distributions](#posterior-distributions)
+- [BRMS](#brms)
+- [MGCV](#mgcv)
+- [GINLA](#ginla)
+- [Discussion](#discussion)
+- [Package version info](#package-version-info)
 
 See the [introduction](index.md) for an overview.
 
@@ -40,7 +33,8 @@ library(pbkrtest)
 library(RLRsim)
 library(INLA)
 library(knitr)
-library(rstan, quietly=TRUE)
+library(cmdstanr)
+register_knitr_engine(override = FALSE)
 library(brms)
 library(mgcv)
 ```
@@ -82,7 +76,7 @@ summary(eggs)
 ggplot(eggs, aes(y=Fat, x=Lab, color=Technician, shape=Sample)) + geom_point(position = position_jitter(width=0.1, height=0.0))
 ```
 
-![](figs/eggplot-1..svg)<!-- -->
+![](figs/eggplot-1..svg)
 
 # Mixed Effect Model
 
@@ -130,7 +124,7 @@ exactRLRT(cmods, cmod, cmodr)
         (p-value based on 10000 simulated values)
 
     data:  
-    RLRT = 1.6, p-value = 0.098
+    RLRT = 1.6, p-value = 0.11
 
 We can remove the sample random effect from the model. But consider the
 confidence intervals:
@@ -139,12 +133,12 @@ confidence intervals:
 confint(cmod, method="boot")
 ```
 
-                   2.5 %  97.5 %
-    .sig01      0.000000 0.09550
-    .sig02      0.000000 0.13596
-    .sig03      0.000000 0.15252
-    .sigma      0.061713 0.10653
-    (Intercept) 0.305194 0.47580
+                   2.5 %   97.5 %
+    .sig01      0.000000 0.095625
+    .sig02      0.000000 0.141366
+    .sig03      0.000000 0.153524
+    .sigma      0.059987 0.106322
+    (Intercept) 0.302717 0.468338
 
 We see that all three random effects include zero at the lower end,
 indicating that we might equally have disposed of the lab or technician
@@ -183,14 +177,14 @@ summary(result)
 
     Fixed effects:
                  mean    sd 0.025quant 0.5quant 0.975quant  mode kld
-    (Intercept) 0.387 0.035      0.319    0.387      0.456 0.387   0
+    (Intercept) 0.388 0.035      0.318    0.388      0.457 0.388   0
 
     Model hyperparameters:
-                                                mean       sd 0.025quant 0.5quant 0.975quant    mode
-    Precision for the Gaussian observations   113.88    26.68      69.11   111.35     173.63  106.75
-    Precision for Lab                       17961.01 18068.82    1101.34 12434.27   66150.63 2949.93
-    Precision for labtech                     105.78    55.94      34.76    93.64     248.32   73.14
-    Precision for labtechsamp               17016.99 17638.78     883.53 11498.84   64109.17 2232.62
+                                                mean       sd 0.025quant 0.5quant 0.975quant  mode
+    Precision for the Gaussian observations   114.86    27.02      69.99   112.08     175.72 34.71
+    Precision for Lab                       21230.87 22842.36    1438.12 14065.24   81875.80 74.74
+    Precision for labtech                     105.62    54.89      35.45    93.81     245.11  9.37
+    Precision for labtechsamp               20398.62 22494.59    1221.25 13240.41   80054.53 57.80
 
      is computed 
 
@@ -217,14 +211,14 @@ summary(result)
 
     Fixed effects:
                  mean    sd 0.025quant 0.5quant 0.975quant  mode kld
-    (Intercept) 0.387 0.062      0.264    0.387      0.511 0.387   0
+    (Intercept) 0.388 0.062      0.263    0.388      0.512 0.388   0
 
     Model hyperparameters:
-                                              mean    sd 0.025quant 0.5quant 0.975quant   mode
-    Precision for the Gaussian observations 159.30 41.57      90.36   155.12     252.95 147.50
-    Precision for Lab                       109.40 87.04      19.04    86.01     339.67  49.76
-    Precision for labtech                   129.40 85.39      31.45   108.41     352.29  74.54
-    Precision for labtechsamp               183.45 92.64      62.99   164.09     417.96 130.72
+                                              mean    sd 0.025quant 0.5quant 0.975quant  mode
+    Precision for the Gaussian observations 160.24 41.99      91.05   155.74     255.10 41.81
+    Precision for Lab                       116.02 95.66      20.41    89.62     369.07  5.01
+    Precision for labtech                   131.28 87.55      31.91   109.44     359.68  6.92
+    Precision for labtechsamp               184.67 93.60      63.59   164.90     421.68 14.89
 
      is computed 
 
@@ -248,13 +242,13 @@ data.frame(restab)
 ```
 
                      mu      Lab Technician   Sample  epsilon
-    mean         0.3875  0.11636    0.10105 0.080452 0.081259
-    sd         0.061483 0.044614   0.031763 0.019522 0.010692
-    quant0.025  0.26415 0.054544   0.053528 0.049098 0.063008
-    quant0.25   0.34892 0.084603    0.07824  0.06643 0.073643
-    quant0.5    0.38735   0.1076   0.095938 0.078018 0.080236
-    quant0.75   0.42578  0.13859    0.11829 0.091821 0.087838
-    quant0.975  0.51055  0.22741    0.17723   0.1254   0.1049
+    mean         0.3875  0.11342    0.10044 0.080197 0.081028
+    sd         0.061899 0.043168   0.031582 0.019438  0.01066
+    quant0.025  0.26332 0.052272   0.052928 0.048858 0.062716
+    quant0.25   0.34857 0.082539   0.077746 0.066235 0.073444
+    quant0.5    0.38735  0.10544    0.09547 0.077825 0.080055
+    quant0.75   0.42613  0.13551     0.1177  0.09156 0.087617
+    quant0.975  0.51138  0.21971    0.17594  0.12483   0.1045
 
 Also construct a plot the SD posteriors:
 
@@ -263,7 +257,7 @@ ddf <- data.frame(rbind(sigmaLab,sigmaTech,sigmaSample,sigmaepsilon),errterm=gl(
 ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("Fat")+ylab("density")+xlim(0,0.25)
 ```
 
-![](figs/plotsdseggs-1..svg)<!-- -->
+![](figs/plotsdseggs-1..svg)
 
 Posteriors look OK. Notice that they are all well bounded away from
 zero.
@@ -286,14 +280,14 @@ summary(result)
 
     Fixed effects:
                  mean    sd 0.025quant 0.5quant 0.975quant  mode kld
-    (Intercept) 0.388 0.052      0.284    0.388      0.491 0.388   0
+    (Intercept) 0.388 0.051      0.284    0.387      0.491 0.387   0
 
     Model hyperparameters:
-                                              mean      sd 0.025quant 0.5quant 0.975quant   mode
-    Precision for the Gaussian observations 141.85   39.79      77.66   137.24     233.17 128.64
-    Precision for Lab                       490.87 1111.06      28.46   209.63    2723.75  67.44
-    Precision for labtech                   185.97  175.16      24.77   135.59     651.27  66.47
-    Precision for labtechsamp               445.57  469.18      65.44   306.69    1677.07 159.04
+                                              mean     sd 0.025quant 0.5quant 0.975quant  mode
+    Precision for the Gaussian observations 143.19  40.34      78.74   138.22     236.18 34.12
+    Precision for Lab                       443.83 904.24      27.87   203.09    2395.42  4.37
+    Precision for labtech                   187.11 175.01      25.59   136.62     650.38  4.54
+    Precision for labtechsamp               427.59 434.84      63.94   299.90    1575.77  6.54
 
      is computed 
 
@@ -314,13 +308,13 @@ data.frame(restab)
 ```
 
                      mu      Lab Technician   Sample  epsilon
-    mean         0.3875 0.077772   0.094461 0.061346 0.086422
-    sd         0.051499 0.043738   0.041417 0.025354 0.012121
-    quant0.025  0.28382 0.019296   0.039391 0.024569 0.065639
-    quant0.25   0.35559 0.045507   0.065163 0.042957 0.077795
-    quant0.5    0.38737 0.069276   0.085701  0.05713  0.08531
-    quant0.75   0.41916  0.10027    0.11409  0.07489 0.093898
-    quant0.975  0.49092  0.18586    0.19924  0.12267  0.11315
+    mean         0.3875 0.079257   0.093748 0.062163 0.086023
+    sd         0.051365  0.04387   0.040553 0.025554 0.012034
+    quant0.025  0.28411  0.02059   0.039368 0.025348 0.065191
+    quant0.25   0.35565 0.047053   0.065006 0.043688 0.077471
+    quant0.5    0.38738 0.070706   0.085317 0.057801    0.085
+    quant0.75    0.4191  0.10159    0.11318 0.075658 0.093497
+    quant0.975  0.49064  0.18796    0.19599  0.12427  0.11237
 
 Make the plots:
 
@@ -329,77 +323,72 @@ ddf <- data.frame(rbind(sigmaLab,sigmaTech,sigmaSample,sigmaepsilon),errterm=gl(
 ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("Fat")+ylab("density")+xlim(0,0.25)
 ```
 
-![](figs/eggspc-1..svg)<!-- -->
+![](figs/eggspc-1..svg)
 
 Posteriors have generally smaller values for the three random effects
 and the possibility of values closer to zero is given greater weight.
 
 # STAN
 
-[STAN](https://mc-stan.org/) performs Bayesian inference using MCMC. Set
-up STAN to use multiple cores. Set the random number seed for
-reproducibility.
+[STAN](https://mc-stan.org/) performs Bayesian inference using MCMC. I
+use `cmdstanr` to access Stan from R.
 
-``` r
-rstan_options(auto_write = TRUE)
-options(mc.cores = parallel::detectCores())
-set.seed(123)
+You see below the Stan code to fit our model. Rmarkdown allows the use
+of Stan chunks (elsewhere I have R chunks). The chunk header looks like
+this.
+
+STAN chunk will be compiled to ‘mod’. Chunk header is:
+
+    cmdstan, output.var="mod", override = FALSE
+
+``` stan
+data {
+     int<lower=0> Nobs;
+     int<lower=0> Nlev1;
+     int<lower=0> Nlev2;
+     int<lower=0> Nlev3;
+     array[Nobs] real y;
+     array[Nobs] int<lower=1,upper=Nlev1> levind1;
+     array[Nobs] int<lower=1,upper=Nlev2> levind2;
+     array[Nobs] int<lower=1,upper=Nlev3> levind3;
+     real<lower=0> sdscal;
+}
+parameters {
+           real mu;
+           real<lower=0> sigmalev1;
+           real<lower=0> sigmalev2;
+           real<lower=0> sigmalev3;
+           real<lower=0> sigmaeps;
+
+           vector[Nlev1] eta1;
+           vector[Nlev2] eta2;
+           vector[Nlev3] eta3;
+}
+transformed parameters {
+  vector[Nlev1] ran1;
+  vector[Nlev2] ran2;
+  vector[Nlev3] ran3;
+  vector[Nobs] yhat;
+
+  ran1  = sigmalev1 * eta1;
+  ran2  = sigmalev2 * eta2;
+  ran3  = sigmalev3 * eta3;
+
+  for (i in 1:Nobs)
+    yhat[i] = mu+ran1[levind1[i]]+ran2[levind2[i]]+ran3[levind3[i]];
+
+}
+model {
+  eta1 ~ normal(0, 1);
+  eta2 ~ normal(0, 1);
+  eta3 ~ normal(0, 1);
+  sigmalev1 ~ cauchy(0, 2.5*sdscal);
+  sigmalev2 ~ cauchy(0, 2.5*sdscal);
+  sigmalev3 ~ cauchy(0, 2.5*sdscal);
+  sigmaeps ~ cauchy(0, 2.5*sdscal);
+  y ~ normal(yhat, sigmaeps);
+}
 ```
-
-Requires use of STAN command file [eggs.stan](../stancode/eggs.stan). We
-have used half-cauchy priors for four variances using the SD of the
-response to help with scaling. We view the code here:
-
-``` r
-writeLines(readLines("../stancode/eggs.stan"))
-```
-
-    data {
-         int<lower=0> Nobs;
-         int<lower=0> Nlev1;
-         int<lower=0> Nlev2;
-         int<lower=0> Nlev3;
-         vector[Nobs] y;
-         int<lower=1,upper=Nlev1> levind1[Nobs];
-         int<lower=1,upper=Nlev2> levind2[Nobs];
-         int<lower=1,upper=Nlev3> levind3[Nobs];
-         real<lower=0> sdscal;
-    }
-    parameters {
-               real mu;
-               real<lower=0> sigmalev1;
-               real<lower=0> sigmalev2;
-               real<lower=0> sigmalev3;
-               real<lower=0> sigmaeps;
-
-               vector[Nlev1] eta1;
-               vector[Nlev2] eta2;
-               vector[Nlev3] eta3;
-    }
-    transformed parameters {
-      vector[Nlev1] ran1;
-      vector[Nlev2] ran2;
-      vector[Nlev3] ran3;
-      vector[Nobs] yhat;
-
-      ran1  = sigmalev1 * eta1;
-      ran2  = sigmalev2 * eta2;
-      ran3  = sigmalev3 * eta3;
-
-      for (i in 1:Nobs)
-        yhat[i] = mu+ran1[levind1[i]]+ran2[levind2[i]]+ran3[levind3[i]];
-
-    }
-    model {
-      eta1 ~ normal(0, 1);
-      eta2 ~ normal(0, 1);
-      eta3 ~ normal(0, 1);
-      sigmalev1 ~ cauchy(0, 2.5*sdscal);
-      sigmalev2 ~ cauchy(0, 2.5*sdscal);
-      sigmalev3 ~ cauchy(0, 2.5*sdscal);
-      sigmaeps ~ cauchy(0, 2.5*sdscal);
-      y ~ normal(yhat, sigmaeps);
-    }
 
 ``` r
 levind1 <- as.numeric(eggs$Lab)
@@ -417,82 +406,101 @@ eggdat <- list(Nobs=nrow(eggs),
                sdscal=sdscal)
 ```
 
-``` r
-rt <- stanc(file="../stancode/eggs.stan")
-sm <- stan_model(stanc_ret = rt, verbose=FALSE)
-```
-
-    Running /Library/Frameworks/R.framework/Resources/bin/R CMD SHLIB foo.c
-    clang -mmacosx-version-min=10.13 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG   -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/Rcpp/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/unsupported"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/BH/include" -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/src/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppParallel/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/rstan/include" -DEIGEN_NO_DEBUG  -DBOOST_DISABLE_ASSERTS  -DBOOST_PENDING_INTEGER_LOG2_HPP  -DSTAN_THREADS  -DUSE_STANC3 -DSTRICT_R_HEADERS  -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION  -DBOOST_NO_AUTO_PTR  -include '/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp'  -D_REENTRANT -DRCPP_PARALLEL_USE_TBB=1   -I/usr/local/include   -fPIC  -Wall -g -O2  -c foo.c -o foo.o
-    In file included from <built-in>:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:88:
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:1: error: unknown type name 'namespace'
-    namespace Eigen {
-    ^
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:16: error: expected ';' after top level declarator
-    namespace Eigen {
-                   ^
-                   ;
-    In file included from <built-in>:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:96:10: fatal error: 'complex' file not found
-    #include <complex>
-             ^~~~~~~~~
-    3 errors generated.
-    make: *** [foo.o] Error 1
+Do the MCMC sampling:
 
 ``` r
-system.time(fit <- sampling(sm, data=eggdat, iter=10000))
+fit <- mod$sample(
+  data = eggdat, 
+  seed = 123, 
+  chains = 4, 
+  parallel_chains = 4,
+  refresh = 500 # print update every 500 iters
+)
 ```
 
-       user  system elapsed 
-     20.269   0.934   8.576 
+    Running MCMC with 4 parallel chains...
+
+    Chain 1 Iteration:    1 / 2000 [  0%]  (Warmup) 
+    Chain 2 Iteration:    1 / 2000 [  0%]  (Warmup) 
+    Chain 3 Iteration:    1 / 2000 [  0%]  (Warmup) 
+    Chain 4 Iteration:    1 / 2000 [  0%]  (Warmup) 
+    Chain 1 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+    Chain 2 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+    Chain 3 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+    Chain 4 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+    Chain 1 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+    Chain 1 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 2 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+    Chain 2 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 3 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+    Chain 3 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 4 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+    Chain 4 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 1 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 2 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 3 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 4 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 3 Iteration: 2000 / 2000 [100%]  (Sampling) 
+    Chain 4 Iteration: 2000 / 2000 [100%]  (Sampling) 
+    Chain 3 finished in 0.6 seconds.
+    Chain 4 finished in 0.6 seconds.
+    Chain 1 Iteration: 2000 / 2000 [100%]  (Sampling) 
+    Chain 2 Iteration: 2000 / 2000 [100%]  (Sampling) 
+    Chain 1 finished in 0.6 seconds.
+    Chain 2 finished in 0.6 seconds.
+
+    All 4 chains finished successfully.
+    Mean chain execution time: 0.6 seconds.
+    Total execution time: 0.8 seconds.
 
 ## Diagnostics
+
+Extract the draws into a convenient dataframe format:
+
+``` r
+draws_df <- fit$draws(format = "df")
+```
 
 For the error SD:
 
 ``` r
-pname <- "sigmaeps"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+ggplot(draws_df,
+       aes(x=.iteration,y=sigmaeps,color=factor(.chain))) + geom_line() +
+  labs(color = 'Chain', x="Iteration")
 ```
 
-![](figs/eggssigmaeps-1..svg)<!-- -->
+![](figs/eggssigmaeps-1..svg)
+
+Looks OK
 
 For the Lab SD
 
 ``` r
-pname <- "sigmalev1"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+ggplot(draws_df,
+       aes(x=.iteration,y=sigmalev1,color=factor(.chain))) + geom_line() +
+  labs(color = 'Chain', x="Iteration")
 ```
 
-![](figs/eggssigmalev1-1..svg)<!-- -->
+![](figs/eggssigmalev1-1..svg)
+
+Looks OK
 
 For the technician SD
 
 ``` r
-pname <- "sigmalev2"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+ggplot(draws_df,
+       aes(x=.iteration,y=sigmalev2,color=factor(.chain))) + geom_line() +
+  labs(color = 'Chain', x="Iteration")
 ```
 
-![](figs/eggssigmalev2-1..svg)<!-- -->
+![](figs/eggssigmalev2-1..svg)
 
 For the sample SD
 
 ``` reggssigmalev3
-pname <- "sigmalev3"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+ggplot(draws_df,
+       aes(x=.iteration,y=sigmalev3,color=factor(.chain))) + geom_line() +
+  labs(color = 'Chain', x="Iteration")
 ```
 
 All these are satisfactory.
@@ -502,44 +510,32 @@ All these are satisfactory.
 Display the parameters of interest:
 
 ``` r
-print(fit,pars=c("mu","sigmalev1","sigmalev2","sigmalev3","sigmaeps"))
+fit$summary(c("mu","sigmalev1","sigmalev2","sigmalev3","sigmaeps"))
 ```
 
-    Inference for Stan model: eggs.
-    4 chains, each with iter=10000; warmup=5000; thin=1; 
-    post-warmup draws per chain=5000, total post-warmup draws=20000.
+    # A tibble: 5 × 10
+      variable    mean median     sd    mad      q5   q95  rhat ess_bulk ess_tail
+      <chr>      <num>  <num>  <num>  <num>   <num> <num> <num>    <num>    <num>
+    1 mu        0.383  0.384  0.0575 0.0506 0.292   0.476  1.00    1299.     844.
+    2 sigmalev1 0.0947 0.0829 0.0673 0.0565 0.0108  0.216  1.00    1112.    1597.
+    3 sigmalev2 0.0942 0.0905 0.0460 0.0407 0.0212  0.176  1.00     814.     632.
+    4 sigmalev3 0.0591 0.0580 0.0308 0.0303 0.00931 0.113  1.01     699.     745.
+    5 sigmaeps  0.0903 0.0891 0.0133 0.0127 0.0710  0.115  1.00    1421.    2206.
 
-              mean se_mean   sd 2.5%  25%  50%  75% 97.5% n_eff Rhat
-    mu        0.40    0.01 0.08 0.27 0.36 0.39 0.42  0.67    85 1.05
-    sigmalev1 0.11    0.01 0.09 0.01 0.05 0.09 0.13  0.43    74 1.06
-    sigmalev2 0.09    0.00 0.05 0.01 0.06 0.09 0.12  0.19   540 1.01
-    sigmalev3 0.06    0.00 0.03 0.00 0.04 0.06 0.08  0.12  2887 1.00
-    sigmaeps  0.09    0.00 0.01 0.07 0.08 0.09 0.10  0.12  5143 1.00
-
-    Samples were drawn using NUTS(diag_e) at Tue Jul 12 13:20:13 2022.
-    For each parameter, n_eff is a crude measure of effective sample size,
-    and Rhat is the potential scale reduction factor on split chains (at 
-    convergence, Rhat=1).
-
-We see the posterior mean, SE and SD, quantiles of the samples. The
-posterior means are somewhat different from the REML estimates seen in
-the `lmer` output. The `n_eff` is a rough measure of the sample size
-taking into account the correlation in the samples. The effective sample
-sizes for the primary parameters are respectable. The $\hat R$
-statistics are good.
+About what we expect:
 
 ## Posterior Distributions
 
 We can use extract to get at various components of the STAN fit.
 
 ``` r
-postsig <- rstan::extract(fit, pars=c("sigmalev1","sigmalev2","sigmalev3","sigmaeps"))
-ref <- reshape2::melt(postsig)
-colnames(ref)[2:3] <- c("Fat","SD")
-ggplot(data=ref,aes(x=Fat, color=SD))+geom_density()
+sdf = stack(draws_df[,c("sigmalev1","sigmalev2","sigmalev3","sigmaeps")])
+colnames(sdf) = c("Fat","SD")
+levels(sdf$SD) = c("Lab","Technician","Sample","Error")
+ggplot(sdf, aes(x=Fat,color=SD)) + geom_density() +xlim(0,0.3)
 ```
 
-![](figs/eggsstanhypsd-1..svg)<!-- -->
+![](figs/eggsstanhypsd-1..svg)
 
 We see that the error SD can be localized much more than the other SDs.
 The technician SD looks to be the largest of the three. We see non-zero
@@ -560,30 +556,8 @@ below, the nesting is signalled by the form of the model specification
 which may be essential to achieve the best results.
 
 ``` r
-suppressMessages(bmod <- brm(Fat ~ 1 + (1|Lab/Technician/Sample), data=eggs,iter=10000, cores=4))
+suppressMessages(bmod <- brm(Fat ~ 1 + (1|Lab/Technician/Sample), data=eggs,iter=10000, cores=4,backend = "cmdstanr"))
 ```
-
-    Running /Library/Frameworks/R.framework/Resources/bin/R CMD SHLIB foo.c
-    clang -mmacosx-version-min=10.13 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG   -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/Rcpp/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/unsupported"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/BH/include" -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/src/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppParallel/include/"  -I"/Library/Frameworks/R.framework/Versions/4.2/Resources/library/rstan/include" -DEIGEN_NO_DEBUG  -DBOOST_DISABLE_ASSERTS  -DBOOST_PENDING_INTEGER_LOG2_HPP  -DSTAN_THREADS  -DUSE_STANC3 -DSTRICT_R_HEADERS  -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION  -DBOOST_NO_AUTO_PTR  -include '/Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp'  -D_REENTRANT -DRCPP_PARALLEL_USE_TBB=1   -I/usr/local/include   -fPIC  -Wall -g -O2  -c foo.c -o foo.o
-    In file included from <built-in>:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:88:
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:1: error: unknown type name 'namespace'
-    namespace Eigen {
-    ^
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:16: error: expected ';' after top level declarator
-    namespace Eigen {
-                   ^
-                   ;
-    In file included from <built-in>:1:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22:
-    In file included from /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Dense:1:
-    /Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppEigen/include/Eigen/Core:96:10: fatal error: 'complex' file not found
-    #include <complex>
-             ^~~~~~~~~
-    3 errors generated.
-    make: *** [foo.o] Error 1
 
 We get some warnings. We can obtain some posterior densities and
 diagnostics with:
@@ -592,7 +566,7 @@ diagnostics with:
 plot(bmod, variable = "^s", regex=TRUE)
 ```
 
-![](figs/eggsbrmsdiag-1..svg)<!-- -->
+![](figs/eggsbrmsdiag-1..svg)
 
 We have chosen only the random effect hyperparameters since this is
 where problems will appear first. Looks OK. We can see some weight is
@@ -604,70 +578,74 @@ We can look at the STAN code that `brms` used with:
 stancode(bmod)
 ```
 
-    // generated with brms 2.17.0
+    // generated with brms 2.19.0
     functions {
+      
     }
     data {
-      int<lower=1> N;  // total number of observations
-      vector[N] Y;  // response variable
+      int<lower=1> N; // total number of observations
+      vector[N] Y; // response variable
       // data for group-level effects of ID 1
-      int<lower=1> N_1;  // number of grouping levels
-      int<lower=1> M_1;  // number of coefficients per level
-      int<lower=1> J_1[N];  // grouping indicator per observation
+      int<lower=1> N_1; // number of grouping levels
+      int<lower=1> M_1; // number of coefficients per level
+      array[N] int<lower=1> J_1; // grouping indicator per observation
       // group-level predictor values
       vector[N] Z_1_1;
       // data for group-level effects of ID 2
-      int<lower=1> N_2;  // number of grouping levels
-      int<lower=1> M_2;  // number of coefficients per level
-      int<lower=1> J_2[N];  // grouping indicator per observation
+      int<lower=1> N_2; // number of grouping levels
+      int<lower=1> M_2; // number of coefficients per level
+      array[N] int<lower=1> J_2; // grouping indicator per observation
       // group-level predictor values
       vector[N] Z_2_1;
       // data for group-level effects of ID 3
-      int<lower=1> N_3;  // number of grouping levels
-      int<lower=1> M_3;  // number of coefficients per level
-      int<lower=1> J_3[N];  // grouping indicator per observation
+      int<lower=1> N_3; // number of grouping levels
+      int<lower=1> M_3; // number of coefficients per level
+      array[N] int<lower=1> J_3; // grouping indicator per observation
       // group-level predictor values
       vector[N] Z_3_1;
-      int prior_only;  // should the likelihood be ignored?
+      int prior_only; // should the likelihood be ignored?
     }
     transformed data {
+      
     }
     parameters {
-      real Intercept;  // temporary intercept for centered predictors
-      real<lower=0> sigma;  // dispersion parameter
-      vector<lower=0>[M_1] sd_1;  // group-level standard deviations
-      vector[N_1] z_1[M_1];  // standardized group-level effects
-      vector<lower=0>[M_2] sd_2;  // group-level standard deviations
-      vector[N_2] z_2[M_2];  // standardized group-level effects
-      vector<lower=0>[M_3] sd_3;  // group-level standard deviations
-      vector[N_3] z_3[M_3];  // standardized group-level effects
+      real Intercept; // temporary intercept for centered predictors
+      real<lower=0> sigma; // dispersion parameter
+      vector<lower=0>[M_1] sd_1; // group-level standard deviations
+      array[M_1] vector[N_1] z_1; // standardized group-level effects
+      vector<lower=0>[M_2] sd_2; // group-level standard deviations
+      array[M_2] vector[N_2] z_2; // standardized group-level effects
+      vector<lower=0>[M_3] sd_3; // group-level standard deviations
+      array[M_3] vector[N_3] z_3; // standardized group-level effects
     }
     transformed parameters {
-      vector[N_1] r_1_1;  // actual group-level effects
-      vector[N_2] r_2_1;  // actual group-level effects
-      vector[N_3] r_3_1;  // actual group-level effects
-      real lprior = 0;  // prior contributions to the log posterior
-      r_1_1 = (sd_1[1] * (z_1[1]));
-      r_2_1 = (sd_2[1] * (z_2[1]));
-      r_3_1 = (sd_3[1] * (z_3[1]));
+      vector[N_1] r_1_1; // actual group-level effects
+      vector[N_2] r_2_1; // actual group-level effects
+      vector[N_3] r_3_1; // actual group-level effects
+      real lprior = 0; // prior contributions to the log posterior
+      r_1_1 = sd_1[1] * z_1[1];
+      r_2_1 = sd_2[1] * z_2[1];
+      r_3_1 = sd_3[1] * z_3[1];
       lprior += student_t_lpdf(Intercept | 3, 0.4, 2.5);
       lprior += student_t_lpdf(sigma | 3, 0, 2.5)
-        - 1 * student_t_lccdf(0 | 3, 0, 2.5);
+                - 1 * student_t_lccdf(0 | 3, 0, 2.5);
       lprior += student_t_lpdf(sd_1 | 3, 0, 2.5)
-        - 1 * student_t_lccdf(0 | 3, 0, 2.5);
+                - 1 * student_t_lccdf(0 | 3, 0, 2.5);
       lprior += student_t_lpdf(sd_2 | 3, 0, 2.5)
-        - 1 * student_t_lccdf(0 | 3, 0, 2.5);
+                - 1 * student_t_lccdf(0 | 3, 0, 2.5);
       lprior += student_t_lpdf(sd_3 | 3, 0, 2.5)
-        - 1 * student_t_lccdf(0 | 3, 0, 2.5);
+                - 1 * student_t_lccdf(0 | 3, 0, 2.5);
     }
     model {
       // likelihood including constants
       if (!prior_only) {
         // initialize linear predictor term
-        vector[N] mu = Intercept + rep_vector(0.0, N);
-        for (n in 1:N) {
+        vector[N] mu = rep_vector(0.0, N);
+        mu += Intercept;
+        for (n in 1 : N) {
           // add more terms to the linear predictor
-          mu[n] += r_1_1[J_1[n]] * Z_1_1[n] + r_2_1[J_2[n]] * Z_2_1[n] + r_3_1[J_3[n]] * Z_3_1[n];
+          mu[n] += r_1_1[J_1[n]] * Z_1_1[n] + r_2_1[J_2[n]] * Z_2_1[n]
+                   + r_3_1[J_3[n]] * Z_3_1[n];
         }
         target += normal_lpdf(Y | mu, sigma);
       }
@@ -704,25 +682,25 @@ summary(bmod)
     Group-Level Effects: 
     ~Lab (Number of levels: 6) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.10      0.07     0.01     0.28 1.00     5668     8636
+    sd(Intercept)     0.10      0.08     0.01     0.31 1.00     3165     2649
 
     ~Lab:Technician (Number of levels: 12) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.09      0.05     0.01     0.20 1.00     4132     3716
+    sd(Intercept)     0.10      0.05     0.01     0.20 1.00     4240     4486
 
     ~Lab:Technician:Sample (Number of levels: 24) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.06      0.03     0.00     0.13 1.00     3703     6289
+    sd(Intercept)     0.06      0.03     0.00     0.12 1.00     4184     7004
 
     Population-Level Effects: 
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept     0.39      0.06     0.26     0.51 1.00     9195     7542
+    Intercept     0.39      0.06     0.26     0.52 1.00     3694     2551
 
     Family Specific Parameters: 
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma     0.09      0.01     0.07     0.12 1.00     7833    11806
+    sigma     0.09      0.01     0.07     0.12 1.00     7406    11378
 
-    Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+    Draws were sampled using sample(hmc). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
     scale reduction factor on split chains (at convergence, Rhat = 1).
 
@@ -848,7 +826,7 @@ We get the posterior density for the intercept as:
 plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="yield",ylab="fat")
 ```
 
-![](figs/eggsginlaint-1..svg)<!-- -->
+![](figs/eggsginlaint-1..svg)
 
 and for the laboratory effects as:
 
@@ -859,7 +837,7 @@ matplot(xmat, ymat,type="l",xlab="fat",ylab="density")
 legend("right",paste0("Lab",1:6),col=1:6,lty=1:6)
 ```
 
-![](figs/eggsginlaleff-1..svg)<!-- -->
+![](figs/eggsginlaleff-1..svg)
 
 We can see the first lab tends to be higher but still substantial
 overlap with the other labs.
@@ -874,7 +852,7 @@ matplot(xmat, ymat,type="l",xlab="fat",ylab="density")
 legend("right",row.names(coef(cmod)[[2]]),col=1:length(sel),lty=1:length(sel))
 ```
 
-![](figs/eggsginlateff-1..svg)<!-- -->
+![](figs/eggsginlateff-1..svg)
 
 There are a couple of technicians which stick out from the others. Not
 overwhelming evidence that they are different but certainly worth
@@ -917,45 +895,47 @@ model](pulp.md#Discussion) for general comments.
 sessionInfo()
 ```
 
-    R version 4.2.1 (2022-06-23)
-    Platform: x86_64-apple-darwin17.0 (64-bit)
-    Running under: macOS Big Sur ... 10.16
+    R version 4.3.1 (2023-06-16)
+    Platform: x86_64-apple-darwin20 (64-bit)
+    Running under: macOS Ventura 13.4.1
 
     Matrix products: default
-    BLAS:   /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRblas.0.dylib
-    LAPACK: /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRlapack.dylib
+    BLAS:   /Library/Frameworks/R.framework/Versions/4.3-x86_64/Resources/lib/libRblas.0.dylib 
+    LAPACK: /Library/Frameworks/R.framework/Versions/4.3-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.11.0
 
     locale:
     [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+    time zone: Europe/London
+    tzcode source: internal
 
     attached base packages:
     [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-41         nlme_3.1-161        brms_2.18.0         Rcpp_1.0.9          rstan_2.26.13      
-     [6] StanHeaders_2.26.13 knitr_1.41          INLA_22.12.16       sp_1.5-1            foreach_1.5.2      
-    [11] RLRsim_3.1-8        pbkrtest_0.5.1      lme4_1.1-31         Matrix_1.5-3        ggplot2_3.4.0      
-    [16] faraway_1.0.9      
+     [1] mgcv_1.8-42     nlme_3.1-162    brms_2.19.0     Rcpp_1.0.10     cmdstanr_0.5.3  knitr_1.43      INLA_23.05.30-1
+     [8] sp_2.0-0        foreach_1.5.2   RLRsim_3.1-8    pbkrtest_0.5.2  lme4_1.1-33     Matrix_1.5-4.1  ggplot2_3.4.2  
+    [15] faraway_1.0.8  
 
     loaded via a namespace (and not attached):
-      [1] minqa_1.2.5          colorspace_2.0-3     ellipsis_0.3.2       markdown_1.4         base64enc_0.1-3     
-      [6] rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         DT_0.26              fansi_1.0.3         
-     [11] mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18     splines_4.2.1        shinythemes_1.2.0   
-     [16] bayesplot_1.10.0     jsonlite_1.8.4       nloptr_2.0.3         broom_1.0.2          shiny_1.7.4         
-     [21] compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0        cli_3.5.0           
-     [26] later_1.3.0          htmltools_0.5.4      prettyunits_1.1.1    tools_4.2.1          igraph_1.3.5        
-     [31] coda_0.19-4          gtable_0.3.1         glue_1.6.2           reshape2_1.4.4       dplyr_1.0.10        
-     [36] posterior_1.3.1      V8_4.2.2             vctrs_0.5.1          svglite_2.1.0        iterators_1.0.14    
-     [41] crosstalk_1.2.0      tensorA_0.36.2       xfun_0.36            stringr_1.5.0        ps_1.7.2            
-     [46] mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.3      gtools_3.9.4         MASS_7.3-58.1       
-     [51] zoo_1.8-11           scales_1.2.1         colourpicker_1.2.0   promises_1.2.0.1     Brobdingnag_1.2-9   
-     [56] inline_0.3.19        shinystan_2.6.0      yaml_2.3.6           curl_4.3.3           gridExtra_2.3       
-     [61] loo_2.5.1            stringi_1.7.8        highr_0.10           dygraphs_1.1.1.6     checkmate_2.1.0     
-     [66] boot_1.3-28.1        pkgbuild_1.4.0       systemfonts_1.0.4    rlang_1.0.6          pkgconfig_2.0.3     
-     [71] matrixStats_0.63.0   distributional_0.3.1 evaluate_0.19        lattice_0.20-45      purrr_1.0.0         
-     [76] labeling_0.4.2       rstantools_2.2.0     htmlwidgets_1.6.0    processx_3.8.0       tidyselect_1.2.0    
-     [81] plyr_1.8.8           magrittr_2.0.3       R6_2.5.1             generics_0.1.3       DBI_1.1.3           
-     [86] pillar_1.8.1         withr_2.5.0          xts_0.12.2           abind_1.4-5          tibble_3.1.8        
-     [91] crayon_1.5.2         utf8_1.2.2           rmarkdown_2.19       grid_4.2.1           callr_3.7.3         
-     [96] threejs_0.3.3        digest_0.6.31        xtable_1.8-4         tidyr_1.2.1          httpuv_1.6.7        
-    [101] RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       
+      [1] gridExtra_2.3        inline_0.3.19        rlang_1.1.1          magrittr_2.0.3       matrixStats_1.0.0   
+      [6] compiler_4.3.1       loo_2.6.0            systemfonts_1.0.4    callr_3.7.3          vctrs_0.6.3         
+     [11] reshape2_1.4.4       stringr_1.5.0        crayon_1.5.2         pkgconfig_2.0.3      fastmap_1.1.1       
+     [16] backports_1.4.1      ellipsis_0.3.2       labeling_0.4.2       utf8_1.2.3           threejs_0.3.3       
+     [21] promises_1.2.0.1     rmarkdown_2.22       markdown_1.7         ps_1.7.5             nloptr_2.0.3        
+     [26] MatrixModels_0.5-1   purrr_1.0.1          xfun_0.39            jsonlite_1.8.5       later_1.3.1         
+     [31] Deriv_4.1.3          prettyunits_1.1.1    broom_1.0.5          R6_2.5.1             dygraphs_1.1.1.6    
+     [36] StanHeaders_2.26.27  stringi_1.7.12       boot_1.3-28.1        rstan_2.21.8         iterators_1.0.14    
+     [41] zoo_1.8-12           base64enc_0.1-3      bayesplot_1.10.0     httpuv_1.6.11        splines_4.3.1       
+     [46] igraph_1.5.0         tidyselect_1.2.0     rstudioapi_0.14      abind_1.4-5          yaml_2.3.7          
+     [51] codetools_0.2-19     miniUI_0.1.1.1       processx_3.8.1       pkgbuild_1.4.1       lattice_0.21-8      
+     [56] tibble_3.2.1         plyr_1.8.8           shiny_1.7.4          withr_2.5.0          bridgesampling_1.1-2
+     [61] posterior_1.4.1      coda_0.19-4          evaluate_0.21        RcppParallel_5.1.7   xts_0.13.1          
+     [66] pillar_1.9.0         tensorA_0.36.2       stats4_4.3.1         checkmate_2.2.0      DT_0.28             
+     [71] shinyjs_2.1.0        distributional_0.3.2 generics_0.1.3       rstantools_2.3.1     munsell_0.5.0       
+     [76] scales_1.2.1         minqa_1.2.5          gtools_3.9.4         xtable_1.8-4         glue_1.6.2          
+     [81] tools_4.3.1          shinystan_2.6.0      data.table_1.14.8    colourpicker_1.2.0   mvtnorm_1.2-2       
+     [86] grid_4.3.1           tidyr_1.3.0          crosstalk_1.2.0      colorspace_2.1-0     cli_3.6.1           
+     [91] fansi_1.0.4          svglite_2.1.1        Brobdingnag_1.2-9    dplyr_1.1.2          gtable_0.3.3        
+     [96] digest_0.6.31        htmlwidgets_1.6.2    farver_2.1.1         htmltools_0.5.5      lifecycle_1.0.3     
+    [101] mime_0.12            shinythemes_1.2.0    MASS_7.3-60         

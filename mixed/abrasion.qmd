@@ -2,12 +2,14 @@
 title: Crossed Effects Design
 author: "[Julian Faraway](https://julianfaraway.github.io/)"
 date: "`r format(Sys.time(), '%d %B %Y')`"
-output: 
-  github_document:
+format: 
+  gfm:
     toc: true
 ---
 
-```{r global_options, include=FALSE}
+```{r}
+#| label: global_options
+#| include: false
 knitr::opts_chunk$set(comment=NA, 
                       echo = TRUE,
                       fig.path="figs/",
@@ -18,7 +20,9 @@ knitr::opts_chunk$set(comment=NA,
 knitr::opts_knit$set(global.par = TRUE)
 ```
 
-```{r graphopts, include=FALSE}
+```{r}
+#| label: graphopts
+#| include: false
 par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
 ggplot2::theme_set(ggplot2::theme_bw())
 ```
@@ -38,7 +42,8 @@ library(pbkrtest)
 library(RLRsim)
 library(INLA)
 library(knitr)
-library(rstan, quietly=TRUE)
+library(cmdstanr)
+register_knitr_engine(override = FALSE)
 library(brms)
 library(mgcv)
 ```
@@ -64,7 +69,8 @@ matrix(abrasion$material,4,4)
 
 We can plot the data
 
-```{r abrasionplot}
+```{r}
+#| label: abrasionplot
 ggplot(abrasion,aes(x=material, y=wear, shape=run, color=position))+geom_point(position = position_jitter(width=0.1, height=0.0))
 ```
 
@@ -105,7 +111,9 @@ We see the fixed effect is significant.
 
 We can compute confidence intervals for the parameters:
 
-```{r abraconfint, cache=TRUE}
+```{r}
+#| label: abraconfint
+#| cache: true
 confint(mmod, method="boot")
 ```
 
@@ -127,7 +135,9 @@ inla.setOption(inla.mode="experimental")
 inla.setOption("short.summary",TRUE)
 ```
 
-```{r abrainladef, cache=TRUE}
+```{r}
+#| label: abrainladef
+#| cache: true
 formula <- wear ~ material + f(run, model="iid") + f(position, model="iid")
 result <- inla(formula, family="gaussian", data=abrasion)
 summary(result)
@@ -144,7 +154,9 @@ variances to be lower than this variance so this is an overestimate.
 The variance of the gamma prior (for the precision) is controlled by
 the `apar` shape parameter.
 
-```{r abrainlaig, cache=TRUE}
+```{r}
+#| label: abrainlaig
+#| cache: true
 apar <- 0.5
 lmod <- lm(wear ~ material, abrasion)
 bpar <- apar*var(residuals(lmod))
@@ -158,7 +170,8 @@ Results are more credible.
 
 Compute the transforms to an SD scale for the random effect terms. Make a table of summary statistics for the posteriors:
 
-```{r sumstats}
+```{r}
+#| label: sumstats
 sigmarun <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[2]])
 sigmapos <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[3]])
 sigmaepsilon <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[1]])
@@ -172,7 +185,8 @@ data.frame(restab) |> kable()
 
 Also construct a plot the SD posteriors:
 
-```{r plotsdsab}
+```{r}
+#| label: plotsdsab
 ddf <- data.frame(rbind(sigmarun,sigmapos,sigmaepsilon),errterm=gl(3,nrow(sigmarun),labels = c("run","position","epsilon")))
 ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("wear")+ylab("density")+xlim(0,35)
 ```
@@ -185,7 +199,9 @@ In [Simpson et al (2015)](http://arxiv.org/abs/1403.4630v3), penalized complexit
 requires that we specify a scaling for the SDs of the random effects. We use the SD of the residuals
 of the fixed effects only model (what might be called the base model in the paper) to provide this scaling.
 
-```{r abrainlapc, cache=TRUE}
+```{r}
+#| label: abrainlapc
+#| cache: true
 lmod <- lm(wear ~ material, abrasion)
 sdres <- sd(residuals(lmod))
 pcprior <- list(prec = list(prior="pc.prec", param = c(3*sdres,0.01)))
@@ -196,12 +212,15 @@ summary(result)
 
 Compute the summaries as before:
 
-```{r ref.label="sumstats"}
+```{r}
+#| ref.label: sumstats
 ```
 
 Make the plots:
 
-```{r abrapc, ref.label="plotsdsab"}
+```{r}
+#| label: abrapc
+#| ref.label: plotsdsab
 ```
 
 Posteriors put more weight on lower values compared to gamma prior.
@@ -209,20 +228,62 @@ Posteriors put more weight on lower values compared to gamma prior.
 # STAN
 
 [STAN](https://mc-stan.org/) performs Bayesian inference using
-MCMC.
-Set up STAN to use multiple cores. Set the random number seed for reproducibility.
+MCMC. I use `cmdstanr` to access Stan from R.
 
-```{r}
-rstan_options(auto_write = TRUE)
-options(mc.cores = parallel::detectCores())
-set.seed(123)
+You see below the Stan code to fit our model. Rmarkdown allows the use
+of Stan chunks (elsewhere I have R chunks). The chunk header looks
+like this. 
+
+STAN chunk will be compiled to 'mod'. Chunk header is:
+```
+cmdstan, output.var="mod", override = FALSE
 ```
 
-Fit the model. Requires use of STAN command file [abrasion.stan](../stancode/abrasion.stan). We have used uninformative priors for the fixed effects and half-cauchy priors for the three variances. We view the code here:
+```{cmdstan, output.var="mod", override = FALSE}
+/*
+Latin square style design
+*/
+data {
+  int<lower=0> N;
+  int<lower=0> Nt;
+  array[N] int<lower=1,upper=Nt> treat;
+  array[N] int<lower=1,upper=Nt> blk1;
+  array[N] int<lower=1,upper=Nt> blk2;
+  array[N] real y;
+  real<lower=0> sdscal;
+}
+parameters {
+  vector[Nt] eta1;
+  vector[Nt] eta2;
+  vector[Nt] trt;
+  real<lower=0> sigmab1;
+  real<lower=0> sigmab2;
+  real<lower=0> sigmaeps;
+}
+transformed parameters {
+  vector[Nt] bld1;
+  vector[Nt] bld2;
+  vector[N] yhat;
 
-```{r}
-writeLines(readLines("../stancode/abrasion.stan"))
+  bld1 = sigmab1 * eta1;
+  bld2 = sigmab2 * eta2;
+
+  for (i in 1:N)
+    yhat[i] = trt[treat[i]] + bld1[blk1[i]] + bld2[blk2[i]];
+
+}
+model {
+  eta1 ~ normal(0, 1);
+  eta2 ~ normal(0, 1);
+  sigmab1 ~ cauchy(0, 2.5*sdscal);
+  sigmab2 ~ cauchy(0, 2.5*sdscal);
+  sigmaeps ~ cauchy(0, 2.5*sdscal);
+
+  y ~ normal(yhat, sigmaeps);
+}
 ```
+
+We have used uninformative priors for the fixed effects and half-cauchy priors for the three variances. We view the code here:
 
 Prepare data in a format consistent with the command file. Needs to be a list:
 
@@ -231,13 +292,18 @@ sdscal <- sd(residuals(lm(wear ~ material, abrasion)))
 abrdat <- list(N=16, Nt=4, treat=as.numeric(abrasion$material), blk1=as.numeric(abrasion$run), blk2=as.numeric(abrasion$position), y=abrasion$wear, sdscal=sdscal)
 ```
 
-Run in three steps:
+Do the MCMC sampling:
 
-```{r abrastan, cache=TRUE}
-rt <- stanc(file="../stancode/abrasion.stan")
-sm <- stan_model(stanc_ret = rt, verbose=FALSE)
-system.time(fit <- sampling(sm, data=abrdat))
+```{r}
+fit <- mod$sample(
+  data = abrdat, 
+  seed = 123, 
+  chains = 4, 
+  parallel_chains = 4,
+  refresh = 500 # print update every 500 iters
+)
 ```
+
 
 We have not used an overall mean. If we want an overall mean
 parameter, we have to set up dummy variables. We can do this but it
@@ -246,31 +312,31 @@ requires more work.
 
 ## Diagnostics
 
+Extract the draws into a convenient dataframe format:
+
+```{r}
+draws_df <- fit$draws(format = "df")
+```
+
+
 For the error SD:
 
-```{r abrasigmaepsdiag}
-pname <- "sigmaeps"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```{r}
+#| label: abrasigmab1diag
+ggplot(draws_df,
+       aes(x=.iteration,y=sigmab1,color=factor(.chain))) + geom_line() +
+  labs(color = 'Chain', x="Iteration")
 ```
 
-For the block one (run) SD:
-
-```{r abrasigmab1diag}
-pname <- "sigmab1"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
-```
+Looks OK
 
 For the block two (position) SD:
 
-```{r abrasigmab2}
-pname <- "sigmab2"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```{r}
+#| label: abrasigmab2diag
+ggplot(draws_df,
+       aes(x=.iteration,y=sigmab2,color=factor(.chain))) + geom_line() +
+  labs(color = 'Chain', x="Iteration")
 ```
 
 Everything looks reasonable.
@@ -278,7 +344,8 @@ Everything looks reasonable.
 ## Output Summary
 
 ```{r}
-print(fit,pars=c("trt","sigmaeps","sigmab1","sigmab2"))
+parsint = c("trt","sigmaeps","sigmab1","sigmab2")
+fit$summary(parsint)
 ```
 
 The effective sample sizes are a bit low so we might want to rerun this with more iterations
@@ -288,11 +355,12 @@ if we care about the tails in particular.
 
 We can use extract to get at various components of the STAN fit. First consider the SDs for random components:
 
-```{r abrapostsig}
-postsig <- rstan::extract(fit, pars=c("sigmaeps","sigmab1","sigmab2"))
-ref <- reshape2::melt(postsig)
-colnames(ref)[2:3] <- c("wear","SD")
-ggplot(data=ref,aes(x=wear, color=SD))+geom_density()
+```{r}
+#| label: abrapostsig
+sdf = stack(draws_df[,parsint[-1]])
+colnames(sdf) = c("wear","SD")
+levels(sdf$SD) = parsint[-1]
+ggplot(sdf, aes(x=wear,color=SD)) + geom_density() +xlim(0,60)
 ```
 
 As usual the error SD distribution is a bit more concentrated. We can see
@@ -301,12 +369,12 @@ some weight at zero for the random effects in contrast to the INLA posteriors.
 Now the treatment effects:
 
 
-```{r abraposttrt}
-postsig <- rstan::extract(fit, pars="trt")
-ref <- reshape2::melt(postsig)
-colnames(ref)[2:3] <- c("material","wear")
-ref$material <- LETTERS[1:4][ref$material]
-ggplot(data=ref,aes(x=wear, color=material))+geom_density()
+```{r}
+#| label: abraposttrt
+sdf = stack(draws_df[,startsWith(colnames(draws_df),"trt")])
+colnames(sdf) = c("wear","trt")
+levels(sdf$trt) = LETTERS[1:4]
+ggplot(sdf, aes(x=wear,color=trt)) + geom_density() 
 ```
 
 We can see that material A shows some separation from the other levels.
@@ -318,13 +386,16 @@ I have used more than the standard number of iterations because this reduces som
 and does not cost much computationally.
 
 
-```{r brmfit, cache=TRUE}
-suppressMessages(bmod <- brm(wear ~ material + (1|run) + (1|position), data=abrasion,iter=10000, cores=4))
+```{r}
+#| label: brmfit
+#| cache: true
+suppressMessages(bmod <- brm(wear ~ material + (1|run) + (1|position), data=abrasion,iter=10000, cores=4, backend = "cmdstanr"))
 ```
 
 We get some minor warnings. We can obtain some posterior densities and diagnostics with:
 
-```{r abrabrmsdiag}
+```{r}
+#| label: abrabrmsdiag
 plot(bmod, variable = "^s", regex=TRUE)
 ```
 
@@ -409,13 +480,15 @@ gimod = ginla(gmod)
 
 We get the posterior density for the intercept as:
 
-```{r abraginlaint}
+```{r}
+#| label: abraginlaint
 plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="yield",ylab="wear")
 ```
 
 and for the material effects as:
 
-```{r abraginlalmat}
+```{r}
+#| label: abraginlalmat
 xmat = t(gimod$beta[2:4,])
 ymat = t(gimod$density[2:4,])
 matplot(xmat, ymat,type="l",xlab="wear",ylab="density")
@@ -426,7 +499,8 @@ We can see some overlap between the effects but clear separation from zero.
 
 The run effects are:
 
-```{r abraginlalrun}
+```{r}
+#| label: abraginlalrun
 xmat = t(gimod$beta[5:8,])
 ymat = t(gimod$density[5:8,])
 matplot(xmat, ymat,type="l",xlab="wear",ylab="density")
@@ -437,7 +511,8 @@ All the run effects overlap with zero but runs 3 and 4 are more distinct than 1 
 
 The position effects are:
 
-```{r abraginlalpos}
+```{r}
+#| label: abraginlalpos
 xmat = t(gimod$beta[9:12,])
 ymat = t(gimod$density[9:12,])
 matplot(xmat, ymat,type="l",xlab="wear",ylab="density")

@@ -4,10 +4,10 @@ Latin square style design
 data {
   int<lower=0> N;
   int<lower=0> Nt;
-  int<lower=1,upper=Nt> treat[N];
-  int<lower=1,upper=Nt> blk1[N];
-  int<lower=1,upper=Nt> blk2[N];
-  vector[N] y;
+  array[N] int<lower=1,upper=Nt> treat;
+  array[N] int<lower=1,upper=Nt> blk1;
+  array[N] int<lower=1,upper=Nt> blk2;
+  array[N] real y;
   real<lower=0> sdscal;
 }
 parameters {
