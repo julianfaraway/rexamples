@@ -2,12 +2,14 @@
 title: Multilevel Design
 author: "[Julian Faraway](https://julianfaraway.github.io/)"
 date: "`r format(Sys.time(), '%d %B %Y')`"
-output: 
-  github_document:
+format: 
+  gfm:
     toc: true
 ---
 
-```{r global_options, include=FALSE}
+```{r}
+#| label: global_options
+#| include: false
 knitr::opts_chunk$set(comment=NA, 
                       echo = TRUE,
                       fig.path="figs/",
@@ -18,7 +20,9 @@ knitr::opts_chunk$set(comment=NA,
 knitr::opts_knit$set(global.par = TRUE)
 ```
 
-```{r graphopts, include=FALSE}
+```{r}
+#| label: graphopts
+#| include: false
 par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
 ggplot2::theme_set(ggplot2::theme_bw())
 ```
@@ -38,7 +42,8 @@ library(pbkrtest)
 library(RLRsim)
 library(INLA)
 library(knitr)
-library(rstan, quietly=TRUE)
+library(cmdstanr)
+register_knitr_engine(override = FALSE)
 library(brms)
 library(mgcv)
 ```
@@ -67,7 +72,8 @@ jspr$classch <- paste(jspr$school,jspr$class,sep=".")
 
 We can plot the data
 
-```{r jspplot}
+```{r}
+#| label: jspplot
 ggplot(jspr, aes(x=raven, y=math))+xlab("Raven Score")+ylab("Math Score")+geom_point(position = position_jitter())
 ggplot(jspr, aes(x=social, y=math))+xlab("Social Class")+ylab("Math Score")+geom_boxplot()
 ```
@@ -114,7 +120,9 @@ We see the social effect is significant.
 
 We can compute confidence intervals for the parameters:
 
-```{r jspconfint, cache=TRUE}
+```{r}
+#| label: jspconfint
+#| cache: true
 confint(mmod, method="boot")
 ```
 
@@ -137,7 +145,9 @@ inla.setOption(inla.mode="experimental")
 inla.setOption("short.summary",TRUE)
 ```
 
-```{r jspinladef, cache=TRUE}
+```{r}
+#| label: jspinladef
+#| cache: true
 formula <- math ~ social+craven + f(school, model="iid") + f(classch, model="iid")
 result <- inla(formula, family="gaussian", data=jspr)
 summary(result)
@@ -154,7 +164,9 @@ variances to be lower than this variance so this is an overestimate.
 The variance of the gamma prior (for the precision) is controlled by
 the `apar` shape parameter.
 
-```{r jspinlaig, cache=TRUE}
+```{r}
+#| label: jspinlaig
+#| cache: true
 apar <- 0.5
 lmod <- lm(math ~ social+craven, jspr)
 bpar <- apar*var(residuals(lmod))
@@ -168,7 +180,8 @@ Results are more credible.
 
 Compute the transforms to an SD scale for the random effect terms. Make a table of summary statistics for the posteriors:
 
-```{r sumstats}
+```{r}
+#| label: sumstats
 sigmasch <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[2]])
 sigmacla <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[3]])
 sigmaepsilon <- inla.tmarginal(function(x) 1/sqrt(exp(x)),result$internal.marginals.hyperpar[[1]])
@@ -182,7 +195,8 @@ data.frame(restab) |> kable()
 
 Also construct a plot the SD posteriors:
 
-```{r jsppostsd}
+```{r}
+#| label: jsppostsd
 ddf <- data.frame(rbind(sigmasch,sigmacla,sigmaepsilon),errterm=gl(3,nrow(sigmasch),labels = c("school","class","epsilon")))
 ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("math")+ylab("density")
 ```
@@ -195,7 +209,9 @@ In [Simpson et al (2015)](http://arxiv.org/abs/1403.4630v3), penalized complexit
 requires that we specify a scaling for the SDs of the random effects. We use the SD of the residuals
 of the fixed effects only model (what might be called the base model in the paper) to provide this scaling.
 
-```{r jspinlapc, cache=TRUE}
+```{r}
+#| label: jspinlapc
+#| cache: true
 lmod <- lm(math ~ craven + social, jspr)
 sdres <- sd(residuals(lmod))
 pcprior <- list(prec = list(prior="pc.prec", param = c(3*sdres,0.01)))
@@ -206,12 +222,14 @@ summary(result)
 
 Compute the summaries as before:
 
-```{r ref.label="sumstats"}
+```{r}
+#| ref.label: sumstats
 ```
 
 Make the plots:
 
-```{r jsppostsdpc}
+```{r}
+#| label: jsppostsdpc
 ddf <- data.frame(rbind(sigmasch,sigmacla,sigmaepsilon),errterm=gl(3,nrow(sigmasch),labels = c("school","class","epsilon")))
 ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("math")+ylab("density")
 ```
@@ -222,19 +240,58 @@ Posteriors put more weight on lower values compared to gamma prior.
 # STAN
 
 [STAN](https://mc-stan.org/) performs Bayesian inference using
-MCMC.
-Set up STAN to use multiple cores. Set the random number seed for reproducibility.
+MCMC. I use `cmdstanr` to access Stan from R.
 
-```{r}
-rstan_options(auto_write = TRUE)
-options(mc.cores = parallel::detectCores())
-set.seed(123)
+You see below the Stan code to fit our model. Rmarkdown allows the use
+of Stan chunks (elsewhere I have R chunks). The chunk header looks
+like this. 
+
+STAN chunk will be compiled to 'mod'. Chunk header is:
+```
+cmdstan, output.var="mod", override = FALSE
 ```
 
-Fit the model. Requires use of STAN command file [multilevel.stan](../stancode/multilevel.stan). We view the code here:
+```{cmdstan, output.var="mod", override = FALSE}
+data {
+     int<lower=0> Nobs;
+     int<lower=0> Npreds;
+     int<lower=0> Nlev1;
+     int<lower=0> Nlev2;
+     array[Nobs] real y;
+     matrix[Nobs,Npreds] x;
+     array[Nobs] int<lower=1,upper=Nlev1> levind1;
+     array[Nobs] int<lower=1,upper=Nlev2> levind2;
+     real<lower=0> sdscal;
+}
+parameters {
+           vector[Npreds] beta;
+           real<lower=0> sigmalev1;
+           real<lower=0> sigmalev2;
+           real<lower=0> sigmaeps;
 
-```{r}
-writeLines(readLines("../stancode/multilevel.stan"))
+           vector[Nlev1] eta1;
+           vector[Nlev2] eta2;
+}
+transformed parameters {
+  vector[Nlev1] ran1;
+  vector[Nlev2] ran2;
+  vector[Nobs] yhat;
+
+  ran1  = sigmalev1 * eta1;
+  ran2  = sigmalev2 * eta2;
+
+  for (i in 1:Nobs)
+    yhat[i] = x[i]*beta+ran1[levind1[i]]+ran2[levind2[i]];
+
+}
+model {
+  eta1 ~ normal(0, 1);
+  eta2 ~ normal(0, 1);
+  sigmalev1 ~ cauchy(0, 2.5*sdscal);
+  sigmalev2 ~ cauchy(0, 2.5*sdscal);
+  sigmaeps ~ cauchy(0, 2.5*sdscal);
+  y ~ normal(yhat, sigmaeps);
+}
 ```
 
 We have used uninformative priors
@@ -262,53 +319,53 @@ jspdat <- list(Nobs=nrow(jspr),
                sdscal=sdscal)
 ```
 
-Break the fitting of the model into three steps. We use 5x the default number
-of iterations to ensure sufficient sample size for the later estimations.
+Do the MCMC sampling:
 
-```{r jspstancomp, cache=TRUE}
-rt <- stanc("../stancode/multilevel.stan")
-sm <- stan_model(stanc_ret = rt, verbose=FALSE)
-set.seed(123)
-system.time(fit <- sampling(sm, data=jspdat, iter=10000))
+```{r}
+fit <- mod$sample(
+  data = jspdat, 
+  seed = 123, 
+  chains = 4, 
+  parallel_chains = 4,
+  refresh = 500 # print update every 500 iters
+)
 ```
 
 ## Diagnostics
 
-For the error SD:
+Extract the draws into a convenient dataframe format:
 
-```{r jspsigmaeps}
-pname <- "sigmaeps"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```{r}
+draws_df <- fit$draws(format = "df")
 ```
 
-For the School SD
 
-```{r jspsigmalev1}
-pname <- "sigmalev1"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+For the School SD:
+
+```{r}
+#| label: jspsigmalev1
+ggplot(draws_df,
+       aes(x=.iteration,y=sigmalev1,color=factor(.chain))) + geom_line() +
+  labs(color = 'Chain', x="Iteration")
 ```
 
 For the class SD
 
-```{r jspsigmalev2}
-pname <- "sigmalev2"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```{r}
+#| label: jspsigmalev2
+ggplot(draws_df,
+       aes(x=.iteration,y=sigmalev2,color=factor(.chain))) + geom_line() +
+  labs(color = 'Chain', x="Iteration")
 ```
 
 All these are satisfactory.
 
 ## Output Summary
 
-Examine the main parameters of interest:
+Display the parameters of interest:
 
 ```{r}
-print(fit,pars=c("beta","sigmalev1","sigmalev2","sigmaeps"))
+fit$summary(c("beta","sigmalev1","sigmalev2","sigmaeps"))
 ```
 
 Remember that the beta correspond to the following parameters:
@@ -323,39 +380,41 @@ The results are comparable to the REML fit. The effective sample sizes are suffi
 
 We can use extract to get at various components of the STAN fit. First consider the SDs for random components:
 
-```{r jsppostsig}
-postsig <- rstan::extract(fit, pars=c("sigmaeps","sigmalev1","sigmalev2"))
-ref <- reshape2::melt(postsig)
-colnames(ref)[2:3] <- c("math","SD")
-ggplot(data=ref,aes(x=math, color=SD))+geom_density()
+```{r}
+#| label: jsppostsig
+sdf = stack(draws_df[,c("sigmaeps","sigmalev1","sigmalev2")])
+colnames(sdf) = c("math","SD")
+levels(sdf$SD) = c("individual","school","class")
+ggplot(sdf, aes(x=math,color=SD)) + geom_density() 
 ```
 
 As usual the error SD distribution is a more concentrated. The school SD is more diffuse and smaller whereas the class SD is smaller
 still. Now the treatement effects, considering the social class parameters first:
 
 
-```{r jspbetapost}
-postsig <- rstan::extract(fit, pars="beta")
-ref <- reshape2::melt(postsig)
-colnames(ref)[2:3] <- c("beta","math")
-ref$beta <- colnames(Xmatrix)[ref$beta]
-ref %>% dplyr::filter(grepl("social",beta)) %>% ggplot(aes(x=math, color=beta))+geom_density()
+```{r}
+#| label: jspbetapost
+sdf = stack(draws_df[,4:11])
+colnames(sdf) = c("math","social")
+levels(sdf$social) = 2:9
+ggplot(sdf, aes(x=math,color=social)) + geom_density() 
 ```
 
 Now just the raven score parameter:
 
-```{r jspcravenpost}
-ref %>% dplyr::filter(grepl("craven", beta)) %>% ggplot(aes(x=math))+geom_density()
+```{r}
+#| label: jspcravenpost
+ggplot(draws_df, aes(x=.data[["beta[2]"]])) + geom_density() + xlab("Math per Raven")
 ```
 
 Now for the schools:
 
-```{r jspschoolspost}
-postsig <- rstan::extract(fit, pars="ran1")
-ref <- reshape2::melt(postsig,value.name="math",variable.name="school")
-colnames(ref)[2:3] <- c("school","math")
-ref$school <- factor(unique(jspr$school)[ref$school])
-ggplot(ref,aes(x=math,group=school))+geom_density()
+```{r}
+#| label: jspschoolspost
+sdf = stack(draws_df[,startsWith(colnames(draws_df),"ran1")])
+colnames(sdf) = c("math","school")
+levels(sdf$school) = 1:48
+ggplot(sdf, aes(x=math,group=school)) + geom_density() 
 ```
 
 We can see the variation between schools. A league table might be used to rank the schools but the
@@ -368,13 +427,16 @@ I have used more than the standard number of iterations because this reduces som
 and does not cost much computationally.
 
 
-```{r jspbrmfit, cache=TRUE}
-suppressMessages(bmod <- brm(math ~ craven + social+(1|school)+(1|school:class),data=jspr,iter=10000, cores=4))
+```{r}
+#| label: jspbrmfit
+#| cache: true
+suppressMessages(bmod <- brm(math ~ craven + social+(1|school)+(1|school:class),data=jspr,iter=10000, cores=4, backend = "cmdstanr"))
 ```
 
 We get some minor warnings. We can obtain some posterior densities and diagnostics with:
 
-```{r jspbrmsdiag}
+```{r}
+#| label: jspbrmsdiag
 plot(bmod, variable = "^s", regex=TRUE)
 ```
 
@@ -458,19 +520,22 @@ gimod = ginla(gmod)
 
 We get the posterior density for the intercept as:
 
-```{r jspginlaint}
+```{r}
+#| label: jspginlaint
 plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="math",ylab="density")
 ```
 
 We get the posterior density for the raven effect as:
 
-```{r jspginlaraven}
+```{r}
+#| label: jspginlaraven
 plot(gimod$beta[2,],gimod$density[2,],type="l",xlab="math per raven",ylab="density")
 ```
 
 and for the social effects as:
 
-```{r jspginlalsoc}
+```{r}
+#| label: jspginlalsoc
 xmat = t(gimod$beta[3:10,])
 ymat = t(gimod$density[3:10,])
 matplot(xmat, ymat,type="l",xlab="math",ylab="density")

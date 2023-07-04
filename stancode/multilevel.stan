@@ -3,10 +3,10 @@ data {
      int<lower=0> Npreds;
      int<lower=0> Nlev1;
      int<lower=0> Nlev2;
-     vector[Nobs] y;
+     array[Nobs] real y;
      matrix[Nobs,Npreds] x;
-     int<lower=1,upper=Nlev1> levind1[Nobs];
-     int<lower=1,upper=Nlev2> levind2[Nobs];
+     array[Nobs] int<lower=1,upper=Nlev1> levind1;
+     array[Nobs] int<lower=1,upper=Nlev2> levind2;
      real<lower=0> sdscal;
 }
 parameters {
