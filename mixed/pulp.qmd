@@ -875,7 +875,7 @@ my computer. I never did discover the source of the problem - suggestions
 on the internet required uninstalling and reinstalling large pieces of software. 
 Fortunately, I could see that the errors and warnings could be ignored. *Update: Now that I run the same code again a few months later, the errors and warnings have gone away. I don't know why. They might come back.* *Update no.2: After updating R to version 4.3,
 Stan and BRMS stopped working. After much research and experimentation, I found that
-the solution was to switch from `rstan` to `cmdstanr`.*
+the solution was to switch from `rstan` to `cmdstanr`.* *Update no.3: Now on R version 4.4 in August 2004, installation and execution of INLA and STAN ran without (obvious) problems*
 After several decades of fiddling with computers to get software to work, I (mostly) possess the patience and experience to deal with these sorts of problems. That's far from true for many potential users. 
 
 7. Both STAN and INLA are being actively developed. Of course, it's good to know
@@ -886,7 +886,11 @@ run at all. Again I can ride along with this but less experienced users find
 this problematic. At some point, they may ask "How do I know if this is the
 right answer?" and the reassurance is not entirely convincing. In contrast,
 it is not unusual to feed S vintage code into base R and have it give the same
-results as it did 30 years ago.
+results as it did 30 years ago. *Update August 2024: INLA gave moderately different
+results from the previous year, particularly for the operator SD, presumably due to a change in the algorithm. The STAN results were also slightly different but the MCMC
+sampling is subject to the RNG. A larger MCMC iteration size than the default would help with
+this. BRMS gave very similar results but it is using a larger iteration size by
+default. Nothing obvious changed with the other computations based on other packages.*
 
 8. Specifying and fitting Bayesian models is inherently more complicated than
 standard linear models or those fit by `lme4`. We expect to work harder but

@@ -1,6 +1,6 @@
 # One Way Anova with a random effect
 [Julian Faraway](https://julianfaraway.github.io/)
-2023-06-27
+2024-08-15
 
 - [Data](#data)
 - [Questions](#questions)
@@ -749,34 +749,34 @@ fit <- mod$sample(
     Chain 2 Iteration:    1 / 2000 [  0%]  (Warmup) 
     Chain 3 Iteration:    1 / 2000 [  0%]  (Warmup) 
     Chain 4 Iteration:    1 / 2000 [  0%]  (Warmup) 
+    Chain 3 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+    Chain 3 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+    Chain 3 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 4 Iteration:  500 / 2000 [ 25%]  (Warmup) 
     Chain 1 Iteration:  500 / 2000 [ 25%]  (Warmup) 
     Chain 1 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
     Chain 1 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 1 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 1 Iteration: 2000 / 2000 [100%]  (Sampling) 
     Chain 2 Iteration:  500 / 2000 [ 25%]  (Warmup) 
     Chain 2 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
     Chain 2 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
     Chain 2 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
-    Chain 3 Iteration:  500 / 2000 [ 25%]  (Warmup) 
-    Chain 1 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
-    Chain 1 Iteration: 2000 / 2000 [100%]  (Sampling) 
     Chain 2 Iteration: 2000 / 2000 [100%]  (Sampling) 
-    Chain 4 Iteration:  500 / 2000 [ 25%]  (Warmup) 
-    Chain 4 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
-    Chain 4 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
-    Chain 1 finished in 0.4 seconds.
-    Chain 2 finished in 0.4 seconds.
-    Chain 3 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
-    Chain 3 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
-    Chain 4 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
-    Chain 4 Iteration: 2000 / 2000 [100%]  (Sampling) 
-    Chain 4 finished in 0.5 seconds.
     Chain 3 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
     Chain 3 Iteration: 2000 / 2000 [100%]  (Sampling) 
-    Chain 3 finished in 0.7 seconds.
+    Chain 4 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+    Chain 4 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 4 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 4 Iteration: 2000 / 2000 [100%]  (Sampling) 
+    Chain 1 finished in 0.5 seconds.
+    Chain 2 finished in 0.5 seconds.
+    Chain 3 finished in 0.5 seconds.
+    Chain 4 finished in 0.4 seconds.
 
     All 4 chains finished successfully.
     Mean chain execution time: 0.5 seconds.
-    Total execution time: 0.8 seconds.
+    Total execution time: 0.7 seconds.
 
 By default, we use 2000 iterations but repeated with independent starts
 4 times giving 4 chains. We can thin but do not by default. The warmup
@@ -825,14 +825,14 @@ fit$summary(c("mu","sigmaalpha","sigmaepsilon","a"))
 
     # A tibble: 7 × 10
       variable       mean median     sd    mad      q5    q95  rhat ess_bulk ess_tail
-      <chr>         <num>  <num>  <num>  <num>   <num>  <num> <num>    <num>    <num>
-    1 mu           60.4   60.4   0.291  0.206  59.9    60.8    1.01     532.     201.
-    2 sigmaalpha    0.464  0.363 0.391  0.243   0.0944  1.18   1.01     556.     457.
-    3 sigmaepsilon  0.360  0.350 0.0701 0.0629  0.265   0.486  1.00    1328.    1039.
-    4 a[1]         60.3   60.3   0.150  0.145  60.0    60.5    1.00    3121.    2838.
-    5 a[2]         60.1   60.1   0.165  0.165  59.9    60.4    1.00    1998.    2225.
-    6 a[3]         60.6   60.6   0.154  0.148  60.3    60.8    1.01    2424.    2530.
-    7 a[4]         60.6   60.6   0.162  0.162  60.3    60.9    1.00    2169.    2060.
+      <chr>         <dbl>  <dbl>  <dbl>  <dbl>   <dbl>  <dbl> <dbl>    <dbl>    <dbl>
+    1 mu           60.4   60.4   0.268  0.191  60.0    60.9    1.01     622.     279.
+    2 sigmaalpha    0.472  0.374 0.371  0.242   0.0897  1.19   1.01     617.     496.
+    3 sigmaepsilon  0.360  0.347 0.0725 0.0630  0.264   0.492  1.00    1427.    1459.
+    4 a[1]         60.3   60.3   0.151  0.148  60.0    60.5    1.00    3017.    3228.
+    5 a[2]         60.1   60.1   0.169  0.166  59.9    60.4    1.00    2134.    2237.
+    6 a[3]         60.6   60.6   0.157  0.150  60.3    60.8    1.00    2325.    2321.
+    7 a[4]         60.6   60.6   0.159  0.157  60.4    60.9    1.00    2421.    2606.
 
 We see the posterior mean, median, SD and MAD of the samples. We see
 some quantiles from which we could construct a 95% credible interval
@@ -887,8 +887,8 @@ fit$summary("sigmaalpha", tailprob = ~ mean(. <= 0.1))
 
     # A tibble: 1 × 2
       variable   tailprob
-      <chr>         <num>
-    1 sigmaalpha   0.0575
+      <chr>         <dbl>
+    1 sigmaalpha   0.0572
 
 This is a somewhat larger probability than seen previously. The value
 obtained is sensitive to the choice of prior on the error SD. This can
@@ -1008,16 +1008,16 @@ summary(bmod)
       Draws: 4 chains, each with iter = 10000; warmup = 5000; thin = 1;
              total post-warmup draws = 20000
 
-    Group-Level Effects: 
+    Multilevel Hyperparameters:
     ~operator (Number of levels: 4) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
     sd(Intercept)     0.46      0.36     0.05     1.45 1.00     1142      671
 
-    Population-Level Effects: 
+    Regression Coefficients:
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
     Intercept    60.40      0.28    59.77    60.97 1.00     1015      488
 
-    Family Specific Parameters: 
+    Further Distributional Parameters:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
     sigma     0.36      0.07     0.25     0.53 1.00     6286     8555
 
@@ -1247,7 +1247,9 @@ computations.
     gone away. I don’t know why. They might come back.* *Update no.2:
     After updating R to version 4.3, Stan and BRMS stopped working.
     After much research and experimentation, I found that the solution
-    was to switch from `rstan` to `cmdstanr`.* After several decades of
+    was to switch from `rstan` to `cmdstanr`.* *Update no.3: Now on R
+    version 4.4 in August 2004, installation and execution of INLA and
+    STAN ran without (obvious) problems* After several decades of
     fiddling with computers to get software to work, I (mostly) possess
     the patience and experience to deal with these sorts of problems.
     That’s far from true for many potential users.
@@ -1261,7 +1263,14 @@ computations.
     point, they may ask “How do I know if this is the right answer?” and
     the reassurance is not entirely convincing. In contrast, it is not
     unusual to feed S vintage code into base R and have it give the same
-    results as it did 30 years ago.
+    results as it did 30 years ago. *Update August 2024: INLA gave
+    moderately different results from the previous year, particularly
+    for the operator SD, presumably due to a change in the algorithm.
+    The STAN results were also slightly different but the MCMC sampling
+    is subject to the RNG. A larger MCMC iteration size than the default
+    would help with this. BRMS gave very similar results but it is using
+    a larger iteration size by default. Nothing obvious changed with the
+    other computations based on other packages.*
 
 8.  Specifying and fitting Bayesian models is inherently more
     complicated than standard linear models or those fit by `lme4`. We
@@ -1298,13 +1307,13 @@ we could do without.
 sessionInfo()
 ```
 
-    R version 4.3.1 (2023-06-16)
-    Platform: x86_64-apple-darwin20 (64-bit)
-    Running under: macOS Ventura 13.4
+    R version 4.4.1 (2024-06-14)
+    Platform: x86_64-apple-darwin20
+    Running under: macOS Sonoma 14.6
 
     Matrix products: default
-    BLAS:   /Library/Frameworks/R.framework/Versions/4.3-x86_64/Resources/lib/libRblas.0.dylib 
-    LAPACK: /Library/Frameworks/R.framework/Versions/4.3-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.11.0
+    BLAS:   /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRblas.0.dylib 
+    LAPACK: /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.0
 
     locale:
     [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
@@ -1313,30 +1322,28 @@ sessionInfo()
     tzcode source: internal
 
     attached base packages:
-    [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
+    [1] stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-42     nlme_3.1-162    brms_2.19.0     Rcpp_1.0.10     cmdstanr_0.5.3  knitr_1.43      INLA_23.05.30-1
-     [8] sp_2.0-0        foreach_1.5.2   lme4_1.1-33     Matrix_1.5-4.1  ggplot2_3.4.2   faraway_1.0.8  
+     [1] mgcv_1.9-1     nlme_3.1-165   brms_2.21.0    Rcpp_1.0.13    cmdstanr_0.8.1 knitr_1.48     INLA_24.06.27 
+     [8] sp_2.1-4       lme4_1.1-35.5  Matrix_1.7-0   ggplot2_3.5.1  faraway_1.0.8 
 
     loaded via a namespace (and not attached):
-     [1] gridExtra_2.3        inline_0.3.19        rlang_1.1.1          magrittr_2.0.3       matrixStats_1.0.0   
-     [6] compiler_4.3.1       loo_2.6.0            systemfonts_1.0.4    callr_3.7.3          vctrs_0.6.3         
-    [11] reshape2_1.4.4       stringr_1.5.0        pkgconfig_2.0.3      crayon_1.5.2         fastmap_1.1.1       
-    [16] backports_1.4.1      ellipsis_0.3.2       labeling_0.4.2       utf8_1.2.3           threejs_0.3.3       
-    [21] promises_1.2.0.1     rmarkdown_2.22       markdown_1.7         ps_1.7.5             nloptr_2.0.3        
-    [26] xfun_0.39            jsonlite_1.8.5       later_1.3.1          Deriv_4.1.3          prettyunits_1.1.1   
-    [31] R6_2.5.1             dygraphs_1.1.1.6     stringi_1.7.12       StanHeaders_2.26.27  boot_1.3-28.1       
-    [36] rstan_2.21.8         iterators_1.0.14     zoo_1.8-12           base64enc_0.1-3      bayesplot_1.10.0    
-    [41] httpuv_1.6.11        splines_4.3.1        igraph_1.5.0         tidyselect_1.2.0     rstudioapi_0.14     
-    [46] abind_1.4-5          yaml_2.3.7           codetools_0.2-19     miniUI_0.1.1.1       processx_3.8.1      
-    [51] pkgbuild_1.4.1       lattice_0.21-8       tibble_3.2.1         plyr_1.8.8           shiny_1.7.4         
-    [56] withr_2.5.0          bridgesampling_1.1-2 posterior_1.4.1      coda_0.19-4          evaluate_0.21       
-    [61] RcppParallel_5.1.7   xts_0.13.1           pillar_1.9.0         tensorA_0.36.2       checkmate_2.2.0     
-    [66] DT_0.28              stats4_4.3.1         shinyjs_2.1.0        distributional_0.3.2 generics_0.1.3      
-    [71] rstantools_2.3.1     munsell_0.5.0        scales_1.2.1         minqa_1.2.5          gtools_3.9.4        
-    [76] xtable_1.8-4         glue_1.6.2           tools_4.3.1          shinystan_2.6.0      data.table_1.14.8   
-    [81] colourpicker_1.2.0   mvtnorm_1.2-2        grid_4.3.1           crosstalk_1.2.0      colorspace_2.1-0    
-    [86] cli_3.6.1            fansi_1.0.4          svglite_2.1.1        Brobdingnag_1.2-9    dplyr_1.1.2         
-    [91] gtable_0.3.3         digest_0.6.31        htmlwidgets_1.6.2    farver_2.1.1         htmltools_0.5.5     
-    [96] lifecycle_1.0.3      mime_0.12            shinythemes_1.2.0    MASS_7.3-60         
+     [1] tidyselect_1.2.1     farver_2.1.2         dplyr_1.1.4          loo_2.8.0            fastmap_1.2.0       
+     [6] tensorA_0.36.2.1     digest_0.6.36        estimability_1.5.1   lifecycle_1.0.4      Deriv_4.1.3         
+    [11] sf_1.0-16            StanHeaders_2.32.10  processx_3.8.4       magrittr_2.0.3       posterior_1.6.0     
+    [16] compiler_4.4.1       rlang_1.1.4          tools_4.4.1          utf8_1.2.4           yaml_2.3.10         
+    [21] data.table_1.15.4    labeling_0.4.3       bridgesampling_1.1-2 pkgbuild_1.4.4       classInt_0.4-10     
+    [26] plyr_1.8.9           abind_1.4-5          KernSmooth_2.23-24   withr_3.0.1          grid_4.4.1          
+    [31] stats4_4.4.1         fansi_1.0.6          xtable_1.8-4         e1071_1.7-14         colorspace_2.1-1    
+    [36] inline_0.3.19        emmeans_1.10.3       scales_1.3.0         MASS_7.3-61          cli_3.6.3           
+    [41] mvtnorm_1.2-5        rmarkdown_2.27       generics_0.1.3       RcppParallel_5.1.8   rstudioapi_0.16.0   
+    [46] reshape2_1.4.4       minqa_1.2.7          DBI_1.2.3            proxy_0.4-27         rstan_2.32.6        
+    [51] stringr_1.5.1        splines_4.4.1        bayesplot_1.11.1     parallel_4.4.1       matrixStats_1.3.0   
+    [56] vctrs_0.6.5          boot_1.3-30          jsonlite_1.8.8       systemfonts_1.1.0    units_0.8-5         
+    [61] glue_1.7.0           nloptr_2.1.1         codetools_0.2-20     ps_1.7.7             distributional_0.4.0
+    [66] stringi_1.8.4        gtable_0.3.5         QuickJSR_1.3.1       munsell_0.5.1        tibble_3.2.1        
+    [71] pillar_1.9.0         htmltools_0.5.8.1    Brobdingnag_1.2-9    R6_2.5.1             fmesher_0.1.7       
+    [76] evaluate_0.24.0      lattice_0.22-6       backports_1.5.0      rstantools_2.4.0     class_7.3-22        
+    [81] svglite_2.1.3        coda_0.19-4.1        gridExtra_2.3        checkmate_2.3.2      xfun_0.46           
+    [86] pkgconfig_2.0.3     
