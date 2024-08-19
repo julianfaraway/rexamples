@@ -1,0 +1,499 @@
+---
+title: One Way Anova with a random effect fit using Frequentist methods
+author: "[Julian Faraway](https://julianfaraway.github.io/)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+format: 
+  gfm:
+    toc: true
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(comment=NA, 
+                      echo = TRUE,
+                      fig.path="figs/",
+                      dev = 'svglite',  
+                      fig.ext = ".svg",
+                      warning=FALSE, 
+                      message=FALSE)
+knitr::opts_knit$set(global.par = TRUE)
+```
+
+```{r graphopts, include=FALSE}
+par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
+ggplot2::theme_set(ggplot2::theme_bw())
+```
+
+Previously, I compared various [methods for fitting a model with a single random effect](pulp.md). My focus was on comparing Bayesian
+methods. On this page, I turn to Frequentist packages for fitting
+this most simple model of its type. At first glance, there might seem
+to be little that needs to be said. There are a few fitting methods
+that are quite straightforward so any decent package should manage this
+and achieve much the same result. But on closer examination, there
+are some variations in the approaches taken and some differences in
+the output.
+
+
+See the [introduction](../index.md) for an overview. 
+
+This example is discussed in more detail in my book
+[Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
+with a emphasis on the `lme4` package. The book does not discuss
+other packages.
+
+The data comes from my package, we'll make some ggplots and format some
+output with `knitr`.
+
+```{r}
+library(faraway)
+library(ggplot2)
+library(knitr)
+```
+
+We'll be looking at:
+
+- `aov()` from the base stats package in R
+- `lmer()` from [lme4](https://github.com/lme4/lme4)
+- `lme()` from [nlme](https://cran.r-project.org/web/packages/nlme/index.html)
+- `mmrm()` from [mmrm](https://openpharma.github.io/mmrm/latest-tag/)
+- `glmmTMB` from [glmmTMB](https://glmmtmb.github.io/glmmTMB/)
+
+The first part of this investigation follows the same path as
+the [more Bayesian comparison of the one way random effect model](pulp.md)
+
+# Data
+
+Load up and look at the data, which concerns the brightness of paper
+which may vary between operators of the production machinery.
+
+```{r pulpdat}
+data(pulp, package="faraway")
+summary(pulp)
+ggplot(pulp, aes(x=operator, y=bright))+geom_point(position = position_jitter(width=0.1, height=0.0))
+```
+
+You can read more about the data by typing `help(pulp)` at the R prompt.
+
+In this example, there are only five replicates per level. There is
+no strong reason to reject the normality assumption. We don't care
+about the specific operators, who are named a, b, c and d, but we do
+want to know how they vary.
+
+# Questions
+
+1. Is there a difference between operators in general?
+2. How much is the difference between operators in general?
+3. How does the variation between operators compare to the variation
+within operators?
+4. What is the difference between these four operators?
+
+We are mostly interested in the first three questions.
+
+# Linear model with fixed effects
+
+We start with the simplest analysis although it is not correct. It
+will be useful for comparisons. We treat the operator as a fixed effect
+meaning that the analysis refers to these four operators and not to
+other possible operators. Since we probably don't care about these
+particular four operators, this would not be the best choice.
+
+You can use the `lm()` or `aov()` functions:
+
+```{r}
+amod = aov(bright ~ operator, pulp)
+```
+
+Now test for a difference between operators:
+
+```{r}
+anova(amod)
+```
+
+We find a statistically significant difference. We can estimate
+the coefficients:
+
+```{r}
+coef(amod)
+```
+
+The treatment coding sets operator a as the reference level. The intercept
+is the mean for operator a and the other estimates are differences in the mean
+from operator a. We can also test for a difference between pairs of operators:
+
+```{r}
+TukeyHSD(amod)
+```
+
+Only the d to b difference is found significant.
+
+We have answered the fourth question stated above. We could make some
+speculations on the first three questions (what can be said about operators
+in general) but our analysis was not designed to do this.
+
+The `aov()` function has been available in R and S before that i.e. at least
+30 years. I do not believe it has changed in a long time. It can handle
+some simple models but it is has very limited functionality.
+
+
+# Model specification
+
+We use a model of the form:
+$$
+y_{ij} = \mu + \alpha_i + \epsilon_{ij} \qquad i=1,\dots ,a
+  \qquad j=1,\dots ,n_i,
+$$
+where the $\alpha_i$ and $\epsilon_{ij}$  are normal
+with mean zero, but variances $\sigma_\alpha^2$ and $\sigma^2_\epsilon$,
+respectively. 
+
+# LME4
+
+`lme4` may be the most popular mixed effect modeling package in R. The official
+citation is [Fitting Linear Mixed-Effects Models Using lme4](https://www.jstatsoft.org/article/view/v067i01) (2015) by D. Bates et al. but
+is widely described elsewhere.
+
+```{r}
+library(lme4)
+```
+
+
+The default fit uses the REML estimation method:
+
+```{r}
+mmod <- lmer(bright ~ 1+(1|operator), pulp)
+summary(mmod)
+```
+
+We see slightly less variation between operators ( $\hat\sigma_a=0.261$ ) than within
+operators ( $\hat\sigma_\epsilon=0.326$ ). 
+
+## Hypothesis testing
+
+We can also use the ML method:
+
+```{r}
+smod <- lmer(bright ~ 1+(1|operator), pulp, REML = FALSE)
+summary(smod)
+```
+
+The REML method is preferred for estimation but we must use the ML method if we wish
+to make hypothesis tests comparing models.
+
+If we want to test for variation between operators, we fit a null model
+containing no operator, compute the likelihood ratio statistic and corresponding
+p-value:
+
+```{r}
+nullmod <- lm(bright ~ 1, pulp)
+lrtstat <- as.numeric(2*(logLik(smod)-logLik(nullmod)))
+pvalue <- pchisq(lrtstat,1,lower=FALSE)
+data.frame(lrtstat, pvalue)
+```
+
+Superficially, the p-value greater than 0.05 suggests no strong evidence
+against that hypothesis that there is no variation among the operators. But
+there is good reason to doubt the accuracy of the standard approximation of the chi-squared null distribution when
+testing a parameter on the boundary of the space (as we do here at zero). A
+parametric bootstrap can be used where we generate samples from the null
+and compute the test statistic repeatedly:
+
+```{r pulpparaboot, cache=TRUE}
+lrstat <- numeric(1000)
+set.seed(123)
+for(i in 1:1000){
+   y <- unlist(simulate(nullmod))
+   bnull <- lm(y ~ 1)
+   balt <- lmer(y ~ 1 + (1|operator), pulp, REML=FALSE)
+   lrstat[i] <- as.numeric(2*(logLik(balt)-logLik(bnull)))
+  }
+```
+
+Check the proportion of simulated test statistics that are close to zero:
+
+```{r}
+mean(lrstat < 0.00001)
+```
+
+Clearly, the test statistic does not have a chi-squared distribution under
+the null. We can compute the proportion that exceed the observed test
+statistic of 2.5684:
+
+```{r}
+mean(lrstat > 2.5684)
+```
+
+This is a more reliable p-value for our hypothesis test which suggests there
+is good reason to reject the null hypothesis of no variation between operators.
+
+More sophisticated methods of inference are discussed in 
+[Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
+
+## Confidence intervals
+
+We can use bootstrap again to compute confidence intervals for
+the parameters of interest:
+
+```{r pulpboot, cache=TRUE}
+confint(mmod, method="boot")
+```
+
+We see that the lower end of the confidence interval for the operator SD
+extends to zero.
+
+## Random effects
+
+Even though we are most interested in the variation between operators,
+we can still estimate their individual effects:
+
+```{r}
+ranef(mmod)$operator
+```
+
+Approximate 95% confidence intervals can be displayed with:
+
+```{r pulpebar}
+dd = as.data.frame(ranef(mmod))
+ggplot(dd, aes(y=grp,x=condval)) +
+        geom_point() +
+        geom_errorbarh(aes(xmin=condval -2*condsd,
+                           xmax=condval +2*condsd), height=0)
+```
+
+# NLME
+
+NLME is the original wide-ranging mixed effects modeling package for R
+described in [Mixed-Effects Models in S and S-PLUS](https://link.springer.com/book/10.1007/b98882) from 2000, but
+in use well before then as an S package and predating use
+of R as the title of the book suggests. It became one of the small number of recommended
+R packages and, as such, has been continuously maintained for
+many years. It has not changed much, has been used for many years by many people - it's very stable. At one point it seemed that `lme4` would supercede `nlme` but
+it has not turned out that way.
+The package has capabilities in non-linear modeling and
+generalized least squares that go beyond the mixed effect models we consider 
+here.
+
+```{r}
+library(nlme)
+```
+
+The syntax used in `nlme` is different from `lme4` in that the fixed
+and random parts of the model are specified in separate arguments:
+
+```{r}
+nmod = lme(fixed = bright ~ 1, 
+           data = pulp, 
+           random = ~ 1 | operator)
+```
+
+The default fitting method is REML. Given the simplicity of the model, we
+would not expect any difference in the fit compared to `lme4`:
+
+```{r}
+summary(nmod)
+```
+
+Although the details of the summary output vary, the estimated parameters
+are the same as before.
+
+If we want to do hypothesis testing, we need to use maximum likelihood rather
+than REML:
+
+```{r}
+nlmod = lme(fixed = bright ~ 1, 
+           data = pulp, 
+           random = ~ 1 | operator,
+           method = "ML")
+```
+
+We can check this gives the same log likelihood as calculated as computed
+using `lme4`:
+
+```{r}
+c(logLik(smod), logLik(nlmod))
+```
+
+We could use the same resampling based method to test the variance
+of the operator effect and expect to get the same results (subject
+to random number generation, of course).
+
+Confidence intervals can be computed with:
+
+```{r}
+intervals(nlmod)
+```
+
+These are based on a Wald-style calculation. The intervals for the fixed effect
+and residual error variance (or SD here) will be reasonably accurate but
+no trust should be put in the SD for the operator term. A bootstrap-based
+calculation would be better for this purpose.
+
+We can also get the random effects
+
+```{r}
+random.effects(nmod)
+```
+
+which are identical with the `lme4` values but no standard errors are supplied.
+
+Thus far, we have seen no important differences between `nlme` and `lme4` but
+`nlme` has capabilities not seen in `lme4`. Instead of the model
+specification above, we could instead make a parameterized specification
+of the correlation structure of the random terms. In this example, we might say
+that any pair of observations from the same operator have a correlation (which
+we shall now estimate). If we do this, in this case, we won't have a random term 
+left to specify in `lme()` but the usual error term won't have the standard independent
+and identical distribution. We can fit this using `gls()` which has a fixed
+component like `lme()` or `lm()` but allows correlated structures on the error.
+Here we set *compound symmetry* within the operators (which just means
+all the pairs of errors for a given operator have the same correlation):
+
+```{r}
+gmod = gls(bright ~ 1,
+           data=pulp,
+           correlation = corCompSymm(form = ~ 1|operator))
+summary(gmod)
+```
+
+The fixed effect is the same for the REML fit. The likelihoods are
+also the same:
+
+```{r}
+c(logLik(nmod), logLik(gmod))
+```
+
+The model fits are the same but the parameterization is different. The
+correlation fitted in the `gls()` model of 0.39054 can be identified
+with the *intraclass correlation coefficient* of the REML `lme()` model
+which can be computed directly using the variance components as:
+
+```{r}
+0.26093^2/(0.26093^2+0.32596^2)
+```
+
+This specification of correlation structures on the error term can
+also be used in `lme()`-fitted models giving us some additional flexibility
+not provided by `lme4`. But `lme4` also has advantages in comparison
+to `nlme` in that it can fit some classes of models (crossed models e.g.)
+that `nlme` cannot do. It is also faster which is important for models
+with more complex structures and more data.
+
+# MMRM
+
+The `mmrm` package fits mixed models for repeated measures (MMRM). It does
+not use random effects. Instead, all the random components are specified
+within a parameterized variance-covariance matrix for the error term. This
+is like the `gls` fitting method from the `nlme` package except `mmrm` provides
+for a wider class of models and has more detailed inferential methods.
+
+```{r}
+library(mmrm)
+```
+
+
+The `mmrm` was built with clinical trial applications in mind where
+subjects make multiple visits and is thus oriented towards longitudinal
+data. For this simple data set, we can view the multiple responses
+of each operator as repeated measures and treat them as "visits":
+
+```{r}
+pulp$visit = factor(rep(1:5,4))
+```
+
+The compound symmetry assumption for the covariance matrix of the errors
+for a subject posits a constant correlation between any pair visits.
+This is specified using the `cs()` function in the model specification:
+
+
+```{r}
+mmmod = mmrm(bright ~ 1 + cs(visit|operator), pulp)
+summary(mmmod)
+```
+
+The fixed effects part of the output is the same as seen before
+when using REML fits. The AIC and BIC are slightly different due
+to a disagreement about how to count parameters. This is not important
+provided you only compare models using the same fitting function.
+
+The random component is expressed as a covariance matrix. 
+The SD down the diagonal will give the estimated error variance
+from previous models:
+
+```{r}
+cm = mmmod$cov
+sqrt(cm[1,1])
+```
+
+We can compute the correlation as:
+
+```{r}
+cm[1,2]/cm[1,1]
+```
+
+We see this is identical with the `gls()` fit. 
+
+In this instance, there is no good reason to use `mmrm` but it does
+lay the basis for more complex models.
+
+# GLMMTMB
+
+The `glmmTMB` package uses the Template Model Builder package (TMB) to fit
+a wide variety of generalized mixed effect models. 
+
+Installation is not as straightforward as usual because the versions
+of `glmmTMB` and `TMB` (which also depends on `Matrix`) need to match. This
+may involve installing older versions of `TMB` and `Matrix` than current.
+*I admit to not bothering with this and accepting the warning message. We
+are not doing anything cutting edge here so I am not expecting a problem*.
+
+```{r}
+library(glmmTMB)
+```
+
+We can use the `lme4` syntax for the model:
+
+```{r}
+tmod = glmmTMB(bright ~ 1 + (1|operator), pulp)
+summary(tmod)
+```
+
+The default fit uses ML (not REML). Although the output arranged slightly differently,
+it's the same as the previous ML-based `lme4` fit.
+
+Constructing confidence intervals has some interest. The
+default uses the Wald method:
+
+```{r}
+confint(tmod)
+```
+
+We don't trust these for the operator term. We can ask for 
+a profile likelihood computation:
+
+```{r}
+confint(tmod, method = "profile")
+```
+
+The confidence interval is on a transformed parameter theta. We
+get a warning message and an NA for one of the limits. This is
+an indication of the problematic boundary issue.
+
+`glmmTMB` is designed for more complex models so there's no
+compelling reason to use it here.
+
+# Discussion
+
+We have four different packages doing essentially the same thing. There
+is some variation in the parameterization and the computation of some
+auxiliary quantities such as the distribution of random effects. We
+might expect greater differences on more complex model examples.
+
+
+
+
+
+
+
+# Package version info
+
+```{r}
+sessionInfo()
+```

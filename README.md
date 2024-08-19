@@ -28,3 +28,19 @@ of the models.
 - [Multiple Response Models](mixed/jspmultiple.md) - the `jsp` data
 - [Poisson reponse model](mixed/nitrofen.md) - the `nitrofen` data
 - [Binary response model](mixed/ohio.md) - the `ohio` data
+
+## Mixed effect models using Frequentist methods
+
+The comparison above is focused on Bayesian methods but
+there is also some choice in the Frequentist approach which
+we explore below using the following packages:
+
+
+- [lme4](https://github.com/lme4/lme4)
+- [nlme](https://cran.r-project.org/web/packages/nlme/index.html)
+- [mmrm](https://openpharma.github.io/mmrm/latest-tag/)
+- [glmmTMB](https://glmmtmb.github.io/glmmTMB/)
+
+### Examples
+
+- [Single Random Effect](mixed/pulpfreq.md) - the `pulp` data
