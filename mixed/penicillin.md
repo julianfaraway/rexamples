@@ -96,11 +96,10 @@ and no clear evidence of interaction. Let’s proceed.
 
 Consider the model:
 
-$$
-y_{ijk} = \mu + \tau_i + v_j + \epsilon_{ijk}
-$$ where the $\mu$, $\tau_i$ and $v_j$ are fixed effects and the error
-$\epsilon_{ijk}$ is independent and identically distributed
-$N(0,\sigma^2)$. We can fit the model with:
+$$y_{ijk} = \mu + \tau_i + v_j + \epsilon_{ijk}$$ where the $\mu$,
+$\tau_i$ and $v_j$ are fixed effects and the error $\epsilon_{ijk}$ is
+independent and identically distributed $N(0,\sigma^2)$. We can fit the
+model with:
 
 ``` r
 lmod <- aov(yield ~ blend + treat, penicillin)
