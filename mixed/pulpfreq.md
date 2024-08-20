@@ -1,6 +1,6 @@
 # One Way Anova with a random effect fit using Frequentist methods
 [Julian Faraway](https://julianfaraway.github.io/)
-2024-08-19
+2024-08-20
 
 - [Data](#data)
 - [Questions](#questions)
@@ -630,14 +630,17 @@ the basis for more complex models.
 # GLMMTMB
 
 The `glmmTMB` package uses the Template Model Builder package (TMB) to
-fit a wide variety of generalized mixed effect models.
+fit a wide variety of generalized mixed effect models. (Interestingly,
+`mmrm` also uses TMB but does not use the same fitting approach). We
+expect `glmmTMB` to behave like `lme4` for simpler models but there may
+be some differences in the implementation.
 
 Installation is not as straightforward as usual because the versions of
 `glmmTMB` and `TMB` (which also depends on `Matrix`) need to match. This
 may involve installing older versions of `TMB` and `Matrix` than
-current. *I admit to not bothering with this and accepting the warning
-message. We are not doing anything cutting edge here so I am not
-expecting a problem*.
+current. *I admit to be lazy and not bothering with this and accepting
+the warning message. We are not doing anything cutting edge here so I am
+not expecting a problem*.
 
 ``` r
 library(glmmTMB)

@@ -44,3 +44,4 @@ we explore below using the following packages:
 ### Examples
 
 - [Single Random Effect](mixed/pulpfreq.md) - the `pulp` data
+- [Randomized Block Design](mixed/penifreq.md) - the `penicillin` data
