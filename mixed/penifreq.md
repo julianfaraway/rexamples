@@ -80,7 +80,9 @@ and no clear evidence of interaction. Let’s proceed.
 
 # Linear Mixed Model
 
-Consider the model: $$
+Consider the model: 
+
+$$
 y_{ijk} = \mu + \tau_i + v_j + \epsilon_{ijk}
 $$
 
