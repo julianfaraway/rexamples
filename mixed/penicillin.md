@@ -1,6 +1,6 @@
 # Randomized Block Design
 [Julian Faraway](https://julianfaraway.github.io/)
-2023-06-28
+2024-08-20
 
 - [Data](#data)
 - [Questions](#questions)
@@ -94,7 +94,9 @@ and no clear evidence of interaction. Let’s proceed.
 
 # Linear Model
 
-Consider the model: $$
+Consider the model:
+
+$$
 y_{ijk} = \mu + \tau_i + v_j + \epsilon_{ijk}
 $$ where the $\mu$, $\tau_i$ and $v_j$ are fixed effects and the error
 $\epsilon_{ijk}$ is independent and identically distributed
@@ -162,11 +164,14 @@ model.tables(lmod)
 
 Since we are not interested in the blends specifically, we may wish to
 treat it as a random effect. The model becomes:
-$$y_{ijk} = \mu + \tau_i + v_j + \epsilon_{ijk}$$ where the $\mu$
-and$\tau_i$ are fixed effects and the error $\epsilon_{ijk}$ is
-independent and identically distributed $N(0,\sigma^2)$. The $v_j$ are
-now random effects and are independent and identically distributed
-$N(0,\sigma^2_v)$. We fit the model using REML: (again using sum coding)
+
+$$y_{ijk} = \mu + \tau_i + v_j + \epsilon_{ijk}$$
+
+where the $\mu$ and$\tau_i$ are fixed effects and the error
+$\epsilon_{ijk}$ is independent and identically distributed
+$N(0,\sigma^2)$. The $v_j$ are now random effects and are independent
+and identically distributed $N(0,\sigma^2_v)$. We fit the model using
+REML: (again using sum coding)
 
 ``` r
 op <- options(contrasts=c("contr.sum", "contr.poly"))
@@ -632,7 +637,16 @@ fit <- mod$sample(
 
     Chain 1 Iteration:    1 / 2000 [  0%]  (Warmup) 
     Chain 1 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+    Chain 1 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+    Chain 1 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 1 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 1 Iteration: 2000 / 2000 [100%]  (Sampling) 
     Chain 2 Iteration:    1 / 2000 [  0%]  (Warmup) 
+    Chain 2 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+    Chain 2 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+    Chain 2 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+    Chain 2 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 2 Iteration: 2000 / 2000 [100%]  (Sampling) 
     Chain 3 Iteration:    1 / 2000 [  0%]  (Warmup) 
     Chain 3 Iteration:  500 / 2000 [ 25%]  (Warmup) 
     Chain 3 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
@@ -643,25 +657,16 @@ fit <- mod$sample(
     Chain 4 Iteration:  500 / 2000 [ 25%]  (Warmup) 
     Chain 4 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
     Chain 4 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
-    Chain 1 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
-    Chain 1 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
-    Chain 1 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
-    Chain 1 Iteration: 2000 / 2000 [100%]  (Sampling) 
-    Chain 1 finished in 0.2 seconds.
-    Chain 3 finished in 0.2 seconds.
-    Chain 2 Iteration:  500 / 2000 [ 25%]  (Warmup) 
-    Chain 2 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
-    Chain 2 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
-    Chain 2 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
-    Chain 2 Iteration: 2000 / 2000 [100%]  (Sampling) 
     Chain 4 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
     Chain 4 Iteration: 2000 / 2000 [100%]  (Sampling) 
+    Chain 1 finished in 0.2 seconds.
     Chain 2 finished in 0.2 seconds.
-    Chain 4 finished in 0.2 seconds.
+    Chain 3 finished in 0.2 seconds.
+    Chain 4 finished in 0.1 seconds.
 
     All 4 chains finished successfully.
     Mean chain execution time: 0.2 seconds.
-    Total execution time: 0.4 seconds.
+    Total execution time: 0.3 seconds.
 
 We get some warnings but nothing too serious.
 
@@ -694,19 +699,19 @@ fit$summary(c("trt","sigmablk","sigmaepsilon","bld"))
 ```
 
     # A tibble: 11 × 10
-       variable       mean median    sd   mad     q5   q95  rhat ess_bulk ess_tail
-       <chr>         <num>  <num> <num> <num>  <num> <num> <num>    <num>    <num>
-     1 trt[1]       83.9   84.0    3.35  3.08 78.4   89.3   1.01     798.     415.
-     2 trt[2]       85.0   85.1    3.43  3.09 79.5   90.5   1.01     783.     570.
-     3 trt[3]       89.0   89.0    3.32  3.00 83.5   94.4   1.00     777.     413.
-     4 trt[4]       86.0   86.0    3.35  3.04 80.8   91.4   1.00     789.     555.
-     5 sigmablk      4.85   4.18   3.35  2.51  0.787 11.1   1.01     626.     935.
-     6 sigmaepsilon  5.00   4.79   1.20  1.07  3.41   7.26  1.00    1157.    2245.
-     7 bld[1]        4.04   3.66   3.44  3.31 -0.503 10.2   1.00     771.     537.
-     8 bld[2]       -1.94  -1.69   3.08  2.63 -7.16   2.56  1.00     749.     536.
-     9 bld[3]       -0.670 -0.569  3.02  2.37 -5.75   4.01  1.00     734.     525.
-    10 bld[4]        1.37   1.06   3.09  2.58 -3.11   6.56  1.00     834.     503.
-    11 bld[5]       -2.63  -2.33   3.22  2.95 -8.12   1.91  1.01     708.     589.
+       variable       mean median    sd   mad    q5   q95  rhat ess_bulk ess_tail
+       <chr>         <dbl>  <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>    <dbl>    <dbl>
+     1 trt[1]       84.2   84.1    3.54  3.22 78.6  90.1   1.01     571.     474.
+     2 trt[2]       85.2   85.1    3.31  2.99 79.9  90.9   1.01     631.     424.
+     3 trt[3]       89.2   89.2    3.50  3.15 83.8  95.0   1.01     580.     370.
+     4 trt[4]       86.2   86.2    3.44  3.00 80.8  92.2   1.01     561.     374.
+     5 sigmablk      5.22   4.40   3.58  2.61  1.12 12.5   1.01     447.     298.
+     6 sigmaepsilon  4.95   4.77   1.13  1.00  3.51  7.01  1.00    1225.    2229.
+     7 bld[1]        3.97   3.78   3.50  3.29 -1.08  9.84  1.01     588.     514.
+     8 bld[2]       -2.28  -1.92   3.28  2.84 -8.15  2.41  1.01     613.     492.
+     9 bld[3]       -0.899 -0.729  3.16  2.47 -6.53  4.27  1.01     566.     425.
+    10 bld[4]        1.22   1.10   3.17  2.62 -3.73  6.42  1.01     703.     702.
+    11 bld[5]       -2.97  -2.65   3.39  3.11 -8.90  1.76  1.01     665.     374.
 
 We see that the posterior block SD and error SD are similar in mean but
 the former is more variable. The effective sample size are adequate
@@ -736,8 +741,8 @@ fit$summary("sigmablk", tailprob = ~ mean(. <= 1))
 
     # A tibble: 1 × 2
       variable tailprob
-      <chr>       <num>
-    1 sigmablk   0.0632
+      <chr>       <dbl>
+    1 sigmablk   0.0432
 
 We see that this probability is small and would be smaller if we had
 specified a lower threshold.
@@ -883,19 +888,19 @@ summary(bmod)
       Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
              total post-warmup draws = 4000
 
-    Group-Level Effects: 
+    Multilevel Hyperparameters:
     ~blend (Number of levels: 5) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
     sd(Intercept)     3.82      2.34     0.37     9.85 1.01      752      717
 
-    Population-Level Effects: 
+    Regression Coefficients:
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
     Intercept    84.18      2.79    78.60    89.95 1.00     1354      970
     treatB        0.90      3.15    -5.45     7.08 1.00     2352     2158
     treatC        4.96      3.13    -1.37    11.08 1.00     2464     2550
     treatD        1.91      3.13    -4.58     7.91 1.00     2448     2294
 
-    Family Specific Parameters: 
+    Further Distributional Parameters:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
     sigma     4.80      1.05     3.23     7.38 1.00     1263     1937
 
@@ -1051,13 +1056,13 @@ tail. This is concerning.
 sessionInfo()
 ```
 
-    R version 4.3.1 (2023-06-16)
-    Platform: x86_64-apple-darwin20 (64-bit)
-    Running under: macOS Ventura 13.4.1
+    R version 4.4.1 (2024-06-14)
+    Platform: x86_64-apple-darwin20
+    Running under: macOS Sonoma 14.6.1
 
     Matrix products: default
-    BLAS:   /Library/Frameworks/R.framework/Versions/4.3-x86_64/Resources/lib/libRblas.0.dylib 
-    LAPACK: /Library/Frameworks/R.framework/Versions/4.3-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.11.0
+    BLAS:   /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRblas.0.dylib 
+    LAPACK: /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.0
 
     locale:
     [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
@@ -1066,30 +1071,28 @@ sessionInfo()
     tzcode source: internal
 
     attached base packages:
-    [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
+    [1] stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-42     nlme_3.1-162    brms_2.19.0     Rcpp_1.0.10     cmdstanr_0.5.3  knitr_1.43      INLA_23.05.30-1
-     [8] sp_2.0-0        foreach_1.5.2   lme4_1.1-33     Matrix_1.5-4.1  ggplot2_3.4.2   faraway_1.0.8  
+     [1] mgcv_1.9-1     nlme_3.1-165   brms_2.21.0    Rcpp_1.0.13    cmdstanr_0.8.1 knitr_1.48     INLA_24.06.27 
+     [8] sp_2.1-4       lme4_1.1-35.5  Matrix_1.7-0   ggplot2_3.5.1  faraway_1.0.8 
 
     loaded via a namespace (and not attached):
-     [1] gridExtra_2.3        inline_0.3.19        rlang_1.1.1          magrittr_2.0.3       matrixStats_1.0.0   
-     [6] compiler_4.3.1       loo_2.6.0            systemfonts_1.0.4    callr_3.7.3          vctrs_0.6.3         
-    [11] reshape2_1.4.4       stringr_1.5.0        pkgconfig_2.0.3      crayon_1.5.2         fastmap_1.1.1       
-    [16] backports_1.4.1      ellipsis_0.3.2       labeling_0.4.2       utf8_1.2.3           threejs_0.3.3       
-    [21] promises_1.2.0.1     rmarkdown_2.22       markdown_1.7         ps_1.7.5             nloptr_2.0.3        
-    [26] xfun_0.39            jsonlite_1.8.5       later_1.3.1          Deriv_4.1.3          prettyunits_1.1.1   
-    [31] R6_2.5.1             dygraphs_1.1.1.6     stringi_1.7.12       StanHeaders_2.26.27  boot_1.3-28.1       
-    [36] rstan_2.21.8         iterators_1.0.14     zoo_1.8-12           base64enc_0.1-3      bayesplot_1.10.0    
-    [41] httpuv_1.6.11        splines_4.3.1        igraph_1.5.0         tidyselect_1.2.0     rstudioapi_0.14     
-    [46] abind_1.4-5          yaml_2.3.7           codetools_0.2-19     miniUI_0.1.1.1       processx_3.8.1      
-    [51] pkgbuild_1.4.1       lattice_0.21-8       tibble_3.2.1         plyr_1.8.8           shiny_1.7.4         
-    [56] withr_2.5.0          bridgesampling_1.1-2 posterior_1.4.1      coda_0.19-4          evaluate_0.21       
-    [61] RcppParallel_5.1.7   xts_0.13.1           pillar_1.9.0         tensorA_0.36.2       checkmate_2.2.0     
-    [66] DT_0.28              stats4_4.3.1         shinyjs_2.1.0        distributional_0.3.2 generics_0.1.3      
-    [71] rstantools_2.3.1     munsell_0.5.0        scales_1.2.1         minqa_1.2.5          gtools_3.9.4        
-    [76] xtable_1.8-4         glue_1.6.2           tools_4.3.1          shinystan_2.6.0      data.table_1.14.8   
-    [81] colourpicker_1.2.0   mvtnorm_1.2-2        grid_4.3.1           crosstalk_1.2.0      colorspace_2.1-0    
-    [86] cli_3.6.1            fansi_1.0.4          svglite_2.1.1        Brobdingnag_1.2-9    dplyr_1.1.2         
-    [91] gtable_0.3.3         digest_0.6.31        htmlwidgets_1.6.2    farver_2.1.1         htmltools_0.5.5     
-    [96] lifecycle_1.0.3      mime_0.12            shinythemes_1.2.0    MASS_7.3-60         
+     [1] tidyselect_1.2.1     farver_2.1.2         dplyr_1.1.4          loo_2.8.0            fastmap_1.2.0       
+     [6] tensorA_0.36.2.1     digest_0.6.36        estimability_1.5.1   lifecycle_1.0.4      Deriv_4.1.3         
+    [11] sf_1.0-16            StanHeaders_2.32.10  processx_3.8.4       magrittr_2.0.3       posterior_1.6.0     
+    [16] compiler_4.4.1       rlang_1.1.4          tools_4.4.1          utf8_1.2.4           yaml_2.3.10         
+    [21] data.table_1.15.4    labeling_0.4.3       bridgesampling_1.1-2 pkgbuild_1.4.4       classInt_0.4-10     
+    [26] plyr_1.8.9           abind_1.4-5          KernSmooth_2.23-24   withr_3.0.1          grid_4.4.1          
+    [31] stats4_4.4.1         fansi_1.0.6          xtable_1.8-4         e1071_1.7-14         colorspace_2.1-1    
+    [36] inline_0.3.19        emmeans_1.10.3       scales_1.3.0         MASS_7.3-61          cli_3.6.3           
+    [41] mvtnorm_1.2-5        rmarkdown_2.27       generics_0.1.3       RcppParallel_5.1.8   rstudioapi_0.16.0   
+    [46] reshape2_1.4.4       minqa_1.2.7          DBI_1.2.3            proxy_0.4-27         rstan_2.32.6        
+    [51] stringr_1.5.1        splines_4.4.1        bayesplot_1.11.1     parallel_4.4.1       matrixStats_1.3.0   
+    [56] vctrs_0.6.5          boot_1.3-30          jsonlite_1.8.8       systemfonts_1.1.0    units_0.8-5         
+    [61] glue_1.7.0           nloptr_2.1.1         codetools_0.2-20     ps_1.7.7             distributional_0.4.0
+    [66] stringi_1.8.4        gtable_0.3.5         QuickJSR_1.3.1       munsell_0.5.1        tibble_3.2.1        
+    [71] pillar_1.9.0         htmltools_0.5.8.1    Brobdingnag_1.2-9    R6_2.5.1             fmesher_0.1.7       
+    [76] evaluate_0.24.0      lattice_0.22-6       backports_1.5.0      rstantools_2.4.0     class_7.3-22        
+    [81] svglite_2.1.3        coda_0.19-4.1        gridExtra_2.3        checkmate_2.3.2      xfun_0.46           
+    [86] pkgconfig_2.0.3     

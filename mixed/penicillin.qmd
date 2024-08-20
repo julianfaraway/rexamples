@@ -75,6 +75,7 @@ no clear evidence of interaction. Let's proceed.
 # Linear Model
 
 Consider the model: 
+
 $$
 y_{ijk} = \mu + \tau_i + v_j + \epsilon_{ijk}
 $$
@@ -113,7 +114,10 @@ model.tables(lmod)
 # Mixed Effect Model
 
 Since we are not interested in the blends specifically, we may
-wish to treat it as a random effect. The model becomes: $$y_{ijk} = \mu + \tau_i + v_j + \epsilon_{ijk}$$
+wish to treat it as a random effect. The model becomes: 
+
+$$y_{ijk} = \mu + \tau_i + v_j + \epsilon_{ijk}$$
+
 where the $\mu$ and$\tau_i$ are fixed effects and the error
 $\epsilon_{ijk}$ is independent and
 identically distributed $N(0,\sigma^2)$. The $v_j$ are now random
