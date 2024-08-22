@@ -69,8 +69,9 @@ and variety, which is necessarily also a random effect because one of
 the two components is random. The fullest model that we might consider
 is: 
 
-
-$$y_{ijk} = \mu + i_i + v_j + (iv)_{ij} + f_k + (vf)_{jk} + \epsilon_{ijk}$$
+```{math}
+y_{ijk} = \mu + i_i + v_j + (iv)_{ij} + f_k + (vf)_{jk} + \epsilon_{ijk}
+```
 
 
 where $\mu, i_i, v_j, (iv)_{ij}$ are fixed effects; the rest are random
