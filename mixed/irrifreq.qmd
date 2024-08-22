@@ -1,0 +1,344 @@
+---
+title: Split Plot Design
+author: "[Julian Faraway](https://julianfaraway.github.io/)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+format: 
+  gfm:
+    toc: true
+---
+
+```{r}
+#| label: global_options
+#| include: false
+knitr::opts_chunk$set(comment=NA, 
+                      echo = TRUE,
+                      fig.path="figs/",
+                      dev = 'svglite',  
+                      fig.ext = ".svg",
+                      warning=FALSE, 
+                      message=FALSE)
+knitr::opts_knit$set(global.par = TRUE)
+```
+
+```{r}
+#| label: graphopts
+#| include: false
+par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
+ggplot2::theme_set(ggplot2::theme_bw())
+```
+
+See the [introduction](index.md) for an overview. 
+
+See a [mostly Bayesian analysis](irrigation.md) analysis of the same
+data. 
+
+
+This example is discussed in more detail in my book
+[Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
+
+```{r}
+library(faraway)
+library(ggplot2)
+```
+
+# Data
+
+In an agricultural field trial, the
+objective was to determine the effects of two crop varieties and four
+different irrigation methods. Eight fields were available, but only one
+type of irrigation may be applied to each field. The fields may be
+divided into two parts with a different variety planted in each half.
+The whole plot factor is the method of irrigation, which should be
+randomly assigned to the fields. Within each field, the variety is
+randomly assigned.
+
+Load in and plot the data:
+
+```{r}
+#| label: irriplot
+data(irrigation, package="faraway")
+summary(irrigation)
+ggplot(irrigation, aes(y=yield, x=field, shape=variety, color=irrigation)) + geom_point()
+```
+
+# Mixed Effect Model
+
+The irrigation and variety are fixed effects, but the field is 
+a random effect. We must also consider the interaction between field
+and variety, which is necessarily also a random effect because one of
+the two components is random. The fullest model that we might consider
+is: 
+
+$$y_{ijk} = \mu + i_i + v_j + (iv)_{ij} + f_k + (vf)_{jk} + \epsilon_{ijk}$$
+
+where $\mu, i_i, v_j, (iv)_{ij}$ are fixed effects; the rest are random
+having variances $\sigma^2_f$, $\sigma^2_{vf}$ and $\sigma^2_\epsilon$.
+Note that we have no $(if)_{ik}$ term in this model. It would not be
+possible to estimate such an effect since only one type of irrigation
+is used on a given field; the factors are not crossed. Unfortunately,
+it is not possible to
+distinguish the variety within the field variation.  We would need
+more than one observation per variety within each field for us to
+separate the two variabilities. (This means that we are not
+demonstrating split plot modeling in the wider sense).
+We resort to a simpler model that omits the variety by field interaction random effect: 
+
+$$y_{ijk} = \mu + i_i + v_j + (iv)_{ij} + f_k +  \epsilon_{ijk}$$
+
+# LME4
+
+See the discussion for the [single random effect example](pulpfreq.md#LME4)
+for some introduction.
+
+We fit this model with:
+
+```{r}
+library(lme4)
+lmod4 = lmer(yield ~ irrigation * variety + (1|field), irrigation)
+summary(lmod4, cor=FALSE)
+```
+
+The fixed effects don't look very significant. For testing
+the fixed effects, we might try:
+
+```{r}
+anova(lmod4)
+```
+
+The small values of the F-statistics suggest a lack of significance
+but no p-values or degrees of freedom for the error are supplied due
+to previously mentioned concerns regarding correctness.
+
+We use the `pbkrtest` package
+for testing which implements the Kenward-Roger approximation for the degrees
+of freedom. First test the interaction:
+
+```{r}
+library(pbkrtest)
+lmoda = lmer(yield ~ irrigation + variety + (1|field),data=irrigation)
+summary(lmoda, cor=FALSE)
+KRmodcomp(lmod4, lmoda)
+```
+
+The interaction is not significant. Does the variety make
+a difference to the yield? We fit a model with no variety effect:
+
+```{r}
+lmodi <- lmer(yield ~ irrigation + (1|field), irrigation)
+```
+
+We have some choices now. One idea is to compare this model to the
+main effects only model with:
+
+```{r}
+KRmodcomp(lmoda,lmodi)
+```
+
+This assumes that the interaction effect is zero and absorbs all the
+variation and degrees of freedom into the error term. Although we
+did not find a significant interaction effect, this is a stronger
+assumption and we may not have the best estimate of $\sigma^2$ for
+the denominator in the F-test.
+
+Another idea is to compare to the full model with:
+
+```{r}
+KRmodcomp(lmod4,lmodi)
+```
+
+The problem with this is that we are not just testing the variety effect.
+This is testing the variety effect and its interaction with irrigation. That's
+OK but not what we meant to test.
+
+We can take the ANOVA approach to testing the variety but we cannot construct
+this a model comparison. The `lme4` package did provide us with
+the ANOVA table. We can get the (possibly adjusted) degrees of freedom
+from `pbkrtest` output as 4, get the F-statistic from the ANOVA table
+and compute the p-value using the F-distribution (the numerator DF also
+comes from the table):
+
+```{r}
+1-pf(1.07,1,4)
+```
+
+A not significant result. In this case, all the nitpicking does not make
+much difference.
+
+Now check the irrigation method using the same ANOVA-based approach:
+
+```{r}
+1-pf(0.39,3,4)
+```
+
+We find no significant irrigation effect.
+
+
+As a final check, lets compare the null model
+with no fixed effects to the full model.
+
+```{r}
+lmodn <- lmer(yield ~  1 + (1|field), irrigation)
+KRmodcomp(lmod4, lmodn)
+```
+
+This confirms the lack of statistical significance for the variety
+and irrigation factors.
+
+
+We can check the significance of the random effect (field) term with:
+
+```{r}
+library(RLRsim)
+exactRLRT(lmod4)
+```
+
+We can see that there is a significant variation among the fields.
+
+# NLME
+
+See the discussion for the [single random effect example](pulpfreq.md#NLME)
+for some introduction.
+
+```{r}
+library(nlme)
+```
+
+```{r}
+nlmod = lme(yield ~ irrigation * variety, irrigation, ~ 1 | field)
+summary(nlmod)
+```
+
+The estimates and standard errors are the same for the corresponding
+`lme4` output. `nlme` also
+p-values for the fixed effects but these are not useful to us here.
+We can test the fixed with:
+
+```{r}
+anova(nlmod)
+```
+
+The result for the interaction corresponds to the calculation for `lme4` using
+`pbkrtest`. The tests for the main effects are the same as the directly
+calculated p-values above. This clarifies what is being tested in the ANOVA
+table.
+
+We can also take the `gls` approach with:
+
+
+```{r}
+gmod = gls(yield ~ irrigation * variety ,
+           data= irrigation,
+           correlation = corCompSymm(form = ~ 1|field))
+summary(gmod)
+```
+
+We attempt a test for the fixed effects with:
+
+```{r}
+anova(gmod)
+```
+
+But the denominator DFs are wrong - should be 4 and not 8 as discussed earlier.
+We could fix the p-values manually.
+
+
+
+# MMRM
+
+See the discussion for the [single random effect example](pulpfreq.md#MMRM)
+for some introduction.
+
+```{r}
+library(mmrm)
+```
+
+As discussed in the `pulp` example, we need to create a `visit` factor
+to distinguish the replicates within the fields:
+
+```{r}
+irrigation$visit = factor(rep(1:2,8))
+```
+
+```{r}
+mmmod = mmrm(yield ~ irrigation * variety + cs(visit|field), irrigation)
+summary(mmmod)
+```
+
+The random component is expressed as a covariance matrix. 
+The SD down the diagonal will give the estimated error variance
+from previous models:
+
+```{r}
+cm = mmmod$cov
+sqrt(cm[1,1])
+```
+
+We can compute the correlation as:
+
+```{r}
+cm[1,2]/cm[1,1]
+```
+
+This agrees with the GLS output as expected.
+
+We can test the fixed effects with:
+
+```{r}
+library(car)
+Anova(mmmod)
+```
+
+and get the same results as previously.
+
+# GLMMTMB
+
+See the discussion for the [single random effect example](pulpfreq.md#GLMMTMB)
+for some introduction.
+
+```{r}
+library(glmmTMB)
+```
+
+The default fit uses ML (not REML)
+
+```{r}
+gtmod <- glmmTMB(yield ~ irrigation*variety + (1|field), irrigation)
+summary(gtmod)
+```
+
+This is identical with the `lme4` fit using ML.
+
+We can use the `car` package to test the treatment effects:
+
+```{r}
+Anova(gtmod)
+```
+
+but this gives chi-square tests whereas we prefer F-tests.
+
+# Discussion
+
+No new issues are raised by this analysis. There are some choices
+with the execution of the tests of the fixed effects but these
+are not unique to this type of example. 
+
+In the [Bayesian analyses of this data](irrigation.md), there
+was more analysis of the random effects but there's not much we
+can do with these in the Frequentist analyses so there's nothing
+to be said.
+
+
+
+# Package version info
+
+
+```{r}
+sessionInfo()
+```
+
+
+
+
+
+
+
