@@ -74,7 +74,10 @@ The irrigation and variety are fixed effects, but the field is
 a random effect. We must also consider the interaction between field
 and variety, which is necessarily also a random effect because one of
 the two components is random. The fullest model that we might consider
-is: $$y_{ijk} = \mu + i_i + v_j + (iv)_{ij} + f_k + (vf)_{jk} + \epsilon_{ijk}$$
+is: 
+
+$$y_{ijk} = \mu + i_i + v_j + (iv)_{ij} + f_k + (vf)_{jk} + \epsilon_{ijk}$$
+
 where $\mu, i_i, v_j, (iv)_{ij}$ are fixed effects; the rest are random
 having variances $\sigma^2_f$, $\sigma^2_{vf}$ and $\sigma^2_\epsilon$.
 Note that we have no $(if)_{ik}$ term in this model. It would not be
@@ -83,7 +86,10 @@ is used on a given field; the factors are not crossed. Unfortunately,
 it is not possible to
 distinguish the variety within the field variation.  We would need
 more than one observation per variety within each field for us to
-separate the two variabilities. We resort to a simpler model that omits the variety by field interaction random effect: $$y_{ijk} = \mu + i_i + v_j + (iv)_{ij} + f_k +  \epsilon_{ijk}$$
+separate the two variabilities. We resort to a simpler model that omits the variety by field interaction random effect: 
+
+$$y_{ijk} = \mu + i_i + v_j + (iv)_{ij} + f_k +  \epsilon_{ijk}$$
+
 
 We fit this model with:
 
