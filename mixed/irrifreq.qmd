@@ -69,6 +69,7 @@ and variety, which is necessarily also a random effect because one of
 the two components is random. The fullest model that we might consider
 is: 
 
+
 $$
 y_{ijk} = \mu + i_i + v_j + (iv)_{ij} + f_k + (vf)_{jk} + \epsilon_{ijk}
 $$
@@ -85,6 +86,7 @@ more than one observation per variety within each field for us to
 separate the two variabilities. (This means that we are not
 demonstrating split plot modeling in the wider sense).
 We resort to a simpler model that omits the variety by field interaction random effect: 
+
 
 $$
 y_{ijk} = \mu + i_i + v_j + (iv)_{ij} + f_k +  \epsilon_{ijk}

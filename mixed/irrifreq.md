@@ -277,7 +277,7 @@ exactRLRT(lmod4)
         (p-value based on 10000 simulated values)
 
     data:  
-    RLRT = 6.11, p-value = 0.0097
+    RLRT = 6.11, p-value = 0.01
 
 We can see that there is a significant variation among the fields.
 
