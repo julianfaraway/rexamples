@@ -63,9 +63,7 @@ effect. We must also consider the interaction between field and variety,
 which is necessarily also a random effect because one of the two
 components is random. The fullest model that we might consider is:
 
-$$
-y_{ijk} = \mu + i_i + v_j + (iv)_{ij} + f_k + (vf)_{jk} + \epsilon_{ijk}
-$$
+$$y_{ijk} = \mu + i_i + v_j + (iv)_{ij} + f_k + (vf)_{jk} + \epsilon_{ijk}$$
 
 where $\mu, i_i, v_j, (iv)_{ij}$ are fixed effects; the rest are random
 having variances $\sigma^2_f$, $\sigma^2_{vf}$ and $\sigma^2_\epsilon$.
@@ -78,9 +76,7 @@ us to separate the two variabilities. (This means that we are not
 demonstrating split plot modeling in the wider sense). We resort to a
 simpler model that omits the variety by field interaction random effect:
 
-$$
-y_{ijk} = \mu + i_i + v_j + (iv)_{ij} + f_k +  \epsilon_{ijk}
-$$
+$$y_{ijk} = \mu + i_i + v_j + (iv)_{ij} + f_k +  \epsilon_{ijk}$$
 
 # LME4
 
@@ -277,7 +273,7 @@ exactRLRT(lmod4)
         (p-value based on 10000 simulated values)
 
     data:  
-    RLRT = 6.11, p-value = 0.01
+    RLRT = 6.11, p-value = 0.0099
 
 We can see that there is a significant variation among the fields.
 
