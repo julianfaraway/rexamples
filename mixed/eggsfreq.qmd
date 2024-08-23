@@ -1,0 +1,213 @@
+---
+title: Nested Design using Frequentist methods
+author: "[Julian Faraway](https://julianfaraway.github.io/)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+format: 
+  gfm:
+    toc: true
+---
+
+```{r}
+#| label: global_options
+#| include: false
+knitr::opts_chunk$set(comment=NA, 
+                      echo = TRUE,
+                      fig.path="figs/",
+                      dev = 'svglite',  
+                      fig.ext = ".svg",
+                      warning=FALSE, 
+                      message=FALSE)
+knitr::opts_knit$set(global.par = TRUE)
+```
+
+```{r}
+#| label: graphopts
+#| include: false
+par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
+ggplot2::theme_set(ggplot2::theme_bw())
+```
+
+See the [introduction](index.md) for an overview. 
+
+See a [mostly Bayesian analysis](eggs.md) analysis of the same
+data. 
+
+This example is discussed in more detail in my book
+[Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
+
+Required libraries:
+
+```{r}
+library(faraway)
+library(ggplot2)
+library(knitr)
+```
+
+# Data
+
+When the levels of one factor vary only within the levels of another
+factor, that factor is said to be *nested*. Here is an example to illustrate nesting. Consistency between laboratory tests is important and yet the results may depend on who did the test and where the test was performed. In an experiment to
+test levels of consistency, a large jar of dried egg powder was
+divided up into a number of samples. Because the powder was
+homogenized, the fat content of the samples is the same, but this fact
+is withheld from the laboratories. Four samples were sent to each of
+six laboratories.  Two of the samples were labeled as G and two as H,
+although in fact they were identical.  The laboratories were
+instructed to give two samples to two different technicians. The
+technicians were then instructed to divide their samples into two
+parts and measure the fat content of each.  So each laboratory
+reported eight measures, each technician four measures, that is, two replicated
+measures on each of two samples.
+
+Load in and plot the data:
+
+```{r}
+#| label: eggplot
+data(eggs, package="faraway")
+summary(eggs)
+ggplot(eggs, aes(y=Fat, x=Lab, color=Technician, shape=Sample)) + geom_point(position = position_jitter(width=0.1, height=0.0))
+```
+
+# Mixed Effect Model
+
+The model is 
+
+$$y_{ijkl} = \mu + L_i + T_{ij} + S_{ijk} + \epsilon_{ijkl}$$
+
+where laboratories (L), technicians (T) and samples (S) are all random effects.
+
+
+# LME4
+
+See the discussion for the [single random effect example](pulpfreq.md#LME4)
+for some introduction.
+
+We fit this model with:
+
+```{r}
+library(lme4)
+lmod4 = lmer(Fat ~ 1 + (1|Lab) + (1|Lab:Technician) +  (1|Lab:Technician:Sample), data=eggs)
+summary(lmod4)
+```
+
+Is there a difference between samples? The `exactRLRT` function requires 
+not only the specification of a null model without the random effect of interest
+but also one where only that random effect is present. Note that because
+of the way the samples are coded, we need to specify this a three-way interaction.
+Otherwise `G` from one lab would be linked to `G` from another lab (which is
+not the case).
+
+```{r}
+library(RLRsim)
+cmodr <- lmer(Fat ~ 1 + (1|Lab) + (1|Lab:Technician), data=eggs)
+cmods <- lmer(Fat ~ 1 + (1|Lab:Technician:Sample), data=eggs)
+exactRLRT(cmods, lmod4, cmodr)
+```
+
+We can remove the sample random effect from the model. But consider
+the confidence intervals:
+
+```{r}
+#| label: eggsconfint
+#| cache: true
+confint(lmod4, method="boot")
+```
+
+We see that all three random effects include zero at the lower end, indicating
+that we might equally have disposed of the lab or technician random effects first.
+There is considerable uncertainty in the apportioning of variation due the three
+effects.
+
+# NLME
+
+See the discussion for the [single random effect example](pulpfreq.md#NLME)
+for some introduction.
+
+```{r}
+library(nlme)
+```
+
+The syntax for specifying the nested model is different:
+
+```{r}
+nlmod = lme(Fat ~ 1, eggs, ~ 1 | Lab/Technician/Sample)
+summary(nlmod)
+```
+
+The estimated SDs for the random terms are the same as in `lme4` fit.
+We can also use `RLRsim`. Confidence intervals are provided by:
+
+```{r}
+intervals(nlmod)
+```
+
+But these are the Wald-based intervals and won't be good for this example.
+
+
+# MMRM
+
+This package is not designed to fit models with a nested structure. In
+principle, it should be possible to specify a parameterised covariance
+structure corresponding to a nested design.
+
+# GLMMTMB
+
+See the discussion for the [single random effect example](pulpfreq.md#GLMMTMB)
+for some introduction.
+
+```{r}
+library(glmmTMB)
+```
+
+The default fit uses ML (not REML)
+
+```{r}
+gtmod <- glmmTMB(Fat ~ 1 + (1|Lab) + (1|Lab:Technician) +  (1|Lab:Technician:Sample), data=eggs)
+summary(gtmod)
+```
+
+This is identical with the `lme4` fit using ML.
+
+Wald-based confidence intervals can be obtained with:
+
+```{r}
+confint(gtmod)
+```
+
+but these are suspect. A better option is:
+
+```{r}
+(mc = confint(gtmod, method="uniroot"))
+```
+
+The random effect SDs are computed on a transformed scale. We
+can invert this with:
+
+```{r}
+exp(mc[2:4,])
+```
+
+We might interpret the missing lower bounds as zero. Given
+the boundary problems here, the bootstrap approach used
+in the `lme4` section is preferable.
+
+# Discussion
+
+There are only random effect terms of interest in this example.
+There are no fixed effects worth doing inference on.
+The frequentist approaches have less functionality for 
+random effects compared to the 
+Bayesian approaches so there's not much to comment on.
+
+
+
+
+
+# Package version info
+
+```{r}
+sessionInfo()
+```
+
+
+

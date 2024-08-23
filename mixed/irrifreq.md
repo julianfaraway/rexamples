@@ -1,6 +1,6 @@
 # Split Plot Design
 [Julian Faraway](https://julianfaraway.github.io/)
-2024-08-22
+2024-08-23
 
 - [Data](#data)
 - [Mixed Effect Model](#mixed-effect-model)
@@ -277,7 +277,7 @@ exactRLRT(lmod4)
         (p-value based on 10000 simulated values)
 
     data:  
-    RLRT = 6.11, p-value = 0.0078
+    RLRT = 6.11, p-value = 0.0075
 
 We can see that there is a significant variation among the fields.
 
