@@ -300,7 +300,7 @@ fit <- mod$sample(
   seed = 123, 
   chains = 4, 
   parallel_chains = 4,
-  refresh = 500 # print update every 500 iters
+  refresh = 0 # don't print updates
 )
 ```
 
@@ -389,7 +389,7 @@ and does not cost much computationally.
 ```{r}
 #| label: brmfit
 #| cache: true
-suppressMessages(bmod <- brm(wear ~ material + (1|run) + (1|position), data=abrasion,iter=10000, cores=4, backend = "cmdstanr"))
+bmod <- brm(wear ~ material + (1|run) + (1|position), data=abrasion,iter=10000, cores=4, backend = "cmdstanr", refresh = 0, silent = 2)
 ```
 
 We get some minor warnings. We can obtain some posterior densities and diagnostics with:
@@ -538,6 +538,10 @@ some chance that they do not. The INLA analysis does not give any weight to the 
 
 - There were no major computational issue with the analyses (in contrast with some of
 the other examples)
+
+- August 2024 update: Rerunning the code on updated versions of the packages
+resulted in some minor changes in the (Bayesian) output although this can
+likely be attributed to random number generation in MCMC.
 
 # Package version info
 

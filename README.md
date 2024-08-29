@@ -47,3 +47,4 @@ we explore below using the following packages:
 - [Randomized Block Design](mixed/penifreq.md) - the `penicillin` data
 - [Split Plot Design](mixed/irrifreq.md) - the `irrigation` data
 - [Nested Effects](mixed/eggsfreq.md) - the `eggs` data
+- [Crossed Effects](mixed/abrafreq.md) - the `abrasion` data

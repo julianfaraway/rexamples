@@ -1,0 +1,179 @@
+---
+title: Crossed Effects Design using Frequentist Methods
+author: "[Julian Faraway](https://julianfaraway.github.io/)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+format: 
+  gfm:
+    toc: true
+---
+
+```{r}
+#| label: global_options
+#| include: false
+knitr::opts_chunk$set(comment=NA, 
+                      echo = TRUE,
+                      fig.path="figs/",
+                      dev = 'svglite',  
+                      fig.ext = ".svg",
+                      warning=FALSE, 
+                      message=FALSE)
+knitr::opts_knit$set(global.par = TRUE)
+```
+
+```{r}
+#| label: graphopts
+#| include: false
+par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
+ggplot2::theme_set(ggplot2::theme_bw())
+```
+
+See the [introduction](index.md) for an overview. 
+
+See a [mostly Bayesian analysis](abrasion.md) analysis of the same
+data. 
+
+This example is discussed in more detail in my book
+[Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
+
+Required libraries:
+
+```{r}
+library(faraway)
+library(ggplot2)
+```
+
+# Data
+
+Effects are said to be crossed when they are
+not nested. When at least some crossing occurs, methods for nested
+designs cannot be used. We consider a latin square example.
+
+In an experiment, four materials, A, B,
+C and D, were fed into a wear-testing machine. The response is the
+loss of weight in 0.1 mm over the testing period. The machine could
+process four samples at a time and past experience indicated that
+there were some differences due to the position of these four samples.
+Also some differences were suspected from run to run. Four runs were made. The latin
+square structure of the design may be observed:
+
+```{r}
+data(abrasion, package="faraway")
+matrix(abrasion$material,4,4)
+```
+
+We can plot the data
+
+```{r}
+#| label: abrasionplot
+ggplot(abrasion,aes(x=material, y=wear, shape=run, color=position))+geom_point(position = position_jitter(width=0.1, height=0.0))
+```
+
+# LME4
+
+See the discussion for the [single random effect example](pulpfreq.md#LME4)
+for some introduction.
+
+Since we are most interested in the choice of material, treating this as
+a fixed effect is natural. We must account for variation due to the
+run and the position but were not interested in their specific values
+because we believe these may vary between experiments. We treat these
+as random effects.
+
+We fit this model with:
+
+```{r}
+library(lme4)
+mmod <- lmer(wear ~ material + (1|run) + (1|position), abrasion)
+summary(mmod, cor=FALSE)
+```
+
+We test the random effects:
+
+```{r}
+library(RLRsim)
+mmodp <- lmer(wear ~ material + (1|position), abrasion)
+mmodr <- lmer(wear ~ material + (1|run), abrasion)
+exactRLRT(mmodp, mmod, mmodr)
+exactRLRT(mmodr, mmod, mmodp)
+```
+
+We see both are statistically significant. 
+
+
+We can test the fixed effect:
+
+```{r}
+library(pbkrtest)
+mmod <- lmer(wear ~ material + (1|run) + (1|position), abrasion,REML=FALSE)
+nmod <- lmer(wear ~ 1+ (1|run) + (1|position), abrasion,REML=FALSE)
+KRmodcomp(mmod, nmod)
+```
+
+We see the fixed effect is significant.
+
+# NLME
+
+See the discussion for the [single random effect example](pulpfreq.md#NLME)
+for some introduction.
+
+The short answer is that `nlme` is not designed to fit crossed effects
+and you should use `lme4`. But it is possible - as explained
+in this [StackOverflow answer by Ben Bolker](https://stackoverflow.com/a/38805602)
+
+```{r}
+library(nlme)
+abrasion$dummy = factor(1)
+nlmod = lme(wear ~ material,
+          random=list(dummy =
+                pdBlocked(list(pdIdent(~run-1),
+                               pdIdent(~position-1)))),
+          data=abrasion)
+nlmod
+```
+
+The output contains the fixed and random effect estimates as found
+with `lme4` albeit presented in an unfamiliar way. Of course, it is
+much easier to just use `lme4`.
+
+# MMRM
+
+See the discussion for the [single random effect example](pulpfreq.md#MMRM)
+for some introduction.
+
+`mmrm` is not designed to handle crossed effects.
+
+# GLMMTMB
+
+See the discussion for the [single random effect example](pulpfreq.md#GLMMTMB)
+for some introduction.
+
+```{r}
+library(glmmTMB)
+```
+
+The default fit uses ML (not REML)
+
+```{r}
+gtmod = glmmTMB(wear ~ material + (1|run) + (1|position), abrasion)
+summary(gtmod)
+```
+
+This is identical with the `lme4` fit using ML.
+
+# Discussion
+
+The `lme4` package is the obvious choice for this model type. Although
+`nlme` can be tricked into fitting the model, it's not convenient. `mmrm`
+was not designed with this model type in mind. `glmmTMB` would be
+valuable for less common response types but is aligned with `lme4` in
+this instance.
+
+
+# Package version info
+
+```{r}
+sessionInfo()
+```
+
+
+
