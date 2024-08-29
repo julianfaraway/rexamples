@@ -1,0 +1,239 @@
+---
+title: Multilevel Design
+author: "[Julian Faraway](https://julianfaraway.github.io/)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+format: 
+  gfm:
+    toc: true
+---
+
+```{r}
+#| label: global_options
+#| include: false
+knitr::opts_chunk$set(comment=NA, 
+                      echo = TRUE,
+                      fig.path="figs/",
+                      dev = 'svglite',  
+                      fig.ext = ".svg",
+                      warning=TRUE, 
+                      message=TRUE)
+knitr::opts_knit$set(global.par = TRUE)
+```
+
+```{r}
+#| label: graphopts
+#| include: false
+par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
+ggplot2::theme_set(ggplot2::theme_bw())
+```
+
+See the [introduction](index.md) for an overview. 
+
+See a [mostly Bayesian analysis](jspmultilevel.md) analysis of the same
+data.
+
+This example is discussed in more detail in my book
+[Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
+
+Required libraries:
+
+```{r}
+library(faraway)
+library(ggplot2)
+```
+
+# Data
+
+*Multilevel* models is a term used for models for data with hierarchical
+structure. The term is most commonly used in the social sciences.
+We can use the methodology we have already developed to fit some of these models.
+
+We take as our example some data from the Junior School Project collected
+from primary (U.S. term is elementary) schools in inner London. 
+We math test score result from year two as the response
+and try to model this as a function of gender, social class and the Raven's test
+score from the first year which might be taken as a measure of ability when entering
+the school. We subset the data to ignore the math scores from the first two years,
+we centre the Raven score and create a combined class-by-school label:
+
+
+```{r}
+data(jsp, package="faraway")
+jspr <- jsp[jsp$year==2,]
+jspr$craven <- jspr$raven-mean(jspr$raven)
+jspr$classch <- paste(jspr$school,jspr$class,sep=".")
+```
+
+We can plot the data
+
+```{r}
+#| label: jspplot
+ggplot(jspr, aes(x=raven, y=math))+xlab("Raven Score")+ylab("Math Score")+geom_point(position = position_jitter())
+ggplot(jspr, aes(x=social, y=math))+xlab("Social Class")+ylab("Math Score")+geom_boxplot()
+```
+
+Although the data supports a more complex model, we simplify to having the centred Raven score and
+the social class as fixed effects and the school and class nested within school as
+random effects. 
+See [Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/),
+
+
+# LME4
+
+See the discussion for the [single random effect example](pulpfreq.md#LME4)
+for some introduction.
+
+```{r}
+library(lme4)
+mmod = lmer(math ~ craven + social+(1|school)+(1|school:class),jspr)
+summary(mmod, cor=FALSE)
+```
+
+We can see the math score is strongly related to
+the entering Raven score. We see that the math score tends to be lower as social class goes down. 
+We also see the most substantial variation at the individual level with smaller
+amounts of variation at the school and class level.
+
+We test the random effects:
+
+```{r}
+library(RLRsim)
+mmodc <- lmer(math ~ craven + social+(1|school:class),jspr)
+mmods <- lmer(math ~ craven + social+(1|school),jspr)
+exactRLRT(mmodc, mmod, mmods)
+exactRLRT(mmods, mmod, mmodc)
+```
+
+The first test is for the class effect which fails to meet the 5% significance level.
+The second test is for the school effect and shows strong evidence of differences between
+schools.
+
+
+We can test the social fixed effect:
+
+```{r}
+library(pbkrtest)
+mmodm <- lmer(math ~ craven + (1|school)+(1|school:class),jspr)
+KRmodcomp(mmod, mmodm)
+```
+
+We see the social effect is significant.
+
+We can compute confidence intervals for the parameters:
+
+```{r}
+#| label: jspconfint
+#| cache: true
+confint(mmod, method="boot")
+```
+
+The lower end of the class confidence interval is zero while the school random effect
+is clearly larger. This is consistent with the earlier tests.
+
+# NLME
+
+See the discussion for the [single random effect example](pulpfreq.md#NLME)
+for some introduction.
+
+The syntax for specifying the nested/heirarchical model is different from `lme4`:
+
+```{r}
+library(nlme)
+nlmod = lme(math ~ craven + social, 
+            jspr, 
+            ~ 1 | school/class)
+summary(nlmod)
+```
+
+The results are presented somewhat differently but match those presented
+by `lme4` earlier. We do get p-values for the fixed effects but these
+are only useful for `craven` and not so much for `social` as it has 
+9 levels.
+
+We can get tests on the fixed effects with:
+
+```{r}
+anova(nlmod)
+```
+
+The denominator degrees of freedom are not adjusted explaining the difference
+with the `pbkrtest`-computed result earlier (which we prefer). But since the
+dfs are large, it makes little difference here.
+
+# MMRM
+
+This package is not designed to fit models with a hierarchical structure. In
+principle, it should be possible to specify a parameterised covariance
+structure corresponding to this design but the would reduce to the
+previous computations.
+
+# GLMMTMB
+
+See the discussion for the [single random effect example](pulpfreq.md#GLMMTMB)
+for some introduction.
+
+```{r}
+library(glmmTMB)
+```
+
+The default fit uses ML (not REML)
+
+```{r}
+gtmod <- glmmTMB(math ~ craven + social+(1|school)+(1|school:class),data=jspr)
+summary(gtmod)
+```
+
+We get a warning about convergence and we see that the class random effect
+variance is estimated as zero (or very close to it).
+
+We can get some advice via the
+suggested vignette or:
+
+```{r}
+diagnose(gtmod)
+```
+
+We are not concerned about the large t-value since it is for the intercept
+term which we know to be very different from zero. The boundary effect
+for the class variance is the the source of our problems.
+
+We did not have this difficulty with `lme4` and `nlme` (although encountering
+this kind of problem is annoyingly common when fitting mixed effect models).
+We don't know the true model but it seems reasonable to assume that class
+variance is not zero i.e. that classes within the same school would tend
+to vary (perhaps due to the teacher effect). Even so, we can't say that
+`glmmTMB` has failed because it may be finding a larger likelihood than
+the previous fits. We could try tinkering with the settings such as
+the optimization methods and starting values but this is often tricky.
+
+Another option is to use REML with:
+
+```{r}
+gtmodr = glmmTMB(math ~ craven + social+(1|school)+(1|school:class),
+                data=jspr,
+                REML=TRUE)
+summary(gtmodr)
+```
+
+The result is very similar but not identical with the previous fits.
+
+
+# Discussion
+
+See the [Discussion of the single random effect model](pulp.md#Discussion) for
+general comments. 
+
+`lme4` and `nlme` were both able to fit this model. `mmrm` was not in
+the game. `glmmTMB` gives us a REML fit without complaint but ML 
+gives us a puzzle to solve.
+
+
+
+# Package version info
+
+```{r}
+sessionInfo()
+```
+
+
+
