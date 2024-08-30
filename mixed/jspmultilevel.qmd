@@ -327,7 +327,7 @@ fit <- mod$sample(
   seed = 123, 
   chains = 4, 
   parallel_chains = 4,
-  refresh = 500 # print update every 500 iters
+  refresh = 0 # print no updates
 )
 ```
 
@@ -430,7 +430,9 @@ and does not cost much computationally.
 ```{r}
 #| label: jspbrmfit
 #| cache: true
-suppressMessages(bmod <- brm(math ~ craven + social+(1|school)+(1|school:class),data=jspr,iter=10000, cores=4, backend = "cmdstanr"))
+bmod <- brm(math ~ craven + social+(1|school)+(1|school:class),
+            data=jspr,iter=10000, cores=4, refresh=0,
+            backend = "cmdstanr")
 ```
 
 We get some minor warnings. We can obtain some posterior densities and diagnostics with:
@@ -564,6 +566,11 @@ the other examples)
 
 - The `mgcv` analyses took a little longer than previous analyses because the sample size
 is larger (but still were quite fast). 
+
+- August 2024: rerunning the code with the latest versions of packages produces much the
+same results except for the PC prior INLA fit. The current fit is more inline with
+the other Bayesian fits. In contrast the INLA with gamma prior results
+was similar to the previous year.
 
 # Package version info
 
