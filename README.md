@@ -49,3 +49,4 @@ we explore below using the following packages:
 - [Nested Effects](mixed/eggsfreq.md) - the `eggs` data
 - [Crossed Effects](mixed/abrafreq.md) - the `abrasion` data
 - [Multilevel Models](mixed/jspmlevelfreq.md) - the `jsp` data
+- [Longitudinal Models](mixed/longitfreq.md) - the `psid` data

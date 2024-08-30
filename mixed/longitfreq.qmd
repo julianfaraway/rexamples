@@ -1,0 +1,332 @@
+---
+title: Longitudinal analysis using Frequentist methods
+author: "[Julian Faraway](https://julianfaraway.github.io/)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+format: 
+  gfm:
+    toc: true
+---
+
+```{r}
+#| label: global_options
+#| include: false
+knitr::opts_chunk$set(comment=NA, 
+                      echo = TRUE,
+                      fig.path="figs/",
+                      dev = 'svglite',  
+                      fig.ext = ".svg",
+                      warning=TRUE, 
+                      message=TRUE)
+knitr::opts_knit$set(global.par = TRUE)
+```
+
+```{r}
+#| label: graphopts
+#| include: false
+par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
+ggplot2::theme_set(ggplot2::theme_bw())
+```
+
+See the [introduction](index.md) for an overview. 
+
+See a [mostly Bayesian analysis](longitudinal.md) analysis of the same
+data.
+
+This example is discussed in more detail in my book
+[Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
+
+
+Required libraries:
+
+```{r}
+library(faraway)
+library(ggplot2)
+```
+
+# Data
+
+The Panel Study of Income Dynamics (PSID), begun in 1968, is a
+longitudinal study of a representative sample of U.S. individuals.
+The study is conducted at the Survey Research
+Center, Institute for Social Research, University of Michigan, and is
+still continuing. There are currently 8700 households in the study
+and many variables are measured. We chose to analyze a random subset
+of this data, consisting of 85 heads of household who were aged
+ 25--39 in 1968 and had complete data for at least 11 of the
+years between 1968 and 1990. The variables included were annual
+income, gender, years of education and age in 1968:
+
+Load in the data:
+
+```{r}
+data(psid, package="faraway")
+head(psid)
+summary(psid)
+psid$cyear <- psid$year-78
+```
+
+We have centered the time variable year. Some plots of just 20 of the subjects:
+
+```{r}
+#| label: psidplot
+psid20 <- dplyr::filter(psid, person <= 20)
+ggplot(psid20, aes(x=year, y=income))+geom_line()+facet_wrap(~ person)
+ggplot(psid20, aes(x=year, y=income+100, group=person)) +geom_line()+facet_wrap(~ sex)+scale_y_log10()
+```
+
+
+# Mixed Effect Model
+
+Suppose that the income change over time can be partly predicted by
+the subject's age, sex and educational level. The variation may be partitioned into two components.
+Clearly there are other factors that will affect a subject's income.
+These factors may cause the income to be generally higher or lower or
+they may cause the income to grow at a faster or slower rate. We can
+model this variation with a random intercept and slope, respectively,
+for each subject.  We also expect that there will be some year-to-year
+variation within each subject. For simplicity, let us initially assume
+that this error is homogeneous and uncorrelated. We also center the year to aid interpretation.
+
+
+# LME4
+
+See the discussion for the [single random effect example](pulpfreq.md#LME4)
+for some introduction.
+
+```{r}
+library(lme4)
+mmod = lmer(log(income) ~ cyear*sex +age+educ+(1 | person) + (0 + cyear | person), psid)
+summary(mmod, cor=FALSE)
+```
+
+This model can be written as: 
+```{math}
+\begin{aligned}
+\mathrm{\log(income)}_{ij} &= \mu + \beta_{y} \mathrm{year}_i + \beta_s \mathrm{sex}_j + \beta_{ys} \mathrm{sex}_j \times \mathrm{year}_i + \beta_e \mathrm{educ}_j + \beta_a \mathrm{age}_j \\ &+ \gamma^0_j + \gamma^1_j \mathrm{year}_i + \epsilon_{ij}
+\end{aligned}
+```
+where $i$ indexes the year and $j$ indexes the individual. We have: 
+```{math}
+\left(
+  \begin{array}{c}
+    \gamma^0_k \\
+    \gamma^1_k
+  \end{array}
+  \right) \sim
+  N(0,\sigma^2 D)
+```
+
+We have chosen not to have an interaction between the intercept and the slope random effects
+and so $D$ is a diagonal matrix. It is possible to have such an interaction in
+`lmer()` models (but not in all the Bayesian models). As it happens, if you do fit
+a model with such an interaction, you find that it is not significant. Hence dropping
+it does not make much difference in this instance.
+
+We can test the interaction term in the fixed effect part of the model:
+
+```{r}
+library(pbkrtest)
+mmod = lmer(log(income) ~ cyear*sex + age + educ +
+                (1 | person) + (0 + cyear | person),
+                psid, REML=FALSE)
+mmodr <- lmer(log(income) ~ cyear + sex + age + educ +
+                  (1 | person) + (0 + cyear | person),
+                  psid, REML=FALSE)
+KRmodcomp(mmod,mmodr)
+```
+
+We find that the interaction is statistically significant. We can also compute
+bootstrap confidence intervals:
+
+```{r}
+#| label: psidboot
+#| cache: TRUE 
+confint(mmod, method="boot", oldNames=FALSE)
+```
+
+We see that all the standard deviations are clearly well above zero. The age
+effect does not look significant.
+
+
+# NLME
+
+See the discussion for the [single random effect example](pulpfreq.md#NLME)
+for some introduction.
+
+The syntax for specifying the random effects part of the model is different from `lme4`:
+
+```{r}
+library(nlme)
+nlmod = lme(log(income) ~ cyear*sex + age + educ,
+            psid, 
+            ~ cyear | person)
+summary(nlmod)
+```
+
+The results are very similar although not identical with `lme4`. This
+is probably due to small differences in the convergence criteria
+used by the fitting algorithms.
+
+`nlme` does provide t-tests on the fixed effects which are useful
+in this instance. We see that age is not a significant effect.
+
+We can also do the sequential ANOVA:
+
+```{r}
+anova(nlmod)
+```
+
+Only the last test is the same as the previous test because
+of the sequential nature of the testing (i.e. different models 
+are being compared.)
+
+More useful are the marginal tests provided by:
+
+```{r}
+library(car)
+Anova(nlmod)
+```
+
+# MMRM
+
+See the discussion for the [single random effect example](pulpfreq.md#MMRM)
+for some introduction.
+
+```{r}
+library(mmrm)
+```
+
+It is not currently possible to fit the random effect slope and
+intercept model in `mmrm`. We can fit some other models.
+
+We need a factor form of the time variable. Also `mmrm` insists
+that the subject variable also be a factor.
+
+```{r}
+psid$visit = factor(psid$cyear)
+psid$person = factor(psid$person)
+```
+
+The most general model uses an unstructured covariance matrix
+for the random component of the model. Since we have 23 timepoints,
+that means 23*24/2 = 276 parameters in total for each pair of timepoints
+plus the diagonal variance.
+
+```{r}
+mmmodu = mmrm(log(income) ~ cyear*sex + age+educ+ us(visit | person), psid)
+summary(mmmodu)
+```
+
+Given the number of parameters, this takes a while to fit (although was
+faster than I expected).
+
+We might assume that the correlation between timepoints depends only on their
+distance apart with Toeplitz structure on the correlation matrix for
+random subject component:
+
+```{r}
+mmmodt = mmrm(log(income) ~ cyear*sex + age+educ+ toep(visit | person), psid)
+summary(mmmodt)
+```
+
+This brings us down to 23 parameters for the variance matrix.
+This generates a warning on the fit convergence but the output looks reasonable.
+
+We can reasonably assume the much stronger (autoregressive) AR1 structure
+on successive timepoints:
+
+```{r}
+mmmoda = mmrm(log(income) ~ cyear*sex + age+educ+ ar1(visit | person), psid)
+summary(mmmoda)
+```
+
+Now we have only 2 parameters for the variance matrix.
+
+There is a plausible myth that in mixed effect models where you are mainly
+interested in the fixed effects, the random structure does not matter so
+much provided some flexibility is given to account for the correlation
+between observations on the same subject.
+
+The unstructured covariance uses far too many parameters so we might discard
+that. Let's compare the Toeplitz fixed effect fit:
+
+```{r}
+tidy(mmmodt) |> knitr::kable()
+```
+
+with the AR1 fixed effect fit:
+
+```{r}
+tidy(mmmoda) |> knitr::kable()
+```
+
+We see that there is not much difference in the fixed effect fits and
+their standard errors. It does make a difference to whether the interaction
+is statistically significant (but p-values themselves are sensitive to
+small changes in the data so there really is not much difference between
+p=0.06 and p=0.04). These results are also quite similar to the `nlme` and
+`lme4` output.
+
+
+# GLMMTMB
+
+See the discussion for the [single random effect example](pulpfreq.md#GLMMTMB)
+for some introduction.
+
+```{r}
+library(glmmTMB)
+```
+
+The default fit uses ML - let's use REML for the purposes of comparison
+with `lme4`:
+
+```{r}
+gtmod <- glmmTMB(log(income) ~ cyear*sex +age+educ+(1 | person) + (0 + cyear | person), psid, REML=TRUE)
+summary(gtmod)
+```
+
+This matches the `lme4` output earlier.
+
+`glmmTMB` has some additional covariance structures for the
+random part of the model. In particular, it has the AR1 option
+as used for `mmrm` above:
+
+```{r}
+gtmoda <- glmmTMB(log(income) ~ cyear*sex +age+educ+ ar1(0 + visit | person), 
+                  data=psid,
+                  REML=TRUE)
+summary(gtmoda)
+```
+
+The results are similar but not the same as the `mmrm` output. The
+correlation is estimated as 0.77 whereas `mmrm` gives:
+
+```{r}
+cm = mmmoda$cov
+cm[1,2]/cm[1,1]
+```
+
+- `glmmTMB` can also handle the Toeplitz and unstructured covariance forms.
+
+- It would also be possible to fit an AR1-type model using `gls()` from
+`nlme`.
+
+# Discussion
+
+We have contending models from all four packages but only
+`glmmTMB` can attempt them all. There is the question of which
+random structure is appropriate for this data which is
+not easily answered. There is a suggestion that this choice
+may not be crucial if the fixed effects are our main interest.
+
+
+
+
+# Package version info
+
+```{r}
+sessionInfo()
+```
+
+
+
