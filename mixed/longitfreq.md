@@ -140,25 +140,32 @@ summary(mmod, cor=FALSE)
     educ         0.10874    0.02183    4.98
     cyear:sexM  -0.02644    0.01229   -2.15
 
-This model can be written as: $$
+This model can be written as:
+
+``` math
 \begin{aligned}
 \mathrm{\log(income)}_{ij} &= \mu + \beta_{y} \mathrm{year}_i + \beta_s \mathrm{sex}_j + \beta_{ys} \mathrm{sex}_j \times \mathrm{year}_i + \beta_e \mathrm{educ}_j + \beta_a \mathrm{age}_j \\ &+ \gamma^0_j + \gamma^1_j \mathrm{year}_i + \epsilon_{ij}
 \end{aligned}
-$$ where $i$ indexes the year and $j$ indexes the individual. We have:
-$$\left(
+```
+
+where $i$ indexes the year and $j$ indexes the individual. We have:
+
+``` math
+\left(
   \begin{array}{c}
     \gamma^0_k \\
     \gamma^1_k
   \end{array}
   \right) \sim
-  N(0,\sigma^2 D)$$
+  N(0,\sigma^2 D)
+```
 
 We have chosen not to have an interaction between the intercept and the
 slope random effects and so $D$ is a diagonal matrix. It is possible to
-have such an interaction in `lmer()` models but not in some of the
-models below. As it happens, if you do fit a model with such an
-interaction, you find that it is not significant. Hence dropping it does
-not make much difference in this instance.
+have such an interaction in `lmer()` models (but not in all the Bayesian
+models). As it happens, if you do fit a model with such an interaction,
+you find that it is not significant. Hence dropping it does not make
+much difference in this instance.
 
 We can test the interaction term in the fixed effect part of the model:
 
@@ -790,13 +797,13 @@ sessionInfo()
      [1] utf8_1.2.4          generics_0.1.3      tidyr_1.3.1         stringi_1.8.4       lattice_0.22-6     
      [6] digest_0.6.37       magrittr_2.0.3      estimability_1.5.1  evaluate_0.24.0     grid_4.4.1         
     [11] mvtnorm_1.2-6       fastmap_1.2.0       jsonlite_1.8.8      backports_1.5.0     mgcv_1.9-1         
-    [16] purrr_1.0.2         fansi_1.0.6         scales_1.3.0        numDeriv_2016.8-1.1 codetools_0.2-20   
-    [21] Rdpack_2.6.1        abind_1.4-5         cli_3.6.3           rlang_1.1.4         rbibutils_2.2.16   
-    [26] munsell_0.5.1       splines_4.4.1       withr_3.0.1         yaml_2.3.10         tools_4.4.1        
-    [31] parallel_4.4.1      coda_0.19-4.1       checkmate_2.3.2     nloptr_2.1.1        minqa_1.2.8        
-    [36] dplyr_1.1.4         colorspace_2.1-1    boot_1.3-31         broom_1.0.6         vctrs_0.6.5        
-    [41] R6_2.5.1            emmeans_1.10.4      lifecycle_1.0.4     stringr_1.5.1       MASS_7.3-61        
-    [46] pkgconfig_2.0.3     pillar_1.9.0        gtable_0.3.5        glue_1.7.0          Rcpp_1.0.13        
-    [51] systemfonts_1.1.0   xfun_0.47           tibble_3.2.1        tidyselect_1.2.1    rstudioapi_0.16.0  
-    [56] knitr_1.48          xtable_1.8-4        farver_2.1.2        htmltools_0.5.8.1   rmarkdown_2.28     
-    [61] svglite_2.1.3       labeling_0.4.3      TMB_1.9.14          compiler_4.4.1     
+    [16] purrr_1.0.2         fansi_1.0.6         scales_1.3.0        numDeriv_2016.8-1.1 Rdpack_2.6.1       
+    [21] abind_1.4-5         cli_3.6.3           rlang_1.1.4         rbibutils_2.2.16    munsell_0.5.1      
+    [26] splines_4.4.1       withr_3.0.1         yaml_2.3.10         tools_4.4.1         parallel_4.4.1     
+    [31] coda_0.19-4.1       checkmate_2.3.2     nloptr_2.1.1        minqa_1.2.8         dplyr_1.1.4        
+    [36] colorspace_2.1-1    boot_1.3-31         broom_1.0.6         vctrs_0.6.5         R6_2.5.1           
+    [41] emmeans_1.10.4      lifecycle_1.0.4     stringr_1.5.1       MASS_7.3-61         pkgconfig_2.0.3    
+    [46] pillar_1.9.0        gtable_0.3.5        glue_1.7.0          Rcpp_1.0.13         systemfonts_1.1.0  
+    [51] xfun_0.47           tibble_3.2.1        tidyselect_1.2.1    rstudioapi_0.16.0   knitr_1.48         
+    [56] xtable_1.8-4        farver_2.1.2        htmltools_0.5.8.1   rmarkdown_2.28      svglite_2.1.3      
+    [61] labeling_0.4.3      TMB_1.9.14          compiler_4.4.1     
