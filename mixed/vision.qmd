@@ -1,13 +1,15 @@
 ---
-title: Repeated Measures
+title: Repeated Measures Data Analysis example
 author: "[Julian Faraway](https://julianfaraway.github.io/)"
 date: "`r format(Sys.time(), '%d %B %Y')`"
-output: 
-  github_document:
+format: 
+  gfm:
     toc: true
 ---
 
-```{r global_options, include=FALSE}
+```{r}
+#| label: global_options
+#| include: false
 knitr::opts_chunk$set(comment=NA, 
                       echo = TRUE,
                       fig.path="figs/",
@@ -18,7 +20,9 @@ knitr::opts_chunk$set(comment=NA,
 knitr::opts_knit$set(global.par = TRUE)
 ```
 
-```{r graphopts, include=FALSE}
+```{r}
+#| label: graphopts
+#| include: false
 par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
 ggplot2::theme_set(ggplot2::theme_bw())
 ```
@@ -81,9 +85,11 @@ faraway::sumary(mmod)
 ```
 
 This model can be written as: 
-$$
+
+```{math}
 y_{ijk} = \mu + p_j + s_i + e_{ik} + \epsilon_{ijk}
-$$
+```
+
 where $i=1, \dots ,7$ runs over individuals, $j=1, \dots ,4$ runs over
 power and $k=1,2$ runs over eyes. The $p_j$ term is a fixed effect, but
 the remaining terms are random. Let $s_i \sim N(0,\sigma^2_s)$,
@@ -325,13 +331,13 @@ still. Now the treatment effects:
 ```{r vispdtrt}
 ref <- reshape2::melt(rstan::extract(fit, pars="beta"),value.name="acuity",varnames=c("iterations","beta"))
 ref$beta <- colnames(Xmatrix)[ref$beta]
-ref %>% dplyr::filter(grepl("power", beta)) %>% ggplot(aes(x=acuity, color=beta))+geom_density()
+ref |> dplyr::filter(grepl("power", beta)) |> ggplot(aes(x=acuity, color=beta))+geom_density()
 ```
 
 Now just the intercept parameter:
 
 ```{r vispdint}
-ref %>% dplyr::filter(grepl("Intercept", beta)) %>% ggplot(aes(x=acuity))+geom_density()
+ref |> dplyr::filter(grepl("Intercept", beta)) |> ggplot(aes(x=acuity))+geom_density()
 ```
 
 Now for the subjects:

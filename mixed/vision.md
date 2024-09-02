@@ -1,28 +1,22 @@
-Repeated Measures
-================
+# Repeated Measures Data Analysis example
 [Julian Faraway](https://julianfaraway.github.io/)
-06 January 2023
+2024-09-02
 
-- <a href="#data" id="toc-data">Data</a>
-- <a href="#mixed-effect-model" id="toc-mixed-effect-model">Mixed Effect
-  Model</a>
-- <a href="#inla" id="toc-inla">INLA</a>
-- <a href="#informative-gamma-priors-on-the-precisions"
-  id="toc-informative-gamma-priors-on-the-precisions">Informative Gamma
-  priors on the precisions</a>
-- <a href="#penalized-complexity-prior"
-  id="toc-penalized-complexity-prior">Penalized Complexity Prior</a>
-- <a href="#stan" id="toc-stan">STAN</a>
-  - <a href="#diagnostics" id="toc-diagnostics">Diagnostics</a>
-  - <a href="#output-summary" id="toc-output-summary">Output Summary</a>
-  - <a href="#posterior-distributions"
-    id="toc-posterior-distributions">Posterior Distributions</a>
-- <a href="#brms" id="toc-brms">BRMS</a>
-- <a href="#mgcv" id="toc-mgcv">MGCV</a>
-- <a href="#ginla" id="toc-ginla">GINLA</a>
-- <a href="#discussion" id="toc-discussion">Discussion</a>
-- <a href="#package-version-info" id="toc-package-version-info">Package
-  version info</a>
+- [Data](#data)
+- [Mixed Effect Model](#mixed-effect-model)
+- [INLA](#inla)
+- [Informative Gamma priors on the
+  precisions](#informative-gamma-priors-on-the-precisions)
+- [Penalized Complexity Prior](#penalized-complexity-prior)
+- [STAN](#stan)
+  - [Diagnostics](#diagnostics)
+  - [Output Summary](#output-summary)
+  - [Posterior Distributions](#posterior-distributions)
+- [BRMS](#brms)
+- [MGCV](#mgcv)
+- [GINLA](#ginla)
+- [Discussion](#discussion)
+- [Package version info](#package-version-info)
 
 See the [introduction](index.md) for an overview.
 
@@ -83,7 +77,7 @@ vision$npower <- rep(1:4,14)
 ggplot(vision, aes(y=acuity, x=npower, linetype=eye)) + geom_line() + facet_wrap(~ subject, ncol=4) + scale_x_continuous("Power",breaks=1:4,labels=c("6/6","6/18","6/36","6/60"))
 ```
 
-![](figs/visplot-1..svg)<!-- -->
+![](figs/visplot-1..svg)
 
 # Mixed Effect Model
 
@@ -116,11 +110,15 @@ faraway::sumary(mmod)
     AIC = 342.7, DIC = 349.6
     deviance = 339.2 
 
-This model can be written as: $$
+This model can be written as:
+
+``` math
 y_{ijk} = \mu + p_j + s_i + e_{ik} + \epsilon_{ijk}
-$$ where $i=1, \dots ,7$ runs over individuals, $j=1, \dots ,4$ runs
-over power and $k=1,2$ runs over eyes. The $p_j$ term is a fixed effect,
-but the remaining terms are random. Let $s_i \sim N(0,\sigma^2_s)$,
+```
+
+where $i=1, \dots ,7$ runs over individuals, $j=1, \dots ,4$ runs over
+power and $k=1,2$ runs over eyes. The $p_j$ term is a fixed effect, but
+the remaining terms are random. Let $s_i \sim N(0,\sigma^2_s)$,
 $e_{ik} \sim N(0,\sigma^2_e)$ and
 $\epsilon_{ijk} \sim N(0,\sigma^2\Sigma)$ where we take $\Sigma=I$.
 
@@ -185,16 +183,16 @@ summary(result)
 
     Fixed effects:
                    mean    sd 0.025quant 0.5quant 0.975quant    mode kld
-    (Intercept) 112.646 1.783    109.124  112.646    116.169 112.646   0
-    power6/18     0.781 1.534     -2.243    0.781      3.804   0.781   0
-    power6/36    -1.002 1.534     -4.026   -1.002      2.021  -1.002   0
-    power6/60     3.278 1.534      0.254    3.278      6.301   3.279   0
+    (Intercept) 112.646 1.780    109.129  112.646    116.164 112.646   0
+    power6/18     0.781 1.538     -2.251    0.781      3.813   0.781   0
+    power6/36    -1.002 1.538     -4.034   -1.002      2.029  -1.002   0
+    power6/60     3.278 1.538      0.246    3.278      6.309   3.278   0
 
     Model hyperparameters:
-                                                mean       sd 0.025quant 0.5quant 0.975quant     mode
-    Precision for the Gaussian observations 6.30e-02 1.40e-02      0.039 6.20e-02   9.40e-02    0.060
-    Precision for subject                   2.14e+04 2.18e+04   1560.872 1.48e+04   7.92e+04 4306.913
-    Precision for eyesub                    4.20e-02 1.90e-02      0.016 3.80e-02   9.00e-02    0.032
+                                                mean       sd 0.025quant 0.5quant 0.975quant    mode
+    Precision for the Gaussian observations 6.30e-02 1.40e-02      0.039 6.20e-02   9.50e-02 5.9e-02
+    Precision for subject                   2.23e+04 2.54e+04   1441.113 1.43e+04   8.97e+04 3.9e+03
+    Precision for eyesub                    4.30e-02 1.90e-02      0.017 3.90e-02   8.90e-02 3.3e-02
 
      is computed 
 
@@ -220,16 +218,16 @@ summary(result)
 
     Fixed effects:
                    mean    sd 0.025quant 0.5quant 0.975quant    mode kld
-    (Intercept) 112.646 2.701    107.253  112.646    118.040 112.646   0
-    power6/18     0.781 1.522     -2.219    0.781      3.781   0.782   0
-    power6/36    -1.002 1.522     -4.002   -1.002      1.997  -1.002   0
-    power6/60     3.278 1.522      0.278    3.279      6.277   3.279   0
+    (Intercept) 112.646 2.675    107.308  112.646    117.985 112.646   0
+    power6/18     0.781 1.520     -2.215    0.781      3.776   0.781   0
+    power6/36    -1.002 1.520     -3.998   -1.002      1.993  -1.002   0
+    power6/60     3.278 1.520      0.282    3.279      6.273   3.279   0
 
     Model hyperparameters:
                                              mean    sd 0.025quant 0.5quant 0.975quant  mode
-    Precision for the Gaussian observations 0.064 0.014      0.040    0.062      0.095 0.060
-    Precision for subject                   0.047 0.037      0.010    0.037      0.146 0.023
-    Precision for eyesub                    0.068 0.041      0.019    0.058      0.176 0.043
+    Precision for the Gaussian observations 0.064 0.014      0.041    0.063      0.096 0.061
+    Precision for subject                   0.049 0.036      0.010    0.039      0.145 0.025
+    Precision for eyesub                    0.070 0.040      0.020    0.061      0.173 0.045
 
      is computed 
 
@@ -250,13 +248,13 @@ data.frame(restab) |> kable()
 
 |            | mu     | power6.18 | power6.36 | power6.60 | subject | eyesub | epsilon |
 |:-----------|:-------|:----------|:----------|:----------|:--------|:-------|:--------|
-| mean       | 112.65 | 0.78125   | -1.0024   | 3.2784    | 5.4868  | 4.3102 | 4.0302  |
-| sd         | 2.6991 | 1.521     | 1.521     | 1.521     | 1.9239  | 1.2286 | 0.44038 |
-| quant0.025 | 107.25 | -2.2191   | -4.0026   | 0.27776   | 2.6334  | 2.3985 | 3.2461  |
-| quant0.25  | 110.92 | -0.23292  | -2.0166   | 2.2642    | 4.1013  | 3.426  | 3.7193  |
-| quant0.5   | 112.64 | 0.77797   | -1.0057   | 3.2751    | 5.1761  | 4.1381 | 4.0004  |
-| quant0.75  | 114.36 | 1.7888    | 0.0050955 | 4.2859    | 6.5255  | 5.0049 | 4.3097  |
-| quant0.975 | 118.03 | 3.7743    | 1.9908    | 6.2712    | 10.113  | 7.1916 | 4.9738  |
+| mean       | 112.65 | 0.78127   | -1.0024   | 3.2784    | 5.3436  | 4.2273 | 4.0104  |
+| sd         | 2.672  | 1.519     | 1.519     | 1.519     | 1.8344  | 1.1786 | 0.43864 |
+| quant0.025 | 107.31 | -2.2151   | -3.9986   | 0.28183   | 2.6389  | 2.41   | 3.2335  |
+| quant0.25  | 110.94 | -0.2317   | -2.0154   | 2.2654    | 4.0256  | 3.3804 | 3.7004  |
+| quant0.5   | 112.64 | 0.77799   | -1.0057   | 3.2752    | 5.039   | 4.0544 | 3.979   |
+| quant0.75  | 114.34 | 1.7876    | 0.0039126 | 4.2847    | 6.3255  | 4.8871 | 4.2878  |
+| quant0.975 | 117.97 | 3.7702    | 1.9867    | 6.2672    | 9.7725  | 7.0085 | 4.9542  |
 
 Also construct a plot the SD posteriors:
 
@@ -265,7 +263,7 @@ ddf <- data.frame(rbind(sigmasubject,sigmaeye,sigmaepsilon),errterm=gl(3,nrow(si
 ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("acuity")+ylab("density")+xlim(0,15)
 ```
 
-![](figs/plotsdsvis-1..svg)<!-- -->
+![](figs/plotsdsvis-1..svg)
 
 Posteriors for the subject and eye give no weight to values close to
 zero.
@@ -289,16 +287,16 @@ summary(result)
 
     Fixed effects:
                    mean    sd 0.025quant 0.5quant 0.975quant    mode kld
-    (Intercept) 112.646 2.445    107.760  112.646    117.533 112.646   0
-    power6/18     0.781 1.525     -2.224    0.781      3.786   0.782   0
-    power6/36    -1.002 1.525     -4.008   -1.002      2.003  -1.002   0
-    power6/60     3.278 1.525      0.272    3.279      6.283   3.279   0
+    (Intercept) 112.646 2.435    107.783  112.646    117.510 112.646   0
+    power6/18     0.781 1.532     -2.237    0.781      3.799   0.781   0
+    power6/36    -1.002 1.532     -4.021   -1.002      2.016  -1.002   0
+    power6/60     3.278 1.532      0.260    3.278      6.296   3.278   0
 
     Model hyperparameters:
                                              mean    sd 0.025quant 0.5quant 0.975quant  mode
-    Precision for the Gaussian observations 0.064 0.014      0.039    0.063      0.094 0.061
-    Precision for subject                   0.075 0.074      0.012    0.053      0.270 0.029
-    Precision for eyesub                    0.108 0.086      0.019    0.086      0.334 0.050
+    Precision for the Gaussian observations 0.064 0.014      0.040    0.063      0.095 0.060
+    Precision for subject                   0.071 0.066      0.013    0.052      0.246 0.030
+    Precision for eyesub                    0.105 0.080      0.020    0.084      0.317 0.051
 
      is computed 
 
@@ -318,13 +316,13 @@ data.frame(restab) |> kable()
 
 |            | mu     | power6.18 | power6.36 | power6.60 | subject | eyesub | epsilon |
 |:-----------|:-------|:----------|:----------|:----------|:--------|:-------|:--------|
-| mean       | 112.65 | 0.78124   | -1.0024   | 3.2783    | 4.6392  | 3.6858 | 4.0357  |
-| sd         | 2.4428 | 1.5238    | 1.5238    | 1.5238    | 1.8294  | 1.4011 | 0.45469 |
-| quant0.025 | 107.76 | -2.225    | -4.0085   | 0.27185   | 1.9341  | 1.7372 | 3.2588  |
-| quant0.25  | 111.09 | -0.23422  | -2.0179   | 2.2629    | 3.31    | 2.6878 | 3.7117  |
-| quant0.5   | 112.64 | 0.77794   | -1.0057   | 3.2751    | 4.3519  | 3.413  | 3.9918  |
-| quant0.75  | 114.19 | 1.79      | 0.0063392 | 4.2871    | 5.637   | 4.3869 | 4.3166  |
-| quant0.975 | 117.52 | 3.7801    | 1.9966    | 6.2769    | 9.02    | 7.1676 | 5.0398  |
+| mean       | 112.65 | 0.7812    | -1.0024   | 3.2783    | 4.632   | 3.6934 | 4.0278  |
+| sd         | 2.4328 | 1.5305    | 1.5305    | 1.5305    | 1.7307  | 1.3457 | 0.44436 |
+| quant0.025 | 107.78 | -2.2378   | -4.0213   | 0.25902   | 2.0305  | 1.784  | 3.2414  |
+| quant0.25  | 111.09 | -0.23968  | -2.0233   | 2.2574    | 3.3748  | 2.7319 | 3.7137  |
+| quant0.5   | 112.64 | 0.7779    | -1.0058   | 3.275     | 4.373   | 3.4436 | 3.9958  |
+| quant0.75  | 114.19 | 1.7954    | 0.011747  | 4.2925    | 5.5905  | 4.3827 | 4.3087  |
+| quant0.975 | 117.5  | 3.7928    | 2.0094    | 6.2897    | 8.7432  | 7.0069 | 4.9845  |
 
 Make the plots:
 
@@ -333,7 +331,7 @@ ddf <- data.frame(rbind(sigmasubject,sigmaeye,sigmaepsilon),errterm=gl(3,nrow(si
 ggplot(ddf, aes(x,y, linetype=errterm))+geom_line()+xlab("acuity")+ylab("density")+xlim(0,15)
 ```
 
-![](figs/vispc-1..svg)<!-- -->
+![](figs/vispc-1..svg)
 
 Posteriors for eye and subject come closer to zero compared to the
 inverse gamma prior.
@@ -364,10 +362,10 @@ writeLines(readLines("../stancode/multilevel.stan"))
          int<lower=0> Npreds;
          int<lower=0> Nlev1;
          int<lower=0> Nlev2;
-         vector[Nobs] y;
+         array[Nobs] real y;
          matrix[Nobs,Npreds] x;
-         int<lower=1,upper=Nlev1> levind1[Nobs];
-         int<lower=1,upper=Nlev2> levind2[Nobs];
+         array[Nobs] int<lower=1,upper=Nlev1> levind1;
+         array[Nobs] int<lower=1,upper=Nlev2> levind2;
          real<lower=0> sdscal;
     }
     parameters {
@@ -433,7 +431,7 @@ system.time(fit <- sampling(sm, data=visdat))
 ```
 
        user  system elapsed 
-      6.449   0.381   2.534 
+      6.112   0.511   2.465 
 
 ## Diagnostics
 
@@ -446,7 +444,7 @@ mdf <- reshape2::melt(muc)
 ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
 ```
 
-![](figs/visdiagsigma-1..svg)<!-- -->
+![](figs/visdiagsigma-1..svg)
 
 For the Subject SD
 
@@ -457,7 +455,7 @@ mdf <- reshape2::melt(muc)
 ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
 ```
 
-![](figs/visdiaglev1-1..svg)<!-- -->
+![](figs/visdiaglev1-1..svg)
 
 For the Subject by Eye SD
 
@@ -468,7 +466,7 @@ mdf <- reshape2::melt(muc)
 ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
 ```
 
-![](figs/visdiaglev2-1..svg)<!-- -->
+![](figs/visdiaglev2-1..svg)
 
 All these are satisfactory.
 
@@ -493,7 +491,7 @@ print(fit,pars=c("beta","sigmalev1","sigmalev2","sigmaeps"))
     sigmalev2   3.89    0.05 1.64   1.28   2.76   3.71   4.73   7.68  1086 1.00
     sigmaeps    4.24    0.01 0.51   3.39   3.87   4.18   4.56   5.36  2489 1.00
 
-    Samples were drawn using NUTS(diag_e) at Fri Jan  6 10:34:06 2023.
+    Samples were drawn using NUTS(diag_e) at Mon Sep  2 12:16:07 2024.
     For each parameter, n_eff is a crude measure of effective sample size,
     and Rhat is the potential scale reduction factor on split chains (at 
     convergence, Rhat=1).
@@ -520,7 +518,7 @@ ref <- reshape2::melt(postsig,value.name="acuity")
 ggplot(data=ref,aes(x=acuity, color=L1))+geom_density()+guides(color=guide_legend(title="SD"))
 ```
 
-![](figs/vispdsig-1..svg)<!-- -->
+![](figs/vispdsig-1..svg)
 
 As usual the error SD distribution is more concentrated. The subject SD
 is more diffuse and smaller whereas the eye SD is smaller still. Now the
@@ -529,18 +527,18 @@ treatment effects:
 ``` r
 ref <- reshape2::melt(rstan::extract(fit, pars="beta"),value.name="acuity",varnames=c("iterations","beta"))
 ref$beta <- colnames(Xmatrix)[ref$beta]
-ref %>% dplyr::filter(grepl("power", beta)) %>% ggplot(aes(x=acuity, color=beta))+geom_density()
+ref |> dplyr::filter(grepl("power", beta)) |> ggplot(aes(x=acuity, color=beta))+geom_density()
 ```
 
-![](figs/vispdtrt-1..svg)<!-- -->
+![](figs/vispdtrt-1..svg)
 
 Now just the intercept parameter:
 
 ``` r
-ref %>% dplyr::filter(grepl("Intercept", beta)) %>% ggplot(aes(x=acuity))+geom_density()
+ref |> dplyr::filter(grepl("Intercept", beta)) |> ggplot(aes(x=acuity))+geom_density()
 ```
 
-![](figs/vispdint-1..svg)<!-- -->
+![](figs/vispdint-1..svg)
 
 Now for the subjects:
 
@@ -552,7 +550,7 @@ ref$subject <- factor(unique(vision$subject)[ref$subject])
 ggplot(ref,aes(x=acuity,color=subject))+geom_density()
 ```
 
-![](figs/vispdsub-1..svg)<!-- -->
+![](figs/vispdsub-1..svg)
 
 We can see the variation between subjects.
 
@@ -572,7 +570,7 @@ We can obtain some posterior densities and diagnostics with:
 plot(bmod, variable = "^s", regex=TRUE)
 ```
 
-![](figs/visbrmsdiag-1..svg)<!-- -->
+![](figs/visbrmsdiag-1..svg)
 
 We have chosen only the random effect hyperparameters since this is
 where problems will appear first. Looks OK.
@@ -583,7 +581,7 @@ We can look at the STAN code that `brms` used with:
 stancode(bmod)
 ```
 
-    // generated with brms 2.18.0
+    // generated with brms 2.21.0
     functions {
     }
     data {
@@ -591,22 +589,22 @@ stancode(bmod)
       vector[N] Y;  // response variable
       int<lower=1> K;  // number of population-level effects
       matrix[N, K] X;  // population-level design matrix
+      int<lower=1> Kc;  // number of population-level effects after centering
       // data for group-level effects of ID 1
       int<lower=1> N_1;  // number of grouping levels
       int<lower=1> M_1;  // number of coefficients per level
-      int<lower=1> J_1[N];  // grouping indicator per observation
+      array[N] int<lower=1> J_1;  // grouping indicator per observation
       // group-level predictor values
       vector[N] Z_1_1;
       // data for group-level effects of ID 2
       int<lower=1> N_2;  // number of grouping levels
       int<lower=1> M_2;  // number of coefficients per level
-      int<lower=1> J_2[N];  // grouping indicator per observation
+      array[N] int<lower=1> J_2;  // grouping indicator per observation
       // group-level predictor values
       vector[N] Z_2_1;
       int prior_only;  // should the likelihood be ignored?
     }
     transformed data {
-      int Kc = K - 1;
       matrix[N, Kc] Xc;  // centered version of X without an intercept
       vector[Kc] means_X;  // column means of X before centering
       for (i in 2:K) {
@@ -615,13 +613,13 @@ stancode(bmod)
       }
     }
     parameters {
-      vector[Kc] b;  // population-level effects
+      vector[Kc] b;  // regression coefficients
       real Intercept;  // temporary intercept for centered predictors
       real<lower=0> sigma;  // dispersion parameter
       vector<lower=0>[M_1] sd_1;  // group-level standard deviations
-      vector[N_1] z_1[M_1];  // standardized group-level effects
+      array[M_1] vector[N_1] z_1;  // standardized group-level effects
       vector<lower=0>[M_2] sd_2;  // group-level standard deviations
-      vector[N_2] z_2[M_2];  // standardized group-level effects
+      array[M_2] vector[N_2] z_2;  // standardized group-level effects
     }
     transformed parameters {
       vector[N_1] r_1_1;  // actual group-level effects
@@ -676,25 +674,25 @@ summary(bmod)
       Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
              total post-warmup draws = 4000
 
-    Group-Level Effects: 
+    Multilevel Hyperparameters:
     ~subject (Number of levels: 7) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     4.16      2.05     0.30     8.47 1.00      732      673
+    sd(Intercept)     4.15      2.09     0.50     8.68 1.00     1035     1042
 
     ~subject:eye (Number of levels: 14) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     3.72      1.48     1.20     7.01 1.00      919     1421
+    sd(Intercept)     3.76      1.50     1.23     7.15 1.00      944     1482
 
-    Population-Level Effects: 
+    Regression Coefficients:
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept   112.90      2.09   108.70   117.04 1.00     2684     2673
-    power6D18     0.79      1.60    -2.37     4.01 1.00     3980     3362
-    power6D36    -0.99      1.62    -4.10     2.18 1.00     4506     3466
-    power6D60     3.31      1.60     0.30     6.55 1.00     4081     3143
+    Intercept   112.94      2.08   108.85   117.08 1.00     2469     2384
+    power6D18     0.80      1.63    -2.41     4.03 1.00     3457     2770
+    power6D36    -0.96      1.63    -4.21     2.20 1.00     3941     3125
+    power6D60     3.29      1.61    -0.00     6.45 1.00     3566     2835
 
-    Family Specific Parameters: 
+    Further Distributional Parameters:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma     4.20      0.49     3.38     5.26 1.00     2798     2698
+    sigma     4.20      0.48     3.38     5.26 1.00     2654     2555
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -805,7 +803,7 @@ We get the posterior density for the intercept as:
 plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="acuity",ylab="density")
 ```
 
-![](figs/visginlaint-1..svg)<!-- -->
+![](figs/visginlaint-1..svg)
 
 and for the power effects as:
 
@@ -816,7 +814,7 @@ matplot(xmat, ymat,type="l",xlab="math",ylab="density")
 legend("left",levels(vision$power)[-1],col=1:3,lty=1:3)
 ```
 
-![](figs/visginlapower-1..svg)<!-- -->
+![](figs/visginlapower-1..svg)
 
 We see the highest power has very little overlap with zero.
 
@@ -827,7 +825,7 @@ matplot(xmat, ymat,type="l",xlab="math",ylab="density")
 legend("left",paste0("subject",1:7),col=1:7,lty=1:7)
 ```
 
-![](figs/visginlasubs-1..svg)<!-- -->
+![](figs/visginlasubs-1..svg)
 
 In contrast to the STAN posteriors, these posterior densities appear to
 have the same variation.
@@ -855,45 +853,44 @@ model](pulp.md#Discussion) for general comments.
 sessionInfo()
 ```
 
-    R version 4.2.1 (2022-06-23)
-    Platform: x86_64-apple-darwin17.0 (64-bit)
-    Running under: macOS Big Sur ... 10.16
+    R version 4.4.1 (2024-06-14)
+    Platform: x86_64-apple-darwin20
+    Running under: macOS Sonoma 14.6.1
 
     Matrix products: default
-    BLAS:   /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRblas.0.dylib
-    LAPACK: /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRlapack.dylib
+    BLAS:   /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRblas.0.dylib 
+    LAPACK: /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.0
 
     locale:
     [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 
+    time zone: Europe/London
+    tzcode source: internal
+
     attached base packages:
-    [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
+    [1] stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-41         nlme_3.1-161        brms_2.18.0         Rcpp_1.0.9          rstan_2.26.13      
-     [6] StanHeaders_2.26.13 knitr_1.41          INLA_22.12.16       sp_1.5-1            foreach_1.5.2      
-    [11] RLRsim_3.1-8        pbkrtest_0.5.1      lme4_1.1-31         Matrix_1.5-3        ggplot2_3.4.0      
-    [16] faraway_1.0.9      
+     [1] mgcv_1.9-1          nlme_3.1-166        brms_2.21.0         Rcpp_1.0.13         rstan_2.32.6       
+     [6] StanHeaders_2.32.10 knitr_1.48          INLA_24.06.27       sp_2.1-4            RLRsim_3.1-8       
+    [11] pbkrtest_0.5.3      lme4_1.1-35.5       Matrix_1.7-0        ggplot2_3.5.1       faraway_1.0.8      
 
     loaded via a namespace (and not attached):
-      [1] minqa_1.2.5          colorspace_2.0-3     ellipsis_0.3.2       markdown_1.4         base64enc_0.1-3     
-      [6] rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         MatrixModels_0.5-1   DT_0.26             
-     [11] fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18     splines_4.2.1       
-     [16] shinythemes_1.2.0    bayesplot_1.10.0     jsonlite_1.8.4       nloptr_2.0.3         broom_1.0.2         
-     [21] shiny_1.7.4          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0       
-     [26] cli_3.5.0            later_1.3.0          htmltools_0.5.4      prettyunits_1.1.1    tools_4.2.1         
-     [31] igraph_1.3.5         coda_0.19-4          gtable_0.3.1         glue_1.6.2           reshape2_1.4.4      
-     [36] dplyr_1.0.10         posterior_1.3.1      V8_4.2.2             vctrs_0.5.1          svglite_2.1.0       
-     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.36            stringr_1.5.0       
-     [46] ps_1.7.2             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.3      gtools_3.9.4        
-     [51] MASS_7.3-58.1        zoo_1.8-11           scales_1.2.1         colourpicker_1.2.0   promises_1.2.0.1    
-     [56] Brobdingnag_1.2-9    inline_0.3.19        shinystan_2.6.0      yaml_2.3.6           curl_4.3.3          
-     [61] gridExtra_2.3        loo_2.5.1            stringi_1.7.8        highr_0.10           dygraphs_1.1.1.6    
-     [66] checkmate_2.1.0      boot_1.3-28.1        pkgbuild_1.4.0       systemfonts_1.0.4    rlang_1.0.6         
-     [71] pkgconfig_2.0.3      matrixStats_0.63.0   distributional_0.3.1 evaluate_0.19        lattice_0.20-45     
-     [76] purrr_1.0.0          labeling_0.4.2       rstantools_2.2.0     htmlwidgets_1.6.0    processx_3.8.0      
-     [81] tidyselect_1.2.0     plyr_1.8.8           magrittr_2.0.3       R6_2.5.1             generics_0.1.3      
-     [86] DBI_1.1.3            pillar_1.8.1         withr_2.5.0          xts_0.12.2           abind_1.4-5         
-     [91] tibble_3.1.8         crayon_1.5.2         utf8_1.2.2           rmarkdown_2.19       grid_4.2.1          
-     [96] callr_3.7.3          threejs_0.3.3        digest_0.6.31        xtable_1.8-4         tidyr_1.2.1         
-    [101] httpuv_1.6.7         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       
+     [1] tidyselect_1.2.1     farver_2.1.2         dplyr_1.1.4          loo_2.8.0            fastmap_1.2.0       
+     [6] tensorA_0.36.2.1     digest_0.6.37        estimability_1.5.1   lifecycle_1.0.4      Deriv_4.1.3         
+    [11] sf_1.0-16            processx_3.8.4       magrittr_2.0.3       posterior_1.6.0      compiler_4.4.1      
+    [16] rlang_1.1.4          tools_4.4.1          utf8_1.2.4           yaml_2.3.10          labeling_0.4.3      
+    [21] bridgesampling_1.1-2 pkgbuild_1.4.4       classInt_0.4-10      plyr_1.8.9           abind_1.4-5         
+    [26] KernSmooth_2.23-24   withr_3.0.1          purrr_1.0.2          grid_4.4.1           stats4_4.4.1        
+    [31] fansi_1.0.6          xtable_1.8-4         e1071_1.7-14         colorspace_2.1-1     inline_0.3.19       
+    [36] emmeans_1.10.4       scales_1.3.0         MASS_7.3-61          cli_3.6.3            mvtnorm_1.2-6       
+    [41] rmarkdown_2.28       generics_0.1.3       RcppParallel_5.1.9   rstudioapi_0.16.0    reshape2_1.4.4      
+    [46] minqa_1.2.8          DBI_1.2.3            proxy_0.4-27         stringr_1.5.1        splines_4.4.1       
+    [51] bayesplot_1.11.1     parallel_4.4.1       matrixStats_1.3.0    vctrs_0.6.5          boot_1.3-31         
+    [56] jsonlite_1.8.8       callr_3.7.6          systemfonts_1.1.0    tidyr_1.3.1          units_0.8-5         
+    [61] glue_1.7.0           nloptr_2.1.1         ps_1.7.7             codetools_0.2-20     distributional_0.4.0
+    [66] stringi_1.8.4        gtable_0.3.5         QuickJSR_1.3.1       munsell_0.5.1        tibble_3.2.1        
+    [71] pillar_1.9.0         htmltools_0.5.8.1    Brobdingnag_1.2-9    R6_2.5.1             fmesher_0.1.7       
+    [76] evaluate_0.24.0      lattice_0.22-6       backports_1.5.0      broom_1.0.6          MatrixModels_0.5-3  
+    [81] rstantools_2.4.0     class_7.3-22         svglite_2.1.3        coda_0.19-4.1        gridExtra_2.3       
+    [86] checkmate_2.3.2      xfun_0.47            pkgconfig_2.0.3     
