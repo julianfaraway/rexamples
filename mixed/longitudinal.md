@@ -1,23 +1,19 @@
-Longitudinal
-================
+# Longitudinal Data Analysis example
 [Julian Faraway](https://julianfaraway.github.io/)
-06 January 2023
+2024-09-02
 
-- <a href="#data" id="toc-data">Data</a>
-- <a href="#mixed-effect-model" id="toc-mixed-effect-model">Mixed Effect
-  Model</a>
-- <a href="#inla" id="toc-inla">INLA</a>
-- <a href="#stan" id="toc-stan">STAN</a>
-  - <a href="#diagnostics" id="toc-diagnostics">Diagnostics</a>
-  - <a href="#output-summary" id="toc-output-summary">Output Summary</a>
-  - <a href="#posterior-distributions"
-    id="toc-posterior-distributions">Posterior Distributions</a>
-- <a href="#brms" id="toc-brms">BRMS</a>
-- <a href="#mgcv" id="toc-mgcv">MGCV</a>
-- <a href="#ginla" id="toc-ginla">GINLA</a>
-- <a href="#discussion" id="toc-discussion">Discussion</a>
-- <a href="#package-version-info" id="toc-package-version-info">Package
-  version info</a>
+- [Data](#data)
+- [Mixed Effect Model](#mixed-effect-model)
+- [INLA](#inla)
+- [STAN](#stan)
+  - [Diagnostics](#diagnostics)
+  - [Output Summary](#output-summary)
+  - [Posterior Distributions](#posterior-distributions)
+- [BRMS](#brms)
+- [MGCV](#mgcv)
+- [GINLA](#ginla)
+- [Discussion](#discussion)
+- [Package version info](#package-version-info)
 
 See the [introduction](index.md) for an overview.
 
@@ -90,13 +86,13 @@ psid20 <- dplyr::filter(psid, person <= 20)
 ggplot(psid20, aes(x=year, y=income))+geom_line()+facet_wrap(~ person)
 ```
 
-![](figs/psidplot-1..svg)<!-- -->
+![](figs/psidplot-1..svg)
 
 ``` r
 ggplot(psid20, aes(x=year, y=income+100, group=person)) +geom_line()+facet_wrap(~ sex)+scale_y_log10()
 ```
 
-![](figs/psidplot-2..svg)<!-- -->
+![](figs/psidplot-2..svg)
 
 # Mixed Effect Model
 
@@ -136,18 +132,25 @@ faraway::sumary(mmod, digits=3)
     AIC = 3839.7, DIC = 3753.4
     deviance = 3787.6 
 
-This model can be written as: $$
+This model can be written as:
+
+``` math
 \begin{aligned}
 \mathrm{\log(income)}_{ij} &= \mu + \beta_{y} \mathrm{year}_i + \beta_s \mathrm{sex}_j + \beta_{ys} \mathrm{sex}_j \times \mathrm{year}_i + \beta_e \mathrm{educ}_j + \beta_a \mathrm{age}_j \\ &+ \gamma^0_j + \gamma^1_j \mathrm{year}_i + \epsilon_{ij}
 \end{aligned}
-$$ where $i$ indexes the year and $j$ indexes the individual. We have:
-$$\left(
+```
+
+where $i$ indexes the year and $j$ indexes the individual. We have:
+
+``` math
+\left(
   \begin{array}{c}
     \gamma^0_k \\
     \gamma^1_k
   \end{array}
   \right) \sim
-  N(0,\sigma^2 D)$$
+  N(0,\sigma^2 D)
+```
 
 We have chosen not to have an interaction between the intercept and the
 slope random effects and so $D$ is a diagonal matrix. It is possible to
@@ -179,15 +182,15 @@ confint(mmod, method="boot", oldNames=FALSE)
 ```
 
                               2.5 %     97.5 %
-    sd_(Intercept)|person  0.416280  0.5804391
-    sd_cyear|person        0.038681  0.0570425
-    sigma                  0.658235  0.7091781
-    (Intercept)            5.499134  7.7696789
-    cyear                  0.068634  0.1024640
-    sexM                   0.918048  1.3769642
-    age                   -0.015266  0.0378608
-    educ                   0.066417  0.1507351
-    cyear:sexM            -0.052304 -0.0029318
+    sd_(Intercept)|person  0.419467  0.6008617
+    sd_cyear|person        0.037740  0.0577056
+    sigma                  0.658871  0.7054057
+    (Intercept)            5.611348  7.6201110
+    cyear                  0.068317  0.1035504
+    sexM                   0.933932  1.3978847
+    age                   -0.014185  0.0358830
+    educ                   0.065079  0.1555695
+    cyear:sexM            -0.049683 -0.0022605
 
 We see that all the standard deviations are clearly well above zero. The
 age effect does not look significant.
@@ -220,18 +223,18 @@ summary(result)
 
     Fixed effects:
                   mean    sd 0.025quant 0.5quant 0.975quant   mode kld
-    (Intercept)  6.629 0.553      5.542    6.629      7.717  6.629   0
-    cyear        0.086 0.009      0.068    0.086      0.103  0.085   0
-    sexM         1.153 0.122      0.914    1.153      1.393  1.153   0
-    age          0.011 0.014     -0.016    0.011      0.038  0.011   0
-    educ         0.109 0.022      0.066    0.109      0.152  0.109   0
-    cyear:sexM  -0.026 0.012     -0.051   -0.026     -0.002 -0.026   0
+    (Intercept)  6.629 0.549      5.550    6.629      7.709  6.629   0
+    cyear        0.086 0.009      0.068    0.086      0.103  0.086   0
+    sexM         1.153 0.121      0.916    1.153      1.391  1.153   0
+    age          0.011 0.014     -0.016    0.011      0.037  0.011   0
+    educ         0.109 0.022      0.066    0.109      0.151  0.109   0
+    cyear:sexM  -0.026 0.012     -0.050   -0.026     -0.002 -0.026   0
 
     Model hyperparameters:
                                               mean     sd 0.025quant 0.5quant 0.975quant   mode
-    Precision for the Gaussian observations   2.15  0.079       1.99     2.14       2.30   2.14
-    Precision for person                      3.63  0.655       2.56     3.56       5.13   3.39
-    Precision for slperson                  437.16 92.316     286.21   426.68     648.13 405.49
+    Precision for the Gaussian observations   2.14  0.079       1.99     2.14       2.30   2.14
+    Precision for person                      3.67  0.628       2.58     3.62       5.04   3.54
+    Precision for slperson                  438.00 91.088     285.95   428.84     642.95 411.12
 
      is computed 
 
@@ -251,15 +254,15 @@ colnames(restab) = c("Intercept",colnames(mm)[-1],"intSD","slopeSD","epsilon")
 data.frame(restab) |> kable()
 ```
 
-|            | Intercept | cyear     | sexM    | age       | educ     | cyear.sexM | intSD   | slopeSD   | epsilon  |
-|:-----------|:----------|:----------|:--------|:----------|:---------|:-----------|:--------|:----------|:---------|
-| mean       | 6.6291    | 0.085574  | 1.1532  | 0.010659  | 0.1087   | -0.02632   | 0.53087 | 0.048606  | 0.6832   |
-| sd         | 0.55288   | 0.0089965 | 0.12168 | 0.013743  | 0.021871 | 0.012226   | 0.04624 | 0.0050065 | 0.012452 |
-| quant0.025 | 5.5414    | 0.067962  | 0.91375 | -0.016399 | 0.065667 | -0.050507  | 0.44212 | 0.039349  | 0.65935  |
-| quant0.25  | 6.2578    | 0.079515  | 1.0714  | 0.0014331 | 0.094005 | -0.034504  | 0.49889 | 0.045103  | 0.67463  |
-| quant0.5   | 6.6278    | 0.085522  | 1.1529  | 0.010635  | 0.10865  | -0.026301  | 0.53042 | 0.048411  | 0.68294  |
-| quant0.75  | 6.998     | 0.091559  | 1.2344  | 0.019832  | 0.12329  | -0.018139  | 0.56184 | 0.05187   | 0.6915   |
-| quant0.975 | 7.7149    | 0.10333   | 1.3921  | 0.03763   | 0.15165  | -0.0024428 | 0.62331 | 0.058989  | 0.70824  |
+|            | Intercept | cyear     | sexM    | age       | educ     | cyear.sexM | intSD    | slopeSD   | epsilon  |
+|:-----------|:----------|:----------|:--------|:----------|:---------|:-----------|:---------|:----------|:---------|
+| mean       | 6.6292    | 0.085561  | 1.1531  | 0.010662  | 0.10869  | -0.026293  | 0.52745  | 0.048544  | 0.68335  |
+| sd         | 0.54876   | 0.0089766 | 0.12078 | 0.01364   | 0.021709 | 0.012199   | 0.044794 | 0.0049758 | 0.012445 |
+| quant0.025 | 5.5498    | 0.067987  | 0.91553 | -0.016189 | 0.065982 | -0.050423  | 0.44577  | 0.039499  | 0.65928  |
+| quant0.25  | 6.2605    | 0.079515  | 1.072   | 0.0015019 | 0.094099 | -0.034461  | 0.49603  | 0.045048  | 0.67483  |
+| quant0.5   | 6.628     | 0.08551   | 1.1529  | 0.010638  | 0.10864  | -0.026275  | 0.5251   | 0.048281  | 0.68319  |
+| quant0.75  | 6.9955    | 0.091534  | 1.2337  | 0.019769  | 0.12317  | -0.01813   | 0.55636  | 0.051748  | 0.69169  |
+| quant0.975 | 7.7068    | 0.10327   | 1.3903  | 0.037427  | 0.15131  | -0.0024687 | 0.62158  | 0.059025  | 0.70815  |
 
 Also construct a plot the SD posteriors:
 
@@ -269,7 +272,7 @@ ggplot(ddf, aes(x,y))+geom_line()+xlab("log(income)")+ylab("density") +
   facet_wrap(~ errterm, scales = "free")
 ```
 
-![](figs/plotsdspsid-1..svg)<!-- -->
+![](figs/plotsdspsid-1..svg)
 
 Posteriors look OK.
 
@@ -355,7 +358,7 @@ system.time(fit <- sampling(sm, data=psiddat))
 ```
 
        user  system elapsed 
-    271.536   1.575  82.460 
+    292.339   2.884  88.065 
 
 ## Diagnostics
 
@@ -367,7 +370,7 @@ mdf <- reshape2::melt(muc)
 ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
 ```
 
-![](figs/psidsigmaeps-1..svg)<!-- -->
+![](figs/psidsigmaeps-1..svg)
 
 Looks OK. For the intercept SD
 
@@ -378,7 +381,7 @@ mdf <- reshape2::melt(muc)
 ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
 ```
 
-![](figs/psidsigmaint-1..svg)<!-- -->
+![](figs/psidsigmaint-1..svg)
 
 Looks OK. For the slope SD.
 
@@ -389,7 +392,7 @@ mdf <- reshape2::melt(muc)
 ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
 ```
 
-![](figs/psidsigmaslope-1..svg)<!-- -->
+![](figs/psidsigmaslope-1..svg)
 
 Again satisfactory.
 
@@ -416,7 +419,7 @@ print(fit,par=c("beta","sigmaint","sigmaslope","sigmaeps"))
     sigmaslope  0.05    0.00 0.01  0.04  0.05  0.05  0.05  0.06  1062 1.00
     sigmaeps    0.68    0.00 0.01  0.66  0.68  0.68  0.69  0.71  4315 1.00
 
-    Samples were drawn using NUTS(diag_e) at Fri Jan  6 10:23:47 2023.
+    Samples were drawn using NUTS(diag_e) at Mon Sep  2 11:45:13 2024.
     For each parameter, n_eff is a crude measure of effective sample size,
     and Rhat is the potential scale reduction factor on split chains (at 
     convergence, Rhat=1).
@@ -440,7 +443,7 @@ colnames(ref)[2:3] <- c("logincome","parameter")
 ggplot(data=ref,aes(x=logincome))+geom_density()+facet_wrap(~parameter,scales="free")
 ```
 
-![](figs/psidpostsig-1..svg)<!-- -->
+![](figs/psidpostsig-1..svg)
 
 The slope parameter is not on the same scale.
 
@@ -451,7 +454,7 @@ ref$parameter <- factor(colnames(x)[ref$parameter])
 ggplot(ref, aes(x=logincome))+geom_density()+geom_vline(xintercept=0)+facet_wrap(~parameter,scales="free")
 ```
 
-![](figs/psidpostbeta-1..svg)<!-- -->
+![](figs/psidpostbeta-1..svg)
 
 We see that age and possibly the year:sex interaction are the only terms
 which may not contribute much,
@@ -472,7 +475,7 @@ We can obtain some posterior densities and diagnostics with:
 plot(bmod, variable = "^s", regex=TRUE)
 ```
 
-![](figs/psidbrmsdiag-1..svg)<!-- -->
+![](figs/psidbrmsdiag-1..svg)
 
 We have chosen only the random effect hyperparameters since this is
 where problems will appear first. Looks OK.
@@ -483,7 +486,7 @@ We can look at the STAN code that `brms` used with:
 stancode(bmod)
 ```
 
-    // generated with brms 2.18.0
+    // generated with brms 2.21.0
     functions {
     }
     data {
@@ -491,22 +494,22 @@ stancode(bmod)
       vector[N] Y;  // response variable
       int<lower=1> K;  // number of population-level effects
       matrix[N, K] X;  // population-level design matrix
+      int<lower=1> Kc;  // number of population-level effects after centering
       // data for group-level effects of ID 1
       int<lower=1> N_1;  // number of grouping levels
       int<lower=1> M_1;  // number of coefficients per level
-      int<lower=1> J_1[N];  // grouping indicator per observation
+      array[N] int<lower=1> J_1;  // grouping indicator per observation
       // group-level predictor values
       vector[N] Z_1_1;
       // data for group-level effects of ID 2
       int<lower=1> N_2;  // number of grouping levels
       int<lower=1> M_2;  // number of coefficients per level
-      int<lower=1> J_2[N];  // grouping indicator per observation
+      array[N] int<lower=1> J_2;  // grouping indicator per observation
       // group-level predictor values
       vector[N] Z_2_1;
       int prior_only;  // should the likelihood be ignored?
     }
     transformed data {
-      int Kc = K - 1;
       matrix[N, Kc] Xc;  // centered version of X without an intercept
       vector[Kc] means_X;  // column means of X before centering
       for (i in 2:K) {
@@ -515,13 +518,13 @@ stancode(bmod)
       }
     }
     parameters {
-      vector[Kc] b;  // population-level effects
+      vector[Kc] b;  // regression coefficients
       real Intercept;  // temporary intercept for centered predictors
       real<lower=0> sigma;  // dispersion parameter
       vector<lower=0>[M_1] sd_1;  // group-level standard deviations
-      vector[N_1] z_1[M_1];  // standardized group-level effects
+      array[M_1] vector[N_1] z_1;  // standardized group-level effects
       vector<lower=0>[M_2] sd_2;  // group-level standard deviations
-      vector[N_2] z_2[M_2];  // standardized group-level effects
+      array[M_2] vector[N_2] z_2;  // standardized group-level effects
     }
     transformed parameters {
       vector[N_1] r_1_1;  // actual group-level effects
@@ -576,24 +579,24 @@ summary(bmod)
       Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
              total post-warmup draws = 4000
 
-    Group-Level Effects: 
+    Multilevel Hyperparameters:
     ~person (Number of levels: 85) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.54      0.05     0.46     0.64 1.00      897     1535
-    sd(cyear)         0.05      0.01     0.04     0.06 1.00     1090     2139
+    sd(Intercept)     0.54      0.05     0.46     0.65 1.00      962     1476
+    sd(cyear)         0.05      0.01     0.04     0.06 1.00     1147     1969
 
-    Population-Level Effects: 
+    Regression Coefficients:
                Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept      6.65      0.55     5.55     7.72 1.01      677      925
-    cyear          0.09      0.01     0.07     0.10 1.01      923     1714
-    sexM           1.15      0.12     0.91     1.38 1.01      653     1151
-    age            0.01      0.01    -0.02     0.04 1.01      615     1251
-    educ           0.11      0.02     0.06     0.15 1.00      776      871
-    cyear:sexM    -0.03      0.01    -0.05    -0.00 1.00      911     1758
+    Intercept      6.64      0.57     5.53     7.77 1.00      978     1545
+    cyear          0.09      0.01     0.07     0.11 1.00     1231     1526
+    sexM           1.15      0.13     0.90     1.40 1.00      636      879
+    age            0.01      0.01    -0.02     0.04 1.00      918     1325
+    educ           0.11      0.02     0.07     0.15 1.00      861     1669
+    cyear:sexM    -0.03      0.01    -0.05    -0.00 1.00     1038     1891
 
-    Family Specific Parameters: 
+    Further Distributional Parameters:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma     0.68      0.01     0.66     0.71 1.00     5111     3239
+    sigma     0.68      0.01     0.66     0.71 1.00     4357     3120
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -707,7 +710,7 @@ We get the posterior density for the intercept as:
 plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="log(income)",ylab="density")
 ```
 
-![](figs/psidginlaint-1..svg)<!-- -->
+![](figs/psidginlaint-1..svg)
 
 and for the age fixed effects as:
 
@@ -716,7 +719,7 @@ plot(gimod$beta[4,],gimod$density[4,],type="l",xlab="log(income) per age",ylab="
 abline(v=0)
 ```
 
-![](figs/psidginlaage-1..svg)<!-- -->
+![](figs/psidginlaage-1..svg)
 
 We see that the posterior for the age effect substantially overlaps
 zero.
@@ -747,45 +750,43 @@ model](pulp.md#Discussion) for general comments.
 sessionInfo()
 ```
 
-    R version 4.2.1 (2022-06-23)
-    Platform: x86_64-apple-darwin17.0 (64-bit)
-    Running under: macOS Big Sur ... 10.16
+    R version 4.4.1 (2024-06-14)
+    Platform: x86_64-apple-darwin20
+    Running under: macOS Sonoma 14.6.1
 
     Matrix products: default
-    BLAS:   /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRblas.0.dylib
-    LAPACK: /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRlapack.dylib
+    BLAS:   /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRblas.0.dylib 
+    LAPACK: /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.0
 
     locale:
     [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 
+    time zone: Europe/London
+    tzcode source: internal
+
     attached base packages:
-    [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
+    [1] stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-41         nlme_3.1-161        brms_2.18.0         Rcpp_1.0.9          rstan_2.26.13      
-     [6] StanHeaders_2.26.13 knitr_1.41          INLA_22.12.16       sp_1.5-1            foreach_1.5.2      
-    [11] RLRsim_3.1-8        pbkrtest_0.5.1      lme4_1.1-31         Matrix_1.5-3        ggplot2_3.4.0      
-    [16] faraway_1.0.9      
+     [1] mgcv_1.9-1          nlme_3.1-166        brms_2.21.0         Rcpp_1.0.13         rstan_2.32.6       
+     [6] StanHeaders_2.32.10 knitr_1.48          INLA_24.06.27       sp_2.1-4            RLRsim_3.1-8       
+    [11] pbkrtest_0.5.3      lme4_1.1-35.5       Matrix_1.7-0        ggplot2_3.5.1       faraway_1.0.8      
 
     loaded via a namespace (and not attached):
-      [1] minqa_1.2.5          colorspace_2.0-3     ellipsis_0.3.2       markdown_1.4         base64enc_0.1-3     
-      [6] rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         MatrixModels_0.5-1   DT_0.26             
-     [11] fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18     splines_4.2.1       
-     [16] shinythemes_1.2.0    bayesplot_1.10.0     jsonlite_1.8.4       nloptr_2.0.3         broom_1.0.2         
-     [21] shiny_1.7.4          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0       
-     [26] cli_3.5.0            later_1.3.0          htmltools_0.5.4      prettyunits_1.1.1    tools_4.2.1         
-     [31] igraph_1.3.5         coda_0.19-4          gtable_0.3.1         glue_1.6.2           reshape2_1.4.4      
-     [36] dplyr_1.0.10         posterior_1.3.1      V8_4.2.2             vctrs_0.5.1          svglite_2.1.0       
-     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.36            stringr_1.5.0       
-     [46] ps_1.7.2             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.3      gtools_3.9.4        
-     [51] MASS_7.3-58.1        zoo_1.8-11           scales_1.2.1         colourpicker_1.2.0   promises_1.2.0.1    
-     [56] Brobdingnag_1.2-9    inline_0.3.19        shinystan_2.6.0      yaml_2.3.6           curl_4.3.3          
-     [61] gridExtra_2.3        loo_2.5.1            stringi_1.7.8        highr_0.10           dygraphs_1.1.1.6    
-     [66] checkmate_2.1.0      boot_1.3-28.1        pkgbuild_1.4.0       systemfonts_1.0.4    rlang_1.0.6         
-     [71] pkgconfig_2.0.3      matrixStats_0.63.0   distributional_0.3.1 evaluate_0.19        lattice_0.20-45     
-     [76] purrr_1.0.0          labeling_0.4.2       rstantools_2.2.0     htmlwidgets_1.6.0    processx_3.8.0      
-     [81] tidyselect_1.2.0     plyr_1.8.8           magrittr_2.0.3       R6_2.5.1             generics_0.1.3      
-     [86] DBI_1.1.3            pillar_1.8.1         withr_2.5.0          xts_0.12.2           abind_1.4-5         
-     [91] tibble_3.1.8         crayon_1.5.2         utf8_1.2.2           rmarkdown_2.19       grid_4.2.1          
-     [96] callr_3.7.3          threejs_0.3.3        digest_0.6.31        xtable_1.8-4         tidyr_1.2.1         
-    [101] httpuv_1.6.7         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       
+     [1] tidyselect_1.2.1     farver_2.1.2         dplyr_1.1.4          loo_2.8.0            fastmap_1.2.0       
+     [6] tensorA_0.36.2.1     digest_0.6.37        estimability_1.5.1   lifecycle_1.0.4      Deriv_4.1.3         
+    [11] sf_1.0-16            magrittr_2.0.3       posterior_1.6.0      compiler_4.4.1       rlang_1.1.4         
+    [16] tools_4.4.1          utf8_1.2.4           yaml_2.3.10          labeling_0.4.3       bridgesampling_1.1-2
+    [21] pkgbuild_1.4.4       classInt_0.4-10      plyr_1.8.9           abind_1.4-5          KernSmooth_2.23-24  
+    [26] withr_3.0.1          purrr_1.0.2          grid_4.4.1           stats4_4.4.1         fansi_1.0.6         
+    [31] xtable_1.8-4         e1071_1.7-14         colorspace_2.1-1     inline_0.3.19        emmeans_1.10.4      
+    [36] scales_1.3.0         MASS_7.3-61          cli_3.6.3            mvtnorm_1.2-6        rmarkdown_2.28      
+    [41] generics_0.1.3       RcppParallel_5.1.9   rstudioapi_0.16.0    reshape2_1.4.4       minqa_1.2.8         
+    [46] DBI_1.2.3            proxy_0.4-27         stringr_1.5.1        splines_4.4.1        bayesplot_1.11.1    
+    [51] parallel_4.4.1       matrixStats_1.3.0    vctrs_0.6.5          boot_1.3-31          jsonlite_1.8.8      
+    [56] systemfonts_1.1.0    tidyr_1.3.1          units_0.8-5          glue_1.7.0           nloptr_2.1.1        
+    [61] codetools_0.2-20     distributional_0.4.0 stringi_1.8.4        gtable_0.3.5         QuickJSR_1.3.1      
+    [66] munsell_0.5.1        tibble_3.2.1         pillar_1.9.0         htmltools_0.5.8.1    Brobdingnag_1.2-9   
+    [71] R6_2.5.1             fmesher_0.1.7        evaluate_0.24.0      lattice_0.22-6       backports_1.5.0     
+    [76] broom_1.0.6          rstantools_2.4.0     class_7.3-22         svglite_2.1.3        coda_0.19-4.1       
+    [81] gridExtra_2.3        checkmate_2.3.2      xfun_0.47            pkgconfig_2.0.3     
