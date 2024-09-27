@@ -1,6 +1,6 @@
 # Nested Design
 [Julian Faraway](https://julianfaraway.github.io/)
-2023-06-30
+2024-09-27
 
 - [Data](#data)
 - [Mixed Effect Model](#mixed-effect-model)
@@ -124,7 +124,7 @@ exactRLRT(cmods, cmod, cmodr)
         (p-value based on 10000 simulated values)
 
     data:  
-    RLRT = 1.6, p-value = 0.11
+    RLRT = 1.6, p-value = 0.097
 
 We can remove the sample random effect from the model. But consider the
 confidence intervals:
@@ -134,11 +134,11 @@ confint(cmod, method="boot")
 ```
 
                    2.5 %   97.5 %
-    .sig01      0.000000 0.095625
-    .sig02      0.000000 0.141366
-    .sig03      0.000000 0.153524
-    .sigma      0.059987 0.106322
-    (Intercept) 0.302717 0.468338
+    .sig01      0.000000 0.096217
+    .sig02      0.000000 0.143103
+    .sig03      0.000000 0.144970
+    .sigma      0.060646 0.106692
+    (Intercept) 0.302549 0.464360
 
 We see that all three random effects include zero at the lower end,
 indicating that we might equally have disposed of the lab or technician
@@ -177,14 +177,14 @@ summary(result)
 
     Fixed effects:
                  mean    sd 0.025quant 0.5quant 0.975quant  mode kld
-    (Intercept) 0.388 0.035      0.318    0.388      0.457 0.388   0
+    (Intercept) 0.387 0.035      0.318    0.387      0.457 0.387   0
 
     Model hyperparameters:
-                                                mean       sd 0.025quant 0.5quant 0.975quant  mode
-    Precision for the Gaussian observations   114.86    27.02      69.99   112.08     175.72 34.71
-    Precision for Lab                       21230.87 22842.36    1438.12 14065.24   81875.80 74.74
-    Precision for labtech                     105.62    54.89      35.45    93.81     245.11  9.37
-    Precision for labtechsamp               20398.62 22494.59    1221.25 13240.41   80054.53 57.80
+                                                mean       sd 0.025quant 0.5quant 0.975quant    mode
+    Precision for the Gaussian observations   114.91    27.08      69.96   112.11     175.94  107.03
+    Precision for Lab                       21661.07 24857.64    1321.12 13806.58   87537.37 3535.49
+    Precision for labtech                     105.32    53.85      36.06    93.85     241.93   74.40
+    Precision for labtechsamp               20653.33 23720.38    1146.64 13068.78   83544.25 3002.66
 
      is computed 
 
@@ -211,14 +211,14 @@ summary(result)
 
     Fixed effects:
                  mean    sd 0.025quant 0.5quant 0.975quant  mode kld
-    (Intercept) 0.388 0.062      0.263    0.388      0.512 0.388   0
+    (Intercept) 0.387 0.062      0.263    0.387      0.512 0.387   0
 
     Model hyperparameters:
-                                              mean    sd 0.025quant 0.5quant 0.975quant  mode
-    Precision for the Gaussian observations 160.24 41.99      91.05   155.74     255.10 41.81
-    Precision for Lab                       116.02 95.66      20.41    89.62     369.07  5.01
-    Precision for labtech                   131.28 87.55      31.91   109.44     359.68  6.92
-    Precision for labtechsamp               184.67 93.60      63.59   164.90     421.68 14.89
+                                              mean    sd 0.025quant 0.5quant 0.975quant   mode
+    Precision for the Gaussian observations 160.43 42.30      91.58   155.62     256.86 146.92
+    Precision for Lab                       115.87 95.02      19.91    89.75     366.90  51.49
+    Precision for labtech                   131.41 88.50      32.01   109.12     362.85  74.69
+    Precision for labtechsamp               184.73 93.54      63.44   165.05     421.31 131.38
 
      is computed 
 
@@ -242,13 +242,13 @@ data.frame(restab)
 ```
 
                      mu      Lab Technician   Sample  epsilon
-    mean         0.3875  0.11342    0.10044 0.080197 0.081028
-    sd         0.061899 0.043168   0.031582 0.019438  0.01066
-    quant0.025  0.26332 0.052272   0.052928 0.048858 0.062716
-    quant0.25   0.34857 0.082539   0.077746 0.066235 0.073444
-    quant0.5    0.38735  0.10544    0.09547 0.077825 0.080055
-    quant0.75   0.42613  0.13551     0.1177  0.09156 0.087617
-    quant0.975  0.51138  0.21971    0.17594  0.12483   0.1045
+    mean         0.3875   0.1137     0.1005 0.080191  0.08099
+    sd         0.061825 0.043845   0.031582 0.019471 0.010637
+    quant0.025  0.26346 0.052415   0.052704 0.048877 0.062504
+    quant0.25   0.34864 0.082422    0.07778 0.066205 0.073439
+    quant0.5    0.38735  0.10531   0.095638 0.077782 0.080106
+    quant0.75   0.42606  0.13578    0.11787 0.091546 0.087619
+    quant0.975  0.51124  0.22237    0.17573  0.12498  0.10421
 
 Also construct a plot the SD posteriors:
 
@@ -280,14 +280,14 @@ summary(result)
 
     Fixed effects:
                  mean    sd 0.025quant 0.5quant 0.975quant  mode kld
-    (Intercept) 0.388 0.051      0.284    0.387      0.491 0.387   0
+    (Intercept) 0.388 0.051      0.285    0.388       0.49 0.388   0
 
     Model hyperparameters:
-                                              mean     sd 0.025quant 0.5quant 0.975quant  mode
-    Precision for the Gaussian observations 143.19  40.34      78.74   138.22     236.18 34.12
-    Precision for Lab                       443.83 904.24      27.87   203.09    2395.42  4.37
-    Precision for labtech                   187.11 175.01      25.59   136.62     650.38  4.54
-    Precision for labtechsamp               427.59 434.84      63.94   299.90    1575.77  6.54
+                                              mean     sd 0.025quant 0.5quant 0.975quant   mode
+    Precision for the Gaussian observations 142.99  40.31      78.46   138.07     235.81 129.07
+    Precision for Lab                       405.85 738.03      30.64   202.37    2082.45  73.24
+    Precision for labtech                   180.86 161.78      26.49   134.85     609.39  70.39
+    Precision for labtechsamp               432.50 435.22      66.15   304.97    1582.95 161.34
 
      is computed 
 
@@ -308,13 +308,13 @@ data.frame(restab)
 ```
 
                      mu      Lab Technician   Sample  epsilon
-    mean         0.3875 0.079257   0.093748 0.062163 0.086023
-    sd         0.051365  0.04387   0.040553 0.025554 0.012034
-    quant0.025  0.28411  0.02059   0.039368 0.025348 0.065191
-    quant0.25   0.35565 0.047053   0.065006 0.043688 0.077471
-    quant0.5    0.38738 0.070706   0.085317 0.057801    0.085
-    quant0.75    0.4191  0.10159    0.11318 0.075658 0.093497
-    quant0.975  0.49064  0.18796    0.19599  0.12427  0.11237
+    mean         0.3875 0.078441     0.0939 0.061533 0.086089
+    sd         0.050964 0.041072   0.039304 0.025018 0.012071
+    quant0.025  0.28497 0.022096   0.040679 0.025294 0.065241
+    quant0.25   0.35578 0.048222   0.066004 0.043431 0.077508
+    quant0.5    0.38738 0.070869   0.085863 0.057329 0.085044
+    quant0.75   0.41897 0.099893    0.11295 0.074829 0.093574
+    quant0.975  0.48978  0.17918    0.19263  0.12216  0.11257
 
 Make the plots:
 
@@ -439,19 +439,19 @@ fit <- mod$sample(
     Chain 1 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
     Chain 2 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
     Chain 3 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 1 Iteration: 2000 / 2000 [100%]  (Sampling) 
     Chain 4 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+    Chain 1 finished in 0.7 seconds.
+    Chain 2 Iteration: 2000 / 2000 [100%]  (Sampling) 
     Chain 3 Iteration: 2000 / 2000 [100%]  (Sampling) 
     Chain 4 Iteration: 2000 / 2000 [100%]  (Sampling) 
+    Chain 2 finished in 0.7 seconds.
     Chain 3 finished in 0.6 seconds.
-    Chain 4 finished in 0.6 seconds.
-    Chain 1 Iteration: 2000 / 2000 [100%]  (Sampling) 
-    Chain 2 Iteration: 2000 / 2000 [100%]  (Sampling) 
-    Chain 1 finished in 0.6 seconds.
-    Chain 2 finished in 0.6 seconds.
+    Chain 4 finished in 0.7 seconds.
 
     All 4 chains finished successfully.
-    Mean chain execution time: 0.6 seconds.
-    Total execution time: 0.8 seconds.
+    Mean chain execution time: 0.7 seconds.
+    Total execution time: 0.9 seconds.
 
 ## Diagnostics
 
@@ -497,11 +497,13 @@ ggplot(draws_df,
 
 For the sample SD
 
-``` reggssigmalev3
+``` r
 ggplot(draws_df,
        aes(x=.iteration,y=sigmalev3,color=factor(.chain))) + geom_line() +
   labs(color = 'Chain', x="Iteration")
 ```
+
+![](figs/reggssigmalev3-1..svg)
 
 All these are satisfactory.
 
@@ -515,12 +517,12 @@ fit$summary(c("mu","sigmalev1","sigmalev2","sigmalev3","sigmaeps"))
 
     # A tibble: 5 × 10
       variable    mean median     sd    mad      q5   q95  rhat ess_bulk ess_tail
-      <chr>      <num>  <num>  <num>  <num>   <num> <num> <num>    <num>    <num>
-    1 mu        0.383  0.384  0.0575 0.0506 0.292   0.476  1.00    1299.     844.
-    2 sigmalev1 0.0947 0.0829 0.0673 0.0565 0.0108  0.216  1.00    1112.    1597.
-    3 sigmalev2 0.0942 0.0905 0.0460 0.0407 0.0212  0.176  1.00     814.     632.
-    4 sigmalev3 0.0591 0.0580 0.0308 0.0303 0.00931 0.113  1.01     699.     745.
-    5 sigmaeps  0.0903 0.0891 0.0133 0.0127 0.0710  0.115  1.00    1421.    2206.
+      <chr>      <dbl>  <dbl>  <dbl>  <dbl>   <dbl> <dbl> <dbl>    <dbl>    <dbl>
+    1 mu        0.389  0.389  0.0563 0.0509 0.297   0.482  1.00    2206.    1689.
+    2 sigmalev1 0.0931 0.0837 0.0617 0.0538 0.0115  0.202  1.00    1199.    1782.
+    3 sigmalev2 0.0941 0.0895 0.0441 0.0395 0.0274  0.172  1.00    1158.    1244.
+    4 sigmalev3 0.0571 0.0555 0.0302 0.0308 0.00908 0.109  1.01     744.    1616.
+    5 sigmaeps  0.0908 0.0894 0.0136 0.0133 0.0707  0.115  1.00    1396.    2542.
 
 About what we expect:
 
@@ -556,7 +558,7 @@ below, the nesting is signalled by the form of the model specification
 which may be essential to achieve the best results.
 
 ``` r
-suppressMessages(bmod <- brm(Fat ~ 1 + (1|Lab/Technician/Sample), data=eggs,iter=10000, cores=4,backend = "cmdstanr"))
+bmod <- brm(Fat ~ 1 + (1|Lab/Technician/Sample), data=eggs,iter=10000, cores=4,silent=2,backend = "cmdstanr")
 ```
 
 We get some warnings. We can obtain some posterior densities and
@@ -578,63 +580,61 @@ We can look at the STAN code that `brms` used with:
 stancode(bmod)
 ```
 
-    // generated with brms 2.19.0
+    // generated with brms 2.21.0
     functions {
-      
     }
     data {
-      int<lower=1> N; // total number of observations
-      vector[N] Y; // response variable
+      int<lower=1> N;  // total number of observations
+      vector[N] Y;  // response variable
       // data for group-level effects of ID 1
-      int<lower=1> N_1; // number of grouping levels
-      int<lower=1> M_1; // number of coefficients per level
-      array[N] int<lower=1> J_1; // grouping indicator per observation
+      int<lower=1> N_1;  // number of grouping levels
+      int<lower=1> M_1;  // number of coefficients per level
+      array[N] int<lower=1> J_1;  // grouping indicator per observation
       // group-level predictor values
       vector[N] Z_1_1;
       // data for group-level effects of ID 2
-      int<lower=1> N_2; // number of grouping levels
-      int<lower=1> M_2; // number of coefficients per level
-      array[N] int<lower=1> J_2; // grouping indicator per observation
+      int<lower=1> N_2;  // number of grouping levels
+      int<lower=1> M_2;  // number of coefficients per level
+      array[N] int<lower=1> J_2;  // grouping indicator per observation
       // group-level predictor values
       vector[N] Z_2_1;
       // data for group-level effects of ID 3
-      int<lower=1> N_3; // number of grouping levels
-      int<lower=1> M_3; // number of coefficients per level
-      array[N] int<lower=1> J_3; // grouping indicator per observation
+      int<lower=1> N_3;  // number of grouping levels
+      int<lower=1> M_3;  // number of coefficients per level
+      array[N] int<lower=1> J_3;  // grouping indicator per observation
       // group-level predictor values
       vector[N] Z_3_1;
-      int prior_only; // should the likelihood be ignored?
+      int prior_only;  // should the likelihood be ignored?
     }
     transformed data {
-      
     }
     parameters {
-      real Intercept; // temporary intercept for centered predictors
-      real<lower=0> sigma; // dispersion parameter
-      vector<lower=0>[M_1] sd_1; // group-level standard deviations
-      array[M_1] vector[N_1] z_1; // standardized group-level effects
-      vector<lower=0>[M_2] sd_2; // group-level standard deviations
-      array[M_2] vector[N_2] z_2; // standardized group-level effects
-      vector<lower=0>[M_3] sd_3; // group-level standard deviations
-      array[M_3] vector[N_3] z_3; // standardized group-level effects
+      real Intercept;  // temporary intercept for centered predictors
+      real<lower=0> sigma;  // dispersion parameter
+      vector<lower=0>[M_1] sd_1;  // group-level standard deviations
+      array[M_1] vector[N_1] z_1;  // standardized group-level effects
+      vector<lower=0>[M_2] sd_2;  // group-level standard deviations
+      array[M_2] vector[N_2] z_2;  // standardized group-level effects
+      vector<lower=0>[M_3] sd_3;  // group-level standard deviations
+      array[M_3] vector[N_3] z_3;  // standardized group-level effects
     }
     transformed parameters {
-      vector[N_1] r_1_1; // actual group-level effects
-      vector[N_2] r_2_1; // actual group-level effects
-      vector[N_3] r_3_1; // actual group-level effects
-      real lprior = 0; // prior contributions to the log posterior
-      r_1_1 = sd_1[1] * z_1[1];
-      r_2_1 = sd_2[1] * z_2[1];
-      r_3_1 = sd_3[1] * z_3[1];
+      vector[N_1] r_1_1;  // actual group-level effects
+      vector[N_2] r_2_1;  // actual group-level effects
+      vector[N_3] r_3_1;  // actual group-level effects
+      real lprior = 0;  // prior contributions to the log posterior
+      r_1_1 = (sd_1[1] * (z_1[1]));
+      r_2_1 = (sd_2[1] * (z_2[1]));
+      r_3_1 = (sd_3[1] * (z_3[1]));
       lprior += student_t_lpdf(Intercept | 3, 0.4, 2.5);
       lprior += student_t_lpdf(sigma | 3, 0, 2.5)
-                - 1 * student_t_lccdf(0 | 3, 0, 2.5);
+        - 1 * student_t_lccdf(0 | 3, 0, 2.5);
       lprior += student_t_lpdf(sd_1 | 3, 0, 2.5)
-                - 1 * student_t_lccdf(0 | 3, 0, 2.5);
+        - 1 * student_t_lccdf(0 | 3, 0, 2.5);
       lprior += student_t_lpdf(sd_2 | 3, 0, 2.5)
-                - 1 * student_t_lccdf(0 | 3, 0, 2.5);
+        - 1 * student_t_lccdf(0 | 3, 0, 2.5);
       lprior += student_t_lpdf(sd_3 | 3, 0, 2.5)
-                - 1 * student_t_lccdf(0 | 3, 0, 2.5);
+        - 1 * student_t_lccdf(0 | 3, 0, 2.5);
     }
     model {
       // likelihood including constants
@@ -642,10 +642,9 @@ stancode(bmod)
         // initialize linear predictor term
         vector[N] mu = rep_vector(0.0, N);
         mu += Intercept;
-        for (n in 1 : N) {
+        for (n in 1:N) {
           // add more terms to the linear predictor
-          mu[n] += r_1_1[J_1[n]] * Z_1_1[n] + r_2_1[J_2[n]] * Z_2_1[n]
-                   + r_3_1[J_3[n]] * Z_3_1[n];
+          mu[n] += r_1_1[J_1[n]] * Z_1_1[n] + r_2_1[J_2[n]] * Z_2_1[n] + r_3_1[J_3[n]] * Z_3_1[n];
         }
         target += normal_lpdf(Y | mu, sigma);
       }
@@ -679,26 +678,26 @@ summary(bmod)
       Draws: 4 chains, each with iter = 10000; warmup = 5000; thin = 1;
              total post-warmup draws = 20000
 
-    Group-Level Effects: 
+    Multilevel Hyperparameters:
     ~Lab (Number of levels: 6) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.10      0.08     0.01     0.31 1.00     3165     2649
+    sd(Intercept)     0.10      0.08     0.01     0.30 1.00     4726     2876
 
     ~Lab:Technician (Number of levels: 12) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.10      0.05     0.01     0.20 1.00     4240     4486
+    sd(Intercept)     0.10      0.05     0.01     0.20 1.00     4504     5422
 
     ~Lab:Technician:Sample (Number of levels: 24) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.06      0.03     0.00     0.12 1.00     4184     7004
+    sd(Intercept)     0.06      0.03     0.00     0.12 1.00     3985     7295
 
-    Population-Level Effects: 
+    Regression Coefficients:
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept     0.39      0.06     0.26     0.52 1.00     3694     2551
+    Intercept     0.39      0.06     0.26     0.51 1.00     5564     3512
 
-    Family Specific Parameters: 
+    Further Distributional Parameters:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma     0.09      0.01     0.07     0.12 1.00     7406    11378
+    sigma     0.09      0.01     0.07     0.12 1.00     6777    11378
 
     Draws were sampled using sample(hmc). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -895,13 +894,13 @@ model](pulp.md#Discussion) for general comments.
 sessionInfo()
 ```
 
-    R version 4.3.1 (2023-06-16)
-    Platform: x86_64-apple-darwin20 (64-bit)
-    Running under: macOS Ventura 13.4.1
+    R version 4.4.1 (2024-06-14)
+    Platform: x86_64-apple-darwin20
+    Running under: macOS Sonoma 14.7
 
     Matrix products: default
-    BLAS:   /Library/Frameworks/R.framework/Versions/4.3-x86_64/Resources/lib/libRblas.0.dylib 
-    LAPACK: /Library/Frameworks/R.framework/Versions/4.3-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.11.0
+    BLAS:   /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRblas.0.dylib 
+    LAPACK: /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.0
 
     locale:
     [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
@@ -910,32 +909,28 @@ sessionInfo()
     tzcode source: internal
 
     attached base packages:
-    [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
+    [1] stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-42     nlme_3.1-162    brms_2.19.0     Rcpp_1.0.10     cmdstanr_0.5.3  knitr_1.43      INLA_23.05.30-1
-     [8] sp_2.0-0        foreach_1.5.2   RLRsim_3.1-8    pbkrtest_0.5.2  lme4_1.1-33     Matrix_1.5-4.1  ggplot2_3.4.2  
-    [15] faraway_1.0.8  
+     [1] mgcv_1.9-1     nlme_3.1-166   brms_2.21.0    Rcpp_1.0.13    cmdstanr_0.8.1 knitr_1.48     INLA_24.06.27 
+     [8] sp_2.1-4       RLRsim_3.1-8   pbkrtest_0.5.3 lme4_1.1-35.5  Matrix_1.7-0   ggplot2_3.5.1  faraway_1.0.8 
 
     loaded via a namespace (and not attached):
-      [1] gridExtra_2.3        inline_0.3.19        rlang_1.1.1          magrittr_2.0.3       matrixStats_1.0.0   
-      [6] compiler_4.3.1       loo_2.6.0            systemfonts_1.0.4    callr_3.7.3          vctrs_0.6.3         
-     [11] reshape2_1.4.4       stringr_1.5.0        crayon_1.5.2         pkgconfig_2.0.3      fastmap_1.1.1       
-     [16] backports_1.4.1      ellipsis_0.3.2       labeling_0.4.2       utf8_1.2.3           threejs_0.3.3       
-     [21] promises_1.2.0.1     rmarkdown_2.22       markdown_1.7         ps_1.7.5             nloptr_2.0.3        
-     [26] MatrixModels_0.5-1   purrr_1.0.1          xfun_0.39            jsonlite_1.8.5       later_1.3.1         
-     [31] Deriv_4.1.3          prettyunits_1.1.1    broom_1.0.5          R6_2.5.1             dygraphs_1.1.1.6    
-     [36] StanHeaders_2.26.27  stringi_1.7.12       boot_1.3-28.1        rstan_2.21.8         iterators_1.0.14    
-     [41] zoo_1.8-12           base64enc_0.1-3      bayesplot_1.10.0     httpuv_1.6.11        splines_4.3.1       
-     [46] igraph_1.5.0         tidyselect_1.2.0     rstudioapi_0.14      abind_1.4-5          yaml_2.3.7          
-     [51] codetools_0.2-19     miniUI_0.1.1.1       processx_3.8.1       pkgbuild_1.4.1       lattice_0.21-8      
-     [56] tibble_3.2.1         plyr_1.8.8           shiny_1.7.4          withr_2.5.0          bridgesampling_1.1-2
-     [61] posterior_1.4.1      coda_0.19-4          evaluate_0.21        RcppParallel_5.1.7   xts_0.13.1          
-     [66] pillar_1.9.0         tensorA_0.36.2       stats4_4.3.1         checkmate_2.2.0      DT_0.28             
-     [71] shinyjs_2.1.0        distributional_0.3.2 generics_0.1.3       rstantools_2.3.1     munsell_0.5.0       
-     [76] scales_1.2.1         minqa_1.2.5          gtools_3.9.4         xtable_1.8-4         glue_1.6.2          
-     [81] tools_4.3.1          shinystan_2.6.0      data.table_1.14.8    colourpicker_1.2.0   mvtnorm_1.2-2       
-     [86] grid_4.3.1           tidyr_1.3.0          crosstalk_1.2.0      colorspace_2.1-0     cli_3.6.1           
-     [91] fansi_1.0.4          svglite_2.1.1        Brobdingnag_1.2-9    dplyr_1.1.2          gtable_0.3.3        
-     [96] digest_0.6.31        htmlwidgets_1.6.2    farver_2.1.1         htmltools_0.5.5      lifecycle_1.0.3     
-    [101] mime_0.12            shinythemes_1.2.0    MASS_7.3-60         
+     [1] tidyselect_1.2.1     farver_2.1.2         dplyr_1.1.4          loo_2.8.0            fastmap_1.2.0       
+     [6] tensorA_0.36.2.1     digest_0.6.37        estimability_1.5.1   lifecycle_1.0.4      Deriv_4.1.3         
+    [11] sf_1.0-16            StanHeaders_2.32.10  processx_3.8.4       magrittr_2.0.3       posterior_1.6.0     
+    [16] compiler_4.4.1       rlang_1.1.4          tools_4.4.1          utf8_1.2.4           yaml_2.3.10         
+    [21] data.table_1.16.0    labeling_0.4.3       bridgesampling_1.1-2 pkgbuild_1.4.4       classInt_0.4-10     
+    [26] plyr_1.8.9           abind_1.4-5          KernSmooth_2.23-24   withr_3.0.1          purrr_1.0.2         
+    [31] grid_4.4.1           stats4_4.4.1         fansi_1.0.6          xtable_1.8-4         e1071_1.7-14        
+    [36] colorspace_2.1-1     inline_0.3.19        emmeans_1.10.4       scales_1.3.0         MASS_7.3-61         
+    [41] cli_3.6.3            mvtnorm_1.2-6        rmarkdown_2.28       generics_0.1.3       RcppParallel_5.1.9  
+    [46] rstudioapi_0.16.0    reshape2_1.4.4       minqa_1.2.8          DBI_1.2.3            proxy_0.4-27        
+    [51] rstan_2.32.6         stringr_1.5.1        splines_4.4.1        bayesplot_1.11.1     parallel_4.4.1      
+    [56] matrixStats_1.3.0    vctrs_0.6.5          boot_1.3-31          jsonlite_1.8.8       systemfonts_1.1.0   
+    [61] tidyr_1.3.1          units_0.8-5          glue_1.7.0           nloptr_2.1.1         codetools_0.2-20    
+    [66] ps_1.7.7             distributional_0.4.0 stringi_1.8.4        gtable_0.3.5         QuickJSR_1.3.1      
+    [71] munsell_0.5.1        tibble_3.2.1         pillar_1.9.0         htmltools_0.5.8.1    Brobdingnag_1.2-9   
+    [76] R6_2.5.1             fmesher_0.1.7        evaluate_0.24.0      lattice_0.22-6       backports_1.5.0     
+    [81] broom_1.0.6          rstantools_2.4.0     class_7.3-22         gridExtra_2.3        svglite_2.1.3       
+    [86] coda_0.19-4.1        checkmate_2.3.2      xfun_0.47            pkgconfig_2.0.3     

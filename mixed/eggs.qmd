@@ -359,7 +359,8 @@ ggplot(draws_df,
 
 For the sample SD
 
-```{reggssigmalev3}
+```{r}
+#| label: reggssigmalev3
 ggplot(draws_df,
        aes(x=.iteration,y=sigmalev3,color=factor(.chain))) + geom_line() +
   labs(color = 'Chain', x="Iteration")
@@ -408,7 +409,7 @@ may be essential to achieve the best results.
 ```{r}
 #| label: brmfit
 #| cache: true
-suppressMessages(bmod <- brm(Fat ~ 1 + (1|Lab/Technician/Sample), data=eggs,iter=10000, cores=4,backend = "cmdstanr"))
+bmod <- brm(Fat ~ 1 + (1|Lab/Technician/Sample), data=eggs,iter=10000, cores=4,silent=2,backend = "cmdstanr")
 ```
 
 We get some warnings. We can obtain some posterior densities and diagnostics with:
