@@ -242,26 +242,16 @@ Class variation is quite small compared to the other sources.
 # STAN
 
 [STAN](https://mc-stan.org/) performs Bayesian inference using
-MCMC.
-Set up STAN to use multiple cores. Set the random number seed for reproducibility.
+MCMC. Here we use `cmdstanr` to access Stan from R.
 
-```{r}
-rstan_options(auto_write = TRUE)
-options(mc.cores = parallel::detectCores())
-```
+We need to set the data up into a suitable form.
+All the fixed effects have been collected into a single design matrix. It's
+easiest to do this by fitting the linear model with just the fixed effects.
+This also provides us with a standard error that is helpful in setting
+up the priors for the random effects.
 
-Fit the model. Requires use of STAN command file [multiple.stan](../stancode/multiple.stan). We view the code here:
-
-```{r}
-writeLines(readLines("../stancode/multiple.stan"))
-```
-
-We have used uninformative priors
-for the treatment effects but slightly informative half-cauchy priors
-for the variances. All the fixed effects have been collected
-into a single design matrix.
 The school and class variables need to
-be renumbered into consecutive positive integers. Somewhat
+be renumbered into consecutive positive integers. This is somewhat
 inconvenient since the schools are numbered up to 50 but have no data
 for two schools so only 48 schools are actually used.
 
@@ -286,62 +276,145 @@ jspdat <- list(Nobs=nrow(mjspr),
                sdscal=sdscal)
 ```
 
-Break the fitting of the model into three steps. We use 5x the default number
-of iterations to ensure sufficient sample size for the later estimations.
+You see below the Stan code to fit our model. Rmarkdown allows the use
+of Stan chunks (elsewhere I have R chunks). The chunk header looks
+like this. 
 
-```{r jspmstancomp, cache=TRUE}
-rt <- stanc("../stancode/multiple.stan")
-sm <- stan_model(stanc_ret = rt, verbose=FALSE)
-set.seed(123)
-system.time(fit <- sampling(sm, data=jspdat, iter=10000))
+STAN chunk will be compiled to 'mod'. Chunk header is:
+```
+cmdstan, output.var="mod", override = FALSE
+```
+
+We have used uninformative priors
+for the treatment effects but slightly informative half-cauchy priors
+for the variances. Strictly speaking we should have scaled these
+without fitting the linear model above but this is unlikely to
+have much impact on the outcome.
+
+```{cmdstan, output.var="mod", override = FALSE}
+data {
+     int<lower=0> Nobs;
+     int<lower=0> Npreds;
+     int<lower=0> Nlev1;
+     int<lower=0> Nlev2;
+     int<lower=0> Nlev3;
+     vector[Nobs] y;
+     matrix[Nobs,Npreds] x;
+     array[Nobs] int<lower=1,upper=Nlev1> levind1;
+     array[Nobs] int<lower=1,upper=Nlev2> levind2;
+     array[Nobs] int<lower=1,upper=Nlev3> levind3;
+     real<lower=0> sdscal;
+}
+parameters {
+           vector[Npreds] beta;
+           real<lower=0> sigmalev1;
+           real<lower=0> sigmalev2;
+           real<lower=0> sigmalev3;
+           real<lower=0> sigmaeps;
+
+           vector[Nlev1] eta1;
+           vector[Nlev2] eta2;
+           vector[Nlev3] eta3;
+}
+transformed parameters {
+  vector[Nlev1] ran1;
+  vector[Nlev2] ran2;
+  vector[Nlev3] ran3;
+  vector[Nobs] yhat;
+
+  ran1  = sigmalev1 * eta1;
+  ran2  = sigmalev2 * eta2;
+  ran3  = sigmalev3 * eta3;
+
+  for (i in 1:Nobs)
+    yhat[i] = x[i]*beta+ran1[levind1[i]]+ran2[levind2[i]]+ran3[levind3[i]];
+
+}
+model {
+  eta1 ~ normal(0, 1);
+  eta2 ~ normal(0, 1);
+  eta3 ~ normal(0, 1);
+  sigmalev1 ~ cauchy(0, 2.5*sdscal);
+  sigmalev2 ~ cauchy(0, 2.5*sdscal);
+  sigmalev3 ~ cauchy(0, 2.5*sdscal);
+  sigmaeps ~ cauchy(0, 2.5*sdscal);
+  y ~ normal(yhat, sigmaeps);
+}
+```
+
+Do the MCMC sampling:
+
+```{r}
+fit <- mod$sample(
+  data = jspdat, 
+  seed = 123, 
+  chains = 4, 
+  parallel_chains = 4,
+  refresh = 1000,
+  iter_sampling = 2000,
+)
 ```
 
 ## Diagnostics
 
-For the error SD:
+Diagnostics to check the convergence are worthwhile. 
 
-```{r jspmstaneps}
-pname <- "sigmaeps"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+Extract the draws into a convenient dataframe format:
+
+```{r}
+draws_df <- fit$draws(format = "df")
 ```
+
+Check the diagnostics on the error term:
+
+```{r}
+#| label: jspdiagerr
+ggplot(draws_df,aes(x=.iteration,y=sigmaeps,color=factor(.chain))) + 
+  geom_line() + labs(color = 'Chain', x="Iteration")
+```
+
+We see the traces of the four chains overlaid in different colors. The chains appear roughly stationary although there are some occasional larger 
+excursions.
+
+The similar plots can be produced for other parameters:
+
+
 
 For the school SD
 
-```{r jspmstansch}
-pname <- "sigmalev1"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```{r}
+#| label: jspdiagsigma1
+ggplot(draws_df,aes(x=.iteration,y=sigmalev1,color=factor(.chain))) + 
+  geom_line() + labs(color = 'Chain', x="Iteration")
 ```
+
 
 For the class SD
 
-```{r jspmstanclass}
-pname <- "sigmalev2"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+
+```{r}
+#| label: jspdiagsigma2
+ggplot(draws_df,aes(x=.iteration,y=sigmalev2,color=factor(.chain))) + 
+  geom_line() + labs(color = 'Chain', x="Iteration")
 ```
+
 
 For the id SD
 
-```{r jspmstanid}
-pname <- "sigmalev3"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+```{r}
+#| label: jspdiagsigma3
+ggplot(draws_df,aes(x=.iteration,y=sigmalev3,color=factor(.chain))) + 
+  geom_line() + labs(color = 'Chain', x="Iteration")
 ```
 
-All these are satisfactory.
+Good enough for the example but might use more draws here.
 
 ## Output Summary
 
 Examine the main parameters of interest:
 
 ```{r}
-print(fit,pars=c("beta","sigmalev1","sigmalev2","sigmalev2","sigmaeps"))
+fit$summary(c("beta","sigmalev1","sigmalev2","sigmalev3","sigmaeps"))
 ```
 
 Remember that the beta correspond to the following parameters:
@@ -357,21 +430,20 @@ The results are comparable to the REML fit. The effective sample sizes are suffi
 We can use extract to get at various components of the STAN fit. First consider the SDs for random components:
 
 ```{r jspmpdsig}
-postsig <- rstan::extract(fit, pars=c("sigmaeps","sigmalev1","sigmalev2","sigmalev3"))
-ref <- reshape2::melt(postsig,value.name="score")
-ref$L1 = factor(ref$L1)
-levels(ref$L1) = c("epsilon","school","class","id")
-ggplot(data=ref,aes(x=score, color=L1))+geom_density()+guides(color=guide_legend(title="SD"))
+sdf = stack(draws_df[,c("sigmaeps","sigmalev1","sigmalev2","sigmalev3")])
+colnames(sdf) = c("score","sigma")
+levels(sdf$sigma) = c("epsilon","school","class","id")
+ggplot(sdf, aes(x=score,color=sigma)) + geom_density() + xlim(0,0.15)
 ```
 
 As usual the error SD distribution is  more concentrated. The class SD is more diffuse, smaller and gives some weight to values close to zero. Now the treatment effects:
 
 
 ```{r jspmpdbeta}
-ref <- reshape2::melt(rstan::extract(fit, pars="beta"))
-colnames(ref)[2:3] <- c("parameter","score")
-ref$parameter <- factor(colnames(Xmatrix)[ref$parameter])
-ggplot(ref, aes(x=score))+geom_density()+geom_vline(xintercept = 0) + facet_wrap(~parameter,scales="free")
+bdf = stack(draws_df[,grep("^beta",colnames(draws_df))])
+colnames(bdf) <- c("score","parameter")
+bdf$parameter <- factor(colnames(Xmatrix)[bdf$parameter])
+ggplot(bdf, aes(x=score))+geom_density()+geom_vline(xintercept = 0) + facet_wrap(~parameter,scales="free")
 ```
 
 # BRMS
@@ -382,7 +454,7 @@ and does not cost much computationally.
 
 
 ```{r jspmbrmfit, cache=TRUE}
-suppressMessages(bmod <- brm(score ~ subject*gender + craven*subject + social + (1|school) + (1|school:class) + (1|school:class:id),data=mjspr,iter=10000, cores=4))
+suppressMessages(bmod <- brm(score ~ subject*gender + craven*subject + social + (1|school) + (1|school:class) + (1|school:class:id),data=mjspr,iter=10000, silent=2,cores=4))
 ```
 
 We get some minor warnings. We can obtain some posterior densities and diagnostics with:

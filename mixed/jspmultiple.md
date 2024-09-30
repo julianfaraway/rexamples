@@ -1,28 +1,22 @@
-Multilevel Design
-================
+# Multilevel Design
 [Julian Faraway](https://julianfaraway.github.io/)
-06 January 2023
+2024-09-30
 
-- <a href="#data" id="toc-data">Data</a>
-- <a href="#mixed-effect-model" id="toc-mixed-effect-model">Mixed Effect
-  Model</a>
-- <a href="#inla" id="toc-inla">INLA</a>
-  - <a href="#informative-gamma-priors-on-the-precisions"
-    id="toc-informative-gamma-priors-on-the-precisions">Informative Gamma
-    priors on the precisions</a>
-  - <a href="#penalized-complexity-prior"
-    id="toc-penalized-complexity-prior">Penalized Complexity Prior</a>
-- <a href="#stan" id="toc-stan">STAN</a>
-  - <a href="#diagnostics" id="toc-diagnostics">Diagnostics</a>
-  - <a href="#output-summary" id="toc-output-summary">Output Summary</a>
-  - <a href="#posterior-distributions"
-    id="toc-posterior-distributions">Posterior Distributions</a>
-- <a href="#brms" id="toc-brms">BRMS</a>
-- <a href="#mgcv" id="toc-mgcv">MGCV</a>
-- <a href="#ginla" id="toc-ginla">GINLA</a>
-- <a href="#discussion" id="toc-discussion">Discussion</a>
-- <a href="#package-version-info" id="toc-package-version-info">Package
-  version info</a>
+- [Data](#data)
+- [Mixed Effect Model](#mixed-effect-model)
+- [INLA](#inla)
+  - [Informative Gamma priors on the
+    precisions](#informative-gamma-priors-on-the-precisions)
+  - [Penalized Complexity Prior](#penalized-complexity-prior)
+- [STAN](#stan)
+  - [Diagnostics](#diagnostics)
+  - [Output Summary](#output-summary)
+  - [Posterior Distributions](#posterior-distributions)
+- [BRMS](#brms)
+- [MGCV](#mgcv)
+- [GINLA](#ginla)
+- [Discussion](#discussion)
+- [Package version info](#package-version-info)
 
 See the [introduction](index.md) for an overview.
 
@@ -39,7 +33,8 @@ library(pbkrtest)
 library(RLRsim)
 library(INLA)
 library(knitr)
-library(rstan, quietly=TRUE)
+library(cmdstanr)
+register_knitr_engine(override = FALSE)
 library(brms)
 library(mgcv)
 ```
@@ -78,7 +73,7 @@ We can plot the data
 ggplot(mjspr, aes(x=raven, y=score))+geom_jitter(alpha=0.25)+facet_grid(gender ~ subject)
 ```
 
-![](figs/jspmplot-1..svg)<!-- -->
+![](figs/jspmplot-1..svg)
 
 # Mixed Effect Model
 
@@ -173,8 +168,8 @@ confint(mmod, method="boot", oldNames=FALSE)
     social5                        -0.1080110  0.0020657
     social6                        -0.1482613 -0.0270518
     social7                        -0.1574203 -0.0324216
-    social8                        -0.1747016 -0.0057936
-    social9                        -0.1033001  0.0065696
+    social8                        -0.1747016 -0.0057935
+    social9                        -0.1033001  0.0065694
     subjectmath:gendergirl         -0.0797471 -0.0365518
     subjectmath:craven             -0.0057538 -0.0021502
 
@@ -214,27 +209,27 @@ summary(result)
 
     Fixed effects:
                              mean    sd 0.025quant 0.5quant 0.975quant   mode kld
-    (Intercept)             0.442 0.026      0.390    0.442      0.493  0.442   0
+    (Intercept)             0.442 0.026      0.390    0.442      0.494  0.442   0
     subjectmath             0.367 0.008      0.351    0.367      0.382  0.367   0
     gendergirl              0.064 0.010      0.044    0.064      0.084  0.064   0
     craven                  0.017 0.001      0.016    0.017      0.019  0.017   0
-    social2                 0.014 0.027     -0.039    0.014      0.067  0.014   0
-    social3                -0.021 0.029     -0.078   -0.021      0.036 -0.021   0
-    social4                -0.071 0.026     -0.122   -0.071     -0.021 -0.071   0
-    social5                -0.050 0.029     -0.107   -0.050      0.006 -0.050   0
+    social2                 0.014 0.027     -0.040    0.014      0.067  0.014   0
+    social3                -0.022 0.029     -0.078   -0.022      0.035 -0.022   0
+    social4                -0.072 0.026     -0.122   -0.072     -0.021 -0.072   0
+    social5                -0.051 0.029     -0.107   -0.051      0.006 -0.051   0
     social6                -0.089 0.031     -0.149   -0.089     -0.029 -0.089   0
-    social7                -0.100 0.032     -0.162   -0.100     -0.038 -0.100   0
+    social7                -0.099 0.032     -0.161   -0.099     -0.038 -0.099   0
     social8                -0.082 0.042     -0.165   -0.082      0.001 -0.082   0
     social9                -0.048 0.027     -0.102   -0.048      0.006 -0.048   0
     subjectmath:gendergirl -0.059 0.011     -0.080   -0.059     -0.038 -0.059   0
     subjectmath:craven     -0.004 0.001     -0.006   -0.004     -0.002 -0.004   0
 
     Model hyperparameters:
-                                                mean       sd 0.025quant 0.5quant 0.975quant    mode
-    Precision for the Gaussian observations    73.61     3.38      67.11    73.56      80.44   73.49
-    Precision for school                      418.85   129.75     181.64   411.67     671.79  405.43
-    Precision for classch                   14210.33 43224.49    1097.46  5304.42   87203.49 1793.65
-    Precision for classchid                    96.52     7.30      82.24    96.50     111.00   96.94
+                                                mean       sd 0.025quant 0.5quant 0.975quant   mode
+    Precision for the Gaussian observations    73.67     3.38      67.16    73.63      80.45  73.60
+    Precision for school                      439.07   133.46     234.16   420.04     754.43 384.40
+    Precision for classch                   15713.74 17908.92     422.80  9462.59   63775.76 738.32
+    Precision for classchid                    96.85     8.17      82.14    96.38     114.29  95.19
 
      is computed 
 
@@ -268,7 +263,7 @@ summary(result)
     social2                 0.013 0.028     -0.041    0.013      0.067  0.013   0
     social3                -0.020 0.029     -0.077   -0.020      0.038 -0.020   0
     social4                -0.069 0.026     -0.120   -0.069     -0.018 -0.069   0
-    social5                -0.050 0.029     -0.108   -0.050      0.007 -0.050   0
+    social5                -0.051 0.029     -0.108   -0.051      0.007 -0.051   0
     social6                -0.085 0.031     -0.146   -0.085     -0.024 -0.085   0
     social7                -0.098 0.032     -0.161   -0.098     -0.036 -0.098   0
     social8                -0.080 0.043     -0.164   -0.080      0.004 -0.080   0
@@ -278,10 +273,10 @@ summary(result)
 
     Model hyperparameters:
                                               mean     sd 0.025quant 0.5quant 0.975quant   mode
-    Precision for the Gaussian observations  73.78   3.38      67.31    73.72      80.61  73.62
-    Precision for school                    367.26 112.60     193.27   351.60     632.55 322.34
-    Precision for classch                   473.37 133.13     263.72   456.02     783.90 423.35
-    Precision for classchid                  99.80   8.55      84.21    99.36     117.87  98.37
+    Precision for the Gaussian observations  73.84   3.38      67.36    73.78      80.65  73.70
+    Precision for school                    366.84 114.69     196.09   348.84     642.89 314.65
+    Precision for classch                   478.69 134.06     264.95   462.05     788.31 431.32
+    Precision for classchid                  99.61   8.51      84.17    99.17     117.65  98.09
 
      is computed 
 
@@ -303,29 +298,29 @@ data.frame(restab)
 ```
 
                X.Intercept. subjectmath gendergirl     craven    social2     social3   social4   social5   social6
-    mean            0.44092     0.36656   0.062025    0.01735   0.013317   -0.019764 -0.068989 -0.050492 -0.085273
-    sd             0.027403   0.0077025   0.010284 0.00093429   0.027504    0.029309  0.026179  0.029123  0.031004
-    quant0.025      0.38713     0.35145   0.041843   0.015517  -0.040668   -0.077295  -0.12038  -0.10766  -0.14614
-    quant0.25       0.42239     0.36135   0.055067   0.016718 -0.0052859   -0.039588 -0.086696  -0.07019  -0.10624
-    quant0.5        0.44087     0.36655   0.062003   0.017348   0.013259   -0.019826 -0.069044 -0.050554 -0.085336
-    quant0.75       0.45934     0.37174   0.068939   0.017978   0.031804 -6.3476e-05 -0.051392 -0.030917 -0.064432
-    quant0.975       0.4946     0.38165    0.08217    0.01918   0.067192    0.037645 -0.017711 0.0065533 -0.024549
+    mean            0.44092     0.36656   0.062022    0.01735   0.013314   -0.019778    -0.069 -0.050501 -0.085262
+    sd              0.02742   0.0077016   0.010285 0.00093434   0.027506    0.029312  0.026182  0.029126  0.031007
+    quant0.025       0.3871     0.35145   0.041839   0.015516  -0.040676   -0.077314  -0.12039  -0.10767  -0.14613
+    quant0.25       0.42238     0.36136   0.055064   0.016718 -0.0052909   -0.039603 -0.086708 -0.070201  -0.10623
+    quant0.5        0.44087     0.36655      0.062   0.017348   0.013255   -0.019839 -0.069054 -0.050562 -0.085325
+    quant0.75       0.45935     0.37174   0.068937   0.017978   0.031802 -7.4945e-05   -0.0514 -0.030923 -0.064418
+    quant0.975      0.49463     0.38165   0.082169    0.01918   0.067193    0.037637 -0.017716 0.0065512 -0.024531
                  social7   social8   social9 subjectmath.gendergirl subjectmath.craven    school     class        id
-    mean       -0.098472  -0.08022 -0.046173              -0.059194         -0.0037203  0.053973  0.047292   0.10037
-    sd          0.031979  0.042735  0.027725               0.010696         0.00092951 0.0081267 0.0065314 0.0042548
-    quant0.025  -0.16125  -0.16411   -0.1006              -0.080189         -0.0055448  0.039858  0.035797  0.092174
-    quant0.25    -0.1201  -0.10912 -0.064925              -0.066428          -0.004349  0.048197  0.042663   0.09745
-    quant0.5   -0.098538 -0.080309 -0.046231              -0.059217         -0.0037222  0.053312  0.046815   0.10032
-    quant0.75  -0.076976 -0.051494 -0.027536              -0.052005         -0.0030955  0.059031  0.051399   0.10322
-    quant0.975 -0.035836  0.003486 0.0081337              -0.038244         -0.0018996  0.071718   0.06141   0.10888
+    mean       -0.098444 -0.080222 -0.046179              -0.059194         -0.0037203  0.054026  0.047029   0.10047
+    sd          0.031983  0.042738  0.027729               0.010694         0.00092941 0.0080874 0.0065236 0.0042432
+    quant0.025  -0.16123  -0.16412  -0.10061              -0.080187         -0.0055446  0.039545  0.035684  0.092261
+    quant0.25   -0.12008  -0.10913 -0.064934              -0.066428         -0.0043489  0.048302  0.042397  0.097555
+    quant0.5    -0.09851  -0.08031 -0.046237              -0.059217         -0.0037222  0.053558  0.046495   0.10042
+    quant0.75  -0.076945 -0.051493  -0.02754              -0.052006         -0.0030955  0.059189  0.051094   0.10331
+    quant0.975   -0.0358 0.0034909 0.0081347              -0.038247         -0.0018998  0.071234  0.061263   0.10892
                  epsilon
-    mean         0.11651
-    sd         0.0026509
-    quant0.025   0.11142
-    quant0.25    0.11469
-    quant0.5     0.11646
-    quant0.75    0.11828
-    quant0.975   0.12183
+    mean         0.11647
+    sd         0.0026468
+    quant0.025   0.11139
+    quant0.25    0.11465
+    quant0.5     0.11642
+    quant0.75    0.11823
+    quant0.975   0.12179
 
 Also construct a plot of the SD posteriors:
 
@@ -336,7 +331,7 @@ ddf <- data.frame(rbind(sigmaschool,sigmaclass,sigmaid,sigmaepsilon),
 ggplot(ddf, aes(x,y, linetype=errterm, color=errterm))+geom_line()+xlab("score")+ylab("density")+xlim(0,0.15)
 ```
 
-![](figs/plotsdsmjspm-1..svg)<!-- -->
+![](figs/plotsdsmjspm-1..svg)
 
 Posteriors for the school and class assign no weight to values close to
 zero.
@@ -365,10 +360,10 @@ summary(result)
     gendergirl              0.063 0.010      0.043    0.063      0.083  0.063   0
     craven                  0.017 0.001      0.016    0.017      0.019  0.017   0
     social2                 0.014 0.027     -0.040    0.014      0.067  0.014   0
-    social3                -0.021 0.029     -0.078   -0.021      0.036 -0.021   0
-    social4                -0.070 0.026     -0.121   -0.070     -0.020 -0.070   0
+    social3                -0.020 0.029     -0.077   -0.020      0.036 -0.020   0
+    social4                -0.070 0.026     -0.121   -0.070     -0.019 -0.070   0
     social5                -0.050 0.029     -0.107   -0.050      0.006 -0.050   0
-    social6                -0.088 0.031     -0.148   -0.088     -0.027 -0.088   0
+    social6                -0.087 0.031     -0.148   -0.087     -0.027 -0.087   0
     social7                -0.099 0.032     -0.161   -0.099     -0.037 -0.099   0
     social8                -0.081 0.042     -0.165   -0.081      0.002 -0.081   0
     social9                -0.047 0.028     -0.101   -0.047      0.007 -0.047   0
@@ -376,11 +371,11 @@ summary(result)
     subjectmath:craven     -0.004 0.001     -0.006   -0.004     -0.002 -0.004   0
 
     Model hyperparameters:
-                                               mean      sd 0.025quant 0.5quant 0.975quant    mode
-    Precision for the Gaussian observations   73.67    3.38      67.25    73.58      80.57   73.39
-    Precision for school                     412.31  131.39     204.31   395.84     716.83  364.90
-    Precision for classch                   5411.85 8091.11     739.90  3116.42   24907.73 1484.85
-    Precision for classchid                   97.71    8.25      82.58    97.32     115.06   96.48
+                                               mean      sd 0.025quant 0.5quant 0.975quant   mode
+    Precision for the Gaussian observations   73.75    3.38      67.20    73.72      80.49  73.74
+    Precision for school                     473.20  182.75     217.97   439.65     925.71 379.49
+    Precision for classch                   2497.31 2688.60     427.84  1707.64    9523.99 932.78
+    Precision for classchid                   98.54    8.45      83.16    98.11     116.39  97.12
 
      is computed 
 
@@ -400,22 +395,30 @@ colnames(restab) = c(names(lmod$coef),"school","class","id","epsilon")
 data.frame(restab)
 ```
 
-               X.Intercept. subjectmath gendergirl     craven  social2    social3   social4   social5   social6   social7
-    mean            0.44146     0.36656   0.063242   0.017388 0.013804  -0.020589 -0.070472 -0.050412 -0.087583 -0.099294
-    sd               0.0266   0.0077092   0.010278 0.00092627 0.027283   0.029036  0.025932  0.028876  0.030755  0.031691
-    quant0.025      0.38924     0.35143   0.043073    0.01557 -0.03975  -0.077584  -0.12137  -0.10709  -0.14796   -0.1615
-    quant0.25       0.42347     0.36135   0.056287   0.016761 -0.00465   -0.04023 -0.088012 -0.069944  -0.10838  -0.12073
-    quant0.5        0.44141     0.36655   0.063219   0.017386 0.013747   -0.02065 -0.070526 -0.050472 -0.087645 -0.099359
-    quant0.75       0.45934     0.37175   0.070151   0.018011 0.032144 -0.0010709  -0.05304 -0.031001 -0.066908  -0.07799
-    quant0.975      0.49356     0.38166   0.083375   0.019202 0.067246   0.036286 -0.019679   0.00615 -0.027347 -0.037223
-                 social8   social9 subjectmath.gendergirl subjectmath.craven    school    class        id   epsilon
-    mean       -0.081413 -0.047174              -0.059194         -0.0037203  0.051128 0.018925   0.10143    0.1166
-    sd          0.042437  0.027502               0.010705         0.00093031 0.0082355 0.007883 0.0042421 0.0026571
-    quant0.025  -0.16472  -0.10116              -0.080207         -0.0055464  0.037452 0.006418  0.093292   0.11145
-    quant0.25   -0.11012 -0.065776              -0.066435         -0.0043496  0.045239 0.012943  0.098514   0.11478
-    quant0.5   -0.081501 -0.047231              -0.059217         -0.0037222   0.05021 0.018086   0.10136   0.11657
-    quant0.75  -0.052886 -0.028687              -0.051998         -0.0030949   0.05608 0.023924   0.10426   0.11838
-    quant0.975 0.0017069 0.0066922              -0.038227         -0.0018981  0.069695 0.036409   0.10995   0.12188
+               X.Intercept. subjectmath gendergirl     craven    social2     social3   social4   social5   social6
+    mean            0.44141     0.36656   0.063196   0.017388   0.013835    -0.02047 -0.070334 -0.050358 -0.087498
+    sd             0.026588   0.0077029   0.010271 0.00092595   0.027273    0.029028  0.025923  0.028864   0.03074
+    quant0.025      0.38921     0.35144   0.043042   0.015571  -0.039699   -0.077449  -0.12122  -0.10701  -0.14785
+    quant0.25       0.42343     0.36135   0.056247   0.016761 -0.0046112   -0.040103 -0.087868  -0.06988  -0.10829
+    quant0.5        0.44136     0.36655   0.063173   0.017386   0.013778   -0.020531 -0.070388 -0.050419  -0.08756
+    quant0.75       0.45928     0.37174   0.070101    0.01801   0.032167 -0.00095781 -0.052909 -0.030957 -0.066834
+    quant0.975      0.49349     0.38165   0.083316   0.019202   0.067258    0.036392 -0.019558 0.0061803 -0.027291
+                 social7   social8   social9 subjectmath.gendergirl subjectmath.craven    school     class        id
+    mean       -0.099325 -0.081324 -0.047086              -0.059194         -0.0037203  0.048362  0.025563   0.10101
+    sd          0.031677  0.042421  0.027488               0.010696         0.00092956 0.0088248 0.0097808 0.0042835
+    quant0.025  -0.16151   -0.1646  -0.10104               -0.08019         -0.0055449  0.032974   0.01032  0.092758
+    quant0.25   -0.12075  -0.11001 -0.065677              -0.066429          -0.004349  0.042072  0.018339  0.098071
+    quant0.5    -0.09939 -0.081411 -0.047142              -0.059217         -0.0037222  0.047712   0.02435   0.10096
+    quant0.75  -0.078031 -0.052809 -0.028609              -0.052004         -0.0030955  0.053889  0.031334   0.10388
+    quant0.975  -0.03728 0.0017664 0.0067545              -0.038243         -0.0018995  0.067522  0.048059   0.10958
+                 epsilon
+    mean         0.11654
+    sd         0.0026566
+    quant0.025    0.1115
+    quant0.25     0.1147
+    quant0.5     0.11646
+    quant0.75     0.1183
+    quant0.975   0.12193
 
 Make the plots:
 
@@ -426,83 +429,25 @@ ddf <- data.frame(rbind(sigmaschool,sigmaclass,sigmaid,sigmaepsilon),
 ggplot(ddf, aes(x,y, linetype=errterm, color=errterm))+geom_line()+xlab("score")+ylab("density")+xlim(0,0.15)
 ```
 
-![](figs/plotsdsmjspmpc-1..svg)<!-- -->
+![](figs/plotsdsmjspmpc-1..svg)
 
 Class variation is quite small compared to the other sources.
 
 # STAN
 
-[STAN](https://mc-stan.org/) performs Bayesian inference using MCMC. Set
-up STAN to use multiple cores. Set the random number seed for
-reproducibility.
+[STAN](https://mc-stan.org/) performs Bayesian inference using MCMC.
+Here we use `cmdstanr` to access Stan from R.
 
-``` r
-rstan_options(auto_write = TRUE)
-options(mc.cores = parallel::detectCores())
-```
+We need to set the data up into a suitable form. All the fixed effects
+have been collected into a single design matrix. It’s easiest to do this
+by fitting the linear model with just the fixed effects. This also
+provides us with a standard error that is helpful in setting up the
+priors for the random effects.
 
-Fit the model. Requires use of STAN command file
-[multiple.stan](../stancode/multiple.stan). We view the code here:
-
-``` r
-writeLines(readLines("../stancode/multiple.stan"))
-```
-
-    data {
-         int<lower=0> Nobs;
-         int<lower=0> Npreds;
-         int<lower=0> Nlev1;
-         int<lower=0> Nlev2;
-         int<lower=0> Nlev3;
-         vector[Nobs] y;
-         matrix[Nobs,Npreds] x;
-         int<lower=1,upper=Nlev1> levind1[Nobs];
-         int<lower=1,upper=Nlev2> levind2[Nobs];
-         int<lower=1,upper=Nlev3> levind3[Nobs];
-         real<lower=0> sdscal;
-    }
-    parameters {
-               vector[Npreds] beta;
-               real<lower=0> sigmalev1;
-               real<lower=0> sigmalev2;
-               real<lower=0> sigmalev3;
-               real<lower=0> sigmaeps;
-
-               vector[Nlev1] eta1;
-               vector[Nlev2] eta2;
-               vector[Nlev3] eta3;
-    }
-    transformed parameters {
-      vector[Nlev1] ran1;
-      vector[Nlev2] ran2;
-      vector[Nlev3] ran3;
-      vector[Nobs] yhat;
-
-      ran1  = sigmalev1 * eta1;
-      ran2  = sigmalev2 * eta2;
-      ran3  = sigmalev3 * eta3;
-
-      for (i in 1:Nobs)
-        yhat[i] = x[i]*beta+ran1[levind1[i]]+ran2[levind2[i]]+ran3[levind3[i]];
-
-    }
-    model {
-      eta1 ~ normal(0, 1);
-      eta2 ~ normal(0, 1);
-      eta3 ~ normal(0, 1);
-      sigmalev1 ~ cauchy(0, 2.5*sdscal);
-      sigmalev2 ~ cauchy(0, 2.5*sdscal);
-      sigmalev3 ~ cauchy(0, 2.5*sdscal);
-      sigmaeps ~ cauchy(0, 2.5*sdscal);
-      y ~ normal(yhat, sigmaeps);
-    }
-
-We have used uninformative priors for the treatment effects but slightly
-informative half-cauchy priors for the variances. All the fixed effects
-have been collected into a single design matrix. The school and class
-variables need to be renumbered into consecutive positive integers.
-Somewhat inconvenient since the schools are numbered up to 50 but have
-no data for two schools so only 48 schools are actually used.
+The school and class variables need to be renumbered into consecutive
+positive integers. This is somewhat inconvenient since the schools are
+numbered up to 50 but have no data for two schools so only 48 schools
+are actually used.
 
 ``` r
 mjspr$craven <- mjspr$raven-mean(mjspr$raven)
@@ -525,103 +470,197 @@ jspdat <- list(Nobs=nrow(mjspr),
                sdscal=sdscal)
 ```
 
-Break the fitting of the model into three steps. We use 5x the default
-number of iterations to ensure sufficient sample size for the later
-estimations.
+You see below the Stan code to fit our model. Rmarkdown allows the use
+of Stan chunks (elsewhere I have R chunks). The chunk header looks like
+this.
 
-``` r
-rt <- stanc("../stancode/multiple.stan")
-sm <- stan_model(stanc_ret = rt, verbose=FALSE)
-set.seed(123)
-system.time(fit <- sampling(sm, data=jspdat, iter=10000))
+STAN chunk will be compiled to ‘mod’. Chunk header is:
+
+    cmdstan, output.var="mod", override = FALSE
+
+We have used uninformative priors for the treatment effects but slightly
+informative half-cauchy priors for the variances. Strictly speaking we
+should have scaled these without fitting the linear model above but this
+is unlikely to have much impact on the outcome.
+
+``` stan
+data {
+     int<lower=0> Nobs;
+     int<lower=0> Npreds;
+     int<lower=0> Nlev1;
+     int<lower=0> Nlev2;
+     int<lower=0> Nlev3;
+     vector[Nobs] y;
+     matrix[Nobs,Npreds] x;
+     array[Nobs] int<lower=1,upper=Nlev1> levind1;
+     array[Nobs] int<lower=1,upper=Nlev2> levind2;
+     array[Nobs] int<lower=1,upper=Nlev3> levind3;
+     real<lower=0> sdscal;
+}
+parameters {
+           vector[Npreds] beta;
+           real<lower=0> sigmalev1;
+           real<lower=0> sigmalev2;
+           real<lower=0> sigmalev3;
+           real<lower=0> sigmaeps;
+
+           vector[Nlev1] eta1;
+           vector[Nlev2] eta2;
+           vector[Nlev3] eta3;
+}
+transformed parameters {
+  vector[Nlev1] ran1;
+  vector[Nlev2] ran2;
+  vector[Nlev3] ran3;
+  vector[Nobs] yhat;
+
+  ran1  = sigmalev1 * eta1;
+  ran2  = sigmalev2 * eta2;
+  ran3  = sigmalev3 * eta3;
+
+  for (i in 1:Nobs)
+    yhat[i] = x[i]*beta+ran1[levind1[i]]+ran2[levind2[i]]+ran3[levind3[i]];
+
+}
+model {
+  eta1 ~ normal(0, 1);
+  eta2 ~ normal(0, 1);
+  eta3 ~ normal(0, 1);
+  sigmalev1 ~ cauchy(0, 2.5*sdscal);
+  sigmalev2 ~ cauchy(0, 2.5*sdscal);
+  sigmalev3 ~ cauchy(0, 2.5*sdscal);
+  sigmaeps ~ cauchy(0, 2.5*sdscal);
+  y ~ normal(yhat, sigmaeps);
+}
 ```
 
-       user  system elapsed 
-    670.801  24.611 248.132 
+Do the MCMC sampling:
+
+``` r
+fit <- mod$sample(
+  data = jspdat, 
+  seed = 123, 
+  chains = 4, 
+  parallel_chains = 4,
+  refresh = 1000,
+  iter_sampling = 2000,
+)
+```
+
+    Running MCMC with 4 parallel chains...
+
+    Chain 1 Iteration:    1 / 3000 [  0%]  (Warmup) 
+    Chain 2 Iteration:    1 / 3000 [  0%]  (Warmup) 
+    Chain 3 Iteration:    1 / 3000 [  0%]  (Warmup) 
+    Chain 4 Iteration:    1 / 3000 [  0%]  (Warmup) 
+    Chain 1 Iteration: 1000 / 3000 [ 33%]  (Warmup) 
+    Chain 1 Iteration: 1001 / 3000 [ 33%]  (Sampling) 
+    Chain 2 Iteration: 1000 / 3000 [ 33%]  (Warmup) 
+    Chain 2 Iteration: 1001 / 3000 [ 33%]  (Sampling) 
+    Chain 4 Iteration: 1000 / 3000 [ 33%]  (Warmup) 
+    Chain 4 Iteration: 1001 / 3000 [ 33%]  (Sampling) 
+    Chain 3 Iteration: 1000 / 3000 [ 33%]  (Warmup) 
+    Chain 3 Iteration: 1001 / 3000 [ 33%]  (Sampling) 
+    Chain 1 Iteration: 2000 / 3000 [ 66%]  (Sampling) 
+    Chain 2 Iteration: 2000 / 3000 [ 66%]  (Sampling) 
+    Chain 4 Iteration: 2000 / 3000 [ 66%]  (Sampling) 
+    Chain 3 Iteration: 2000 / 3000 [ 66%]  (Sampling) 
+    Chain 1 Iteration: 3000 / 3000 [100%]  (Sampling) 
+    Chain 2 Iteration: 3000 / 3000 [100%]  (Sampling) 
+    Chain 1 finished in 57.2 seconds.
+    Chain 2 finished in 57.1 seconds.
+    Chain 4 Iteration: 3000 / 3000 [100%]  (Sampling) 
+    Chain 4 finished in 58.8 seconds.
+    Chain 3 Iteration: 3000 / 3000 [100%]  (Sampling) 
+    Chain 3 finished in 59.6 seconds.
+
+    All 4 chains finished successfully.
+    Mean chain execution time: 58.2 seconds.
+    Total execution time: 59.8 seconds.
 
 ## Diagnostics
 
-For the error SD:
+Diagnostics to check the convergence are worthwhile.
+
+Extract the draws into a convenient dataframe format:
 
 ``` r
-pname <- "sigmaeps"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+draws_df <- fit$draws(format = "df")
 ```
 
-![](figs/jspmstaneps-1..svg)<!-- -->
+Check the diagnostics on the error term:
+
+``` r
+ggplot(draws_df,aes(x=.iteration,y=sigmaeps,color=factor(.chain))) + 
+  geom_line() + labs(color = 'Chain', x="Iteration")
+```
+
+![](figs/jspdiagerr-1..svg)
+
+We see the traces of the four chains overlaid in different colors. The
+chains appear roughly stationary although there are some occasional
+larger excursions.
+
+The similar plots can be produced for other parameters:
 
 For the school SD
 
 ``` r
-pname <- "sigmalev1"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+ggplot(draws_df,aes(x=.iteration,y=sigmalev1,color=factor(.chain))) + 
+  geom_line() + labs(color = 'Chain', x="Iteration")
 ```
 
-![](figs/jspmstansch-1..svg)<!-- -->
+![](figs/jspdiagsigma1-1..svg)
 
 For the class SD
 
 ``` r
-pname <- "sigmalev2"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+ggplot(draws_df,aes(x=.iteration,y=sigmalev2,color=factor(.chain))) + 
+  geom_line() + labs(color = 'Chain', x="Iteration")
 ```
 
-![](figs/jspmstanclass-1..svg)<!-- -->
+![](figs/jspdiagsigma2-1..svg)
 
 For the id SD
 
 ``` r
-pname <- "sigmalev3"
-muc <- rstan::extract(fit, pars=pname,  permuted=FALSE, inc_warmup=FALSE)
-mdf <- reshape2::melt(muc)
-ggplot(mdf,aes(x=iterations,y=value,color=chains)) + geom_line() + ylab(mdf$parameters[1])
+ggplot(draws_df,aes(x=.iteration,y=sigmalev3,color=factor(.chain))) + 
+  geom_line() + labs(color = 'Chain', x="Iteration")
 ```
 
-![](figs/jspmstanid-1..svg)<!-- -->
+![](figs/jspdiagsigma3-1..svg)
 
-All these are satisfactory.
+Good enough for the example but might use more draws here.
 
 ## Output Summary
 
 Examine the main parameters of interest:
 
 ``` r
-print(fit,pars=c("beta","sigmalev1","sigmalev2","sigmalev2","sigmaeps"))
+fit$summary(c("beta","sigmalev1","sigmalev2","sigmalev3","sigmaeps"))
 ```
 
-    Inference for Stan model: multiple.
-    4 chains, each with iter=10000; warmup=5000; thin=1; 
-    post-warmup draws per chain=5000, total post-warmup draws=20000.
-
-               mean se_mean   sd  2.5%   25%   50%   75% 97.5% n_eff Rhat
-    beta[1]    0.44       0 0.03  0.39  0.42  0.44  0.46  0.49  4703    1
-    beta[2]    0.37       0 0.01  0.35  0.36  0.37  0.37  0.38 22269    1
-    beta[3]    0.06       0 0.01  0.04  0.06  0.06  0.07  0.08 15107    1
-    beta[4]    0.02       0 0.00  0.02  0.02  0.02  0.02  0.02 21172    1
-    beta[5]    0.01       0 0.03 -0.04  0.00  0.01  0.03  0.07  4939    1
-    beta[6]   -0.02       0 0.03 -0.08 -0.04 -0.02  0.00  0.04  5047    1
-    beta[7]   -0.07       0 0.03 -0.12 -0.09 -0.07 -0.05 -0.02  4464    1
-    beta[8]   -0.05       0 0.03 -0.11 -0.07 -0.05 -0.03  0.01  5148    1
-    beta[9]   -0.09       0 0.03 -0.15 -0.11 -0.09 -0.07 -0.03  5220    1
-    beta[10]  -0.10       0 0.03 -0.16 -0.12 -0.10 -0.08 -0.04  5677    1
-    beta[11]  -0.08       0 0.04 -0.16 -0.11 -0.08 -0.05  0.00  7628    1
-    beta[12]  -0.05       0 0.03 -0.10 -0.07 -0.05 -0.03  0.01  4721    1
-    beta[13]  -0.06       0 0.01 -0.08 -0.07 -0.06 -0.05 -0.04 22953    1
-    beta[14]   0.00       0 0.00 -0.01  0.00  0.00  0.00  0.00 33522    1
-    sigmalev1  0.05       0 0.01  0.03  0.04  0.05  0.05  0.07  2681    1
-    sigmalev2  0.02       0 0.01  0.00  0.01  0.02  0.03  0.05  1374    1
-    sigmaeps   0.12       0 0.00  0.11  0.11  0.12  0.12  0.12  8110    1
-
-    Samples were drawn using NUTS(diag_e) at Fri Jan  6 10:46:26 2023.
-    For each parameter, n_eff is a crude measure of effective sample size,
-    and Rhat is the potential scale reduction factor on split chains (at 
-    convergence, Rhat=1).
+    # A tibble: 18 × 10
+       variable      mean   median       sd      mad       q5      q95  rhat ess_bulk ess_tail
+       <chr>        <dbl>    <dbl>    <dbl>    <dbl>    <dbl>    <dbl> <dbl>    <dbl>    <dbl>
+     1 beta[1]    0.442    0.442   0.0270   0.0263    0.398    0.487    1.00    1852.    2896.
+     2 beta[2]    0.366    0.366   0.00784  0.00787   0.354    0.379    1.00   10052.    6640.
+     3 beta[3]    0.0631   0.0631  0.0103   0.0102    0.0462   0.0801   1.00    6001.    5718.
+     4 beta[4]    0.0174   0.0174  0.000929 0.000920  0.0159   0.0189   1.00    7699.    6955.
+     5 beta[5]    0.0132   0.0134  0.0272   0.0270   -0.0318   0.0586   1.00    2049.    3256.
+     6 beta[6]   -0.0214  -0.0213  0.0288   0.0283   -0.0684   0.0251   1.00    1954.    3323.
+     7 beta[7]   -0.0713  -0.0714  0.0260   0.0259   -0.114   -0.0285   1.00    1770.    2976.
+     8 beta[8]   -0.0508  -0.0508  0.0290   0.0287   -0.0991  -0.00414  1.00    2024.    3245.
+     9 beta[9]   -0.0881  -0.0882  0.0307   0.0306   -0.139   -0.0380   1.00    2192.    4015.
+    10 beta[10]  -0.0997  -0.0997  0.0318   0.0316   -0.153   -0.0475   1.00    2197.    3470.
+    11 beta[11]  -0.0817  -0.0815  0.0428   0.0426   -0.152   -0.0113   1.00    3063.    5023.
+    12 beta[12]  -0.0479  -0.0480  0.0276   0.0272   -0.0933  -0.00221  1.00    1962.    3056.
+    13 beta[13]  -0.0590  -0.0590  0.0110   0.0110   -0.0772  -0.0408   1.00    9010.    6207.
+    14 beta[14]  -0.00372 -0.00373 0.000925 0.000942 -0.00524 -0.00217  1.00    7970.    5480.
+    15 sigmalev1  0.0475   0.0477  0.0101   0.00941   0.0310   0.0635   1.00    1040.    1123.
+    16 sigmalev2  0.0236   0.0236  0.0126   0.0137    0.00321  0.0443   1.01     489.    1220.
+    17 sigmalev3  0.101    0.101   0.00431  0.00432   0.0943   0.108    1.00    2534.    4619.
+    18 sigmaeps   0.117    0.117   0.00270  0.00271   0.112    0.121    1.00    3728.    5553.
 
 Remember that the beta correspond to the following parameters:
 
@@ -643,27 +682,26 @@ We can use extract to get at various components of the STAN fit. First
 consider the SDs for random components:
 
 ``` r
-postsig <- rstan::extract(fit, pars=c("sigmaeps","sigmalev1","sigmalev2","sigmalev3"))
-ref <- reshape2::melt(postsig,value.name="score")
-ref$L1 = factor(ref$L1)
-levels(ref$L1) = c("epsilon","school","class","id")
-ggplot(data=ref,aes(x=score, color=L1))+geom_density()+guides(color=guide_legend(title="SD"))
+sdf = stack(draws_df[,c("sigmaeps","sigmalev1","sigmalev2","sigmalev3")])
+colnames(sdf) = c("score","sigma")
+levels(sdf$sigma) = c("epsilon","school","class","id")
+ggplot(sdf, aes(x=score,color=sigma)) + geom_density() + xlim(0,0.15)
 ```
 
-![](figs/jspmpdsig-1..svg)<!-- -->
+![](figs/jspmpdsig-1..svg)
 
 As usual the error SD distribution is more concentrated. The class SD is
 more diffuse, smaller and gives some weight to values close to zero. Now
 the treatment effects:
 
 ``` r
-ref <- reshape2::melt(rstan::extract(fit, pars="beta"))
-colnames(ref)[2:3] <- c("parameter","score")
-ref$parameter <- factor(colnames(Xmatrix)[ref$parameter])
-ggplot(ref, aes(x=score))+geom_density()+geom_vline(xintercept = 0) + facet_wrap(~parameter,scales="free")
+bdf = stack(draws_df[,grep("^beta",colnames(draws_df))])
+colnames(bdf) <- c("score","parameter")
+bdf$parameter <- factor(colnames(Xmatrix)[bdf$parameter])
+ggplot(bdf, aes(x=score))+geom_density()+geom_vline(xintercept = 0) + facet_wrap(~parameter,scales="free")
 ```
 
-![](figs/jspmpdbeta-1..svg)<!-- -->
+![](figs/jspmpdbeta-1..svg)
 
 # BRMS
 
@@ -674,7 +712,7 @@ more than the standard number of iterations because this reduces some
 problems and does not cost much computationally.
 
 ``` r
-suppressMessages(bmod <- brm(score ~ subject*gender + craven*subject + social + (1|school) + (1|school:class) + (1|school:class:id),data=mjspr,iter=10000, cores=4))
+suppressMessages(bmod <- brm(score ~ subject*gender + craven*subject + social + (1|school) + (1|school:class) + (1|school:class:id),data=mjspr,iter=10000, silent=2,cores=4))
 ```
 
 We get some minor warnings. We can obtain some posterior densities and
@@ -684,7 +722,7 @@ diagnostics with:
 plot(bmod, variable = "^s", regex=TRUE)
 ```
 
-![](figs/jspmbrmsdiag-1..svg)<!-- -->
+![](figs/jspmbrmsdiag-1..svg)
 
 We have chosen only the random effect hyperparameters since this is
 where problems will appear first. Looks OK. We can see some weight is
@@ -696,7 +734,7 @@ We can look at the STAN code that `brms` used with:
 stancode(bmod)
 ```
 
-    // generated with brms 2.18.0
+    // generated with brms 2.21.0
     functions {
     }
     data {
@@ -704,28 +742,28 @@ stancode(bmod)
       vector[N] Y;  // response variable
       int<lower=1> K;  // number of population-level effects
       matrix[N, K] X;  // population-level design matrix
+      int<lower=1> Kc;  // number of population-level effects after centering
       // data for group-level effects of ID 1
       int<lower=1> N_1;  // number of grouping levels
       int<lower=1> M_1;  // number of coefficients per level
-      int<lower=1> J_1[N];  // grouping indicator per observation
+      array[N] int<lower=1> J_1;  // grouping indicator per observation
       // group-level predictor values
       vector[N] Z_1_1;
       // data for group-level effects of ID 2
       int<lower=1> N_2;  // number of grouping levels
       int<lower=1> M_2;  // number of coefficients per level
-      int<lower=1> J_2[N];  // grouping indicator per observation
+      array[N] int<lower=1> J_2;  // grouping indicator per observation
       // group-level predictor values
       vector[N] Z_2_1;
       // data for group-level effects of ID 3
       int<lower=1> N_3;  // number of grouping levels
       int<lower=1> M_3;  // number of coefficients per level
-      int<lower=1> J_3[N];  // grouping indicator per observation
+      array[N] int<lower=1> J_3;  // grouping indicator per observation
       // group-level predictor values
       vector[N] Z_3_1;
       int prior_only;  // should the likelihood be ignored?
     }
     transformed data {
-      int Kc = K - 1;
       matrix[N, Kc] Xc;  // centered version of X without an intercept
       vector[Kc] means_X;  // column means of X before centering
       for (i in 2:K) {
@@ -734,15 +772,15 @@ stancode(bmod)
       }
     }
     parameters {
-      vector[Kc] b;  // population-level effects
+      vector[Kc] b;  // regression coefficients
       real Intercept;  // temporary intercept for centered predictors
       real<lower=0> sigma;  // dispersion parameter
       vector<lower=0>[M_1] sd_1;  // group-level standard deviations
-      vector[N_1] z_1[M_1];  // standardized group-level effects
+      array[M_1] vector[N_1] z_1;  // standardized group-level effects
       vector<lower=0>[M_2] sd_2;  // group-level standard deviations
-      vector[N_2] z_2[M_2];  // standardized group-level effects
+      array[M_2] vector[N_2] z_2;  // standardized group-level effects
       vector<lower=0>[M_3] sd_3;  // group-level standard deviations
-      vector[N_3] z_3[M_3];  // standardized group-level effects
+      array[M_3] vector[N_3] z_3;  // standardized group-level effects
     }
     transformed parameters {
       vector[N_1] r_1_1;  // actual group-level effects
@@ -804,39 +842,39 @@ summary(bmod)
       Draws: 4 chains, each with iter = 10000; warmup = 5000; thin = 1;
              total post-warmup draws = 20000
 
-    Group-Level Effects: 
+    Multilevel Hyperparameters:
     ~school (Number of levels: 48) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.05      0.01     0.02     0.07 1.01     1076      524
+    sd(Intercept)     0.05      0.01     0.03     0.07 1.00     1610     1160
 
     ~school:class (Number of levels: 90) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.02      0.01     0.00     0.05 1.01      853      612
+    sd(Intercept)     0.02      0.01     0.00     0.05 1.00      828      981
 
     ~school:class:id (Number of levels: 953) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.10      0.00     0.09     0.11 1.00     3700     7429
+    sd(Intercept)     0.10      0.00     0.09     0.11 1.00     4548     8721
 
-    Population-Level Effects: 
+    Regression Coefficients:
                            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept                  0.44      0.03     0.39     0.49 1.00     3577     5953
-    subjectmath                0.37      0.01     0.35     0.38 1.00    12670    14306
-    gendergirl                 0.06      0.01     0.04     0.08 1.00     8311    10174
-    craven                     0.02      0.00     0.02     0.02 1.00    12032    13873
-    social2                    0.01      0.03    -0.04     0.07 1.00     3634     6670
-    social3                   -0.02      0.03    -0.08     0.04 1.00     3897     7206
-    social4                   -0.07      0.03    -0.12    -0.02 1.00     3381     6115
-    social5                   -0.05      0.03    -0.11     0.01 1.00     3805     7224
-    social6                   -0.09      0.03    -0.15    -0.03 1.00     4037     7403
-    social7                   -0.10      0.03    -0.16    -0.04 1.00     3881     7358
-    social8                   -0.08      0.04    -0.16    -0.00 1.00     5633     9493
-    social9                   -0.05      0.03    -0.10     0.01 1.00     3601     6673
-    subjectmath:gendergirl    -0.06      0.01    -0.08    -0.04 1.00     9947    10819
-    subjectmath:craven        -0.00      0.00    -0.01    -0.00 1.00    33301    14201
+    Intercept                  0.44      0.03     0.39     0.49 1.00     3318     5727
+    subjectmath                0.37      0.01     0.35     0.38 1.00    15150    14475
+    gendergirl                 0.06      0.01     0.04     0.08 1.00     9737    12425
+    craven                     0.02      0.00     0.02     0.02 1.00    14415    15237
+    social2                    0.01      0.03    -0.04     0.07 1.00     3388     6733
+    social3                   -0.02      0.03    -0.08     0.04 1.00     3543     6470
+    social4                   -0.07      0.03    -0.12    -0.02 1.00     3085     5173
+    social5                   -0.05      0.03    -0.11     0.01 1.00     3031     5233
+    social6                   -0.09      0.03    -0.15    -0.03 1.00     3717     7281
+    social7                   -0.10      0.03    -0.16    -0.04 1.00     3561     7742
+    social8                   -0.08      0.04    -0.16     0.00 1.00     5277     9548
+    social9                   -0.05      0.03    -0.10     0.01 1.00     3482     6219
+    subjectmath:gendergirl    -0.06      0.01    -0.08    -0.04 1.00    13927    10747
+    subjectmath:craven        -0.00      0.00    -0.01    -0.00 1.00    28971    13348
 
-    Family Specific Parameters: 
+    Further Distributional Parameters:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma     0.12      0.00     0.11     0.12 1.00     6693    10845
+    sigma     0.12      0.00     0.11     0.12 1.00     7232    12899
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -964,7 +1002,7 @@ We get the posterior density for the intercept as:
 plot(gimod$beta[1,],gimod$density[1,],type="l",xlab="score",ylab="density")
 ```
 
-![](figs/jspmginlaint-1..svg)<!-- -->
+![](figs/jspmginlaint-1..svg)
 
 We get the posterior density for the math effect as:
 
@@ -972,7 +1010,7 @@ We get the posterior density for the math effect as:
 plot(gimod$beta[2,],gimod$density[2,],type="l",xlab="score",ylab="density")
 ```
 
-![](figs/jspmginlaraven-1..svg)<!-- -->
+![](figs/jspmginlaraven-1..svg)
 
 and for the social effects as:
 
@@ -983,7 +1021,7 @@ matplot(xmat, ymat,type="l",xlab="score",ylab="density")
 legend("left",paste0("social",2:9),col=1:8,lty=1:8)
 ```
 
-![](figs/jspgminlalsoc-1..svg)<!-- -->
+![](figs/jspgminlalsoc-1..svg)
 
 We can see some overlap between the effects, but strong evidence of a
 negative outcome relative to social class 1 for some classes.
@@ -1018,45 +1056,43 @@ model](pulp.md#Discussion) for general comments.
 sessionInfo()
 ```
 
-    R version 4.2.1 (2022-06-23)
-    Platform: x86_64-apple-darwin17.0 (64-bit)
-    Running under: macOS Big Sur ... 10.16
+    R version 4.4.1 (2024-06-14)
+    Platform: x86_64-apple-darwin20
+    Running under: macOS Sonoma 14.7
 
     Matrix products: default
-    BLAS:   /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRblas.0.dylib
-    LAPACK: /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRlapack.dylib
+    BLAS:   /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRblas.0.dylib 
+    LAPACK: /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.0
 
     locale:
     [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 
+    time zone: Europe/London
+    tzcode source: internal
+
     attached base packages:
-    [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
+    [1] stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-41         nlme_3.1-161        brms_2.18.0         Rcpp_1.0.9          rstan_2.26.13      
-     [6] StanHeaders_2.26.13 knitr_1.41          INLA_22.12.16       sp_1.5-1            foreach_1.5.2      
-    [11] RLRsim_3.1-8        pbkrtest_0.5.1      lme4_1.1-31         Matrix_1.5-3        ggplot2_3.4.0      
-    [16] faraway_1.0.9      
+     [1] mgcv_1.9-1     nlme_3.1-166   brms_2.21.0    Rcpp_1.0.13    cmdstanr_0.8.1 knitr_1.48     INLA_24.06.27 
+     [8] sp_2.1-4       RLRsim_3.1-8   pbkrtest_0.5.3 lme4_1.1-35.5  Matrix_1.7-0   ggplot2_3.5.1  faraway_1.0.8 
 
     loaded via a namespace (and not attached):
-      [1] minqa_1.2.5          colorspace_2.0-3     ellipsis_0.3.2       markdown_1.4         base64enc_0.1-3     
-      [6] rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         MatrixModels_0.5-1   DT_0.26             
-     [11] fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18     splines_4.2.1       
-     [16] shinythemes_1.2.0    bayesplot_1.10.0     jsonlite_1.8.4       nloptr_2.0.3         broom_1.0.2         
-     [21] shiny_1.7.4          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0       
-     [26] cli_3.5.0            later_1.3.0          htmltools_0.5.4      prettyunits_1.1.1    tools_4.2.1         
-     [31] igraph_1.3.5         coda_0.19-4          gtable_0.3.1         glue_1.6.2           reshape2_1.4.4      
-     [36] dplyr_1.0.10         posterior_1.3.1      V8_4.2.2             vctrs_0.5.1          svglite_2.1.0       
-     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.36            stringr_1.5.0       
-     [46] ps_1.7.2             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.3      gtools_3.9.4        
-     [51] MASS_7.3-58.1        zoo_1.8-11           scales_1.2.1         colourpicker_1.2.0   promises_1.2.0.1    
-     [56] Brobdingnag_1.2-9    inline_0.3.19        shinystan_2.6.0      yaml_2.3.6           curl_4.3.3          
-     [61] gridExtra_2.3        loo_2.5.1            stringi_1.7.8        highr_0.10           dygraphs_1.1.1.6    
-     [66] checkmate_2.1.0      boot_1.3-28.1        pkgbuild_1.4.0       systemfonts_1.0.4    rlang_1.0.6         
-     [71] pkgconfig_2.0.3      matrixStats_0.63.0   distributional_0.3.1 evaluate_0.19        lattice_0.20-45     
-     [76] purrr_1.0.0          labeling_0.4.2       rstantools_2.2.0     htmlwidgets_1.6.0    processx_3.8.0      
-     [81] tidyselect_1.2.0     plyr_1.8.8           magrittr_2.0.3       R6_2.5.1             generics_0.1.3      
-     [86] DBI_1.1.3            pillar_1.8.1         withr_2.5.0          xts_0.12.2           abind_1.4-5         
-     [91] tibble_3.1.8         crayon_1.5.2         utf8_1.2.2           rmarkdown_2.19       grid_4.2.1          
-     [96] callr_3.7.3          threejs_0.3.3        digest_0.6.31        xtable_1.8-4         tidyr_1.2.1         
-    [101] httpuv_1.6.7         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       
+     [1] tidyselect_1.2.1     farver_2.1.2         dplyr_1.1.4          loo_2.8.0            fastmap_1.2.0       
+     [6] tensorA_0.36.2.1     digest_0.6.37        estimability_1.5.1   lifecycle_1.0.4      Deriv_4.1.3         
+    [11] sf_1.0-16            StanHeaders_2.32.10  processx_3.8.4       magrittr_2.0.3       posterior_1.6.0     
+    [16] compiler_4.4.1       rlang_1.1.4          tools_4.4.1          utf8_1.2.4           yaml_2.3.10         
+    [21] data.table_1.16.0    labeling_0.4.3       bridgesampling_1.1-2 pkgbuild_1.4.4       classInt_0.4-10     
+    [26] plyr_1.8.9           abind_1.4-5          KernSmooth_2.23-24   withr_3.0.1          purrr_1.0.2         
+    [31] grid_4.4.1           stats4_4.4.1         fansi_1.0.6          xtable_1.8-4         e1071_1.7-14        
+    [36] colorspace_2.1-1     inline_0.3.19        emmeans_1.10.4       scales_1.3.0         MASS_7.3-61         
+    [41] cli_3.6.3            mvtnorm_1.2-6        rmarkdown_2.28       generics_0.1.3       RcppParallel_5.1.9  
+    [46] rstudioapi_0.16.0    reshape2_1.4.4       minqa_1.2.8          DBI_1.2.3            proxy_0.4-27        
+    [51] rstan_2.32.6         stringr_1.5.1        splines_4.4.1        bayesplot_1.11.1     parallel_4.4.1      
+    [56] matrixStats_1.3.0    vctrs_0.6.5          boot_1.3-31          jsonlite_1.8.8       callr_3.7.6         
+    [61] systemfonts_1.1.0    tidyr_1.3.1          units_0.8-5          glue_1.7.0           nloptr_2.1.1        
+    [66] codetools_0.2-20     ps_1.7.7             distributional_0.4.0 stringi_1.8.4        gtable_0.3.5        
+    [71] QuickJSR_1.3.1       munsell_0.5.1        tibble_3.2.1         pillar_1.9.0         htmltools_0.5.8.1   
+    [76] Brobdingnag_1.2-9    R6_2.5.1             fmesher_0.1.7        evaluate_0.24.0      lattice_0.22-6      
+    [81] backports_1.5.0      broom_1.0.6          rstantools_2.4.0     class_7.3-22         gridExtra_2.3       
+    [86] svglite_2.1.3        coda_0.19-4.1        checkmate_2.3.2      xfun_0.47            pkgconfig_2.0.3     
