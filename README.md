@@ -51,3 +51,4 @@ we explore below using the following packages:
 - [Crossed Effects](mixed/abrafreq.md) - the `abrasion` data
 - [Multilevel Models](mixed/jspmlevelfreq.md) - the `jsp` data
 - [Longitudinal Models](mixed/longitfreq.md) - the `psid` data
+- [Repeated Measures](mixed/visionfreq.md) - the `vision` data
