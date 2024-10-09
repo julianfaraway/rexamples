@@ -1,0 +1,25 @@
+run heats coating resistance
+ r1  T360      C2         73
+ r1  T360      C3         83
+ r1  T360      C1         67
+ r1  T360      C4         89
+ r2  T370      C1         65
+ r2  T370      C3         87
+ r2  T370      C4         86
+ r2  T370      C2         91
+ r3  T380      C3        147
+ r3  T380      C1        155
+ r3  T380      C2        127
+ r3  T380      C4        212
+ r4  T380      C4        153
+ r4  T380      C3         90
+ r4  T380      C2        100
+ r4  T380      C1        108
+ r5  T370      C4        150
+ r5  T370      C1        140
+ r5  T370      C3        121
+ r5  T370      C2        142
+ r6  T360      C1         33
+ r6  T360      C4         54
+ r6  T360      C2          8
+ r6  T360      C3         46

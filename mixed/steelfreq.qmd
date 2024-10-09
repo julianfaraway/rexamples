@@ -1,0 +1,191 @@
+---
+title: Split Plot Analysis of Steel Bars using Frequentist methods
+author: "[Julian Faraway](https://julianfaraway.github.io/)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+format: 
+  gfm:
+    toc: true
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(comment=NA, 
+                      echo = TRUE,
+                      fig.path="figs/",
+                      dev = 'svglite',  
+                      fig.ext = ".svg",
+                      warning=FALSE, 
+                      message=FALSE)
+knitr::opts_knit$set(global.par = TRUE)
+```
+
+```{r graphopts, include=FALSE}
+par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
+ggplot2::theme_set(ggplot2::theme_bw())
+```
+
+See the [introduction](../index.md) for an overview. 
+
+The [irrigation example](irrifreq.md) is another split plot example. The
+purpose of this example is to explore other aspects of the analysis.
+
+
+This example come from Chapter 9 of *Statistics for Experimenters: Design, Innovation, and Discovery*, 2nd Edition by
+George E. P. Box, J. Stuart Hunter, William G. Hunter.
+
+
+
+```{r}
+library(ggplot2)
+library(knitr)
+library(here)
+library(lme4)
+```
+
+Read in and examine the data:
+
+```{r}
+steelbars = read.table(here("data","steelbars.txt"),header = TRUE)
+kable(steelbars)
+```
+
+Check the assignment of runs and heat levels:
+
+```{r}
+xtabs( ~ run + heats, steelbars)
+```
+
+Only one heat level is used within each run. We see that the runs are whole plots and the heat levels are the whole plot factor. Now look at the allocation of coating levels:
+
+```{r}
+xtabs( ~ run + coating, steelbars)
+```
+
+We see each coating is applied once per run. This is the split plot factor.
+
+We plot the data:
+
+```{r}
+ggplot(steelbars, aes(y=resistance, x=run, shape=heats, color=coating)) + geom_point()
+```
+
+No outliers, skewness or unequal variance are seen.
+
+We fit this model with:
+
+```{r}
+lmod = lmer(resistance ~ heats*coating + (1|run), steelbars)
+summary(lmod, cor=FALSE)
+```
+
+Notice that the SE on the heating levels are larger because this is the whole
+plot term while those for the coating and interaction are smaller because coating
+is the split plot term.
+
+We can also try to test the significance of the terms:
+
+```{r}
+anova(lmod)
+```
+
+The default `anova()` is sequential (also known as Type I sum of squares). 
+By design, `lme4` does not compute tests either in the `summary` or `anova` output
+for reasons discussed in my textbook. The `lmerTest` package is a convenient way to generate these tests (and associated p-value). It is necessary to
+refit the model to use a modified version of `lmer` loaded by this package.
+
+
+```{r}
+library(lmerTest)
+lmod = lmer(resistance ~ heats*coating + (1|run), steelbars)
+```
+
+The `summary()` output would now contain the p-values but these are
+not so interesting since we usually don't want to consider these
+tests directly. We are more interested in the `anova()`:
+
+```{r}
+anova(lmod)
+```
+
+We get a so-called Type III ANOVA but since we have a balanced design,
+the particular type does not make a difference so we need not be concerned
+with this.
+
+We see a significant interaction. In the presence of significant interaction,
+it is problematic to address the significance of the main effects. But notice the lower denominator degrees of freedom for the whole plot term. This means
+the design has less power to detect differences in the whole plot factor. Essentially,
+we have only 6 runs to detect the differences in the heat levels whereas we have
+n=24 for testing the split plot factor (and its interaction with the main plot
+factor).
+
+Results are essentially the same as BHH although they are presented differently.
+BHH uses (intrinsically) a -1/1 coding so their SEs are twice those presented here
+(and their effects would also be twice the size).
+
+We can also use the Kenward-Roger method of approximating the degrees of
+freedom in contrast to the default Satterthwaite Method. This method
+uses the `pbkrtest` package that was used in the irrigation split plot
+example.
+
+```{r}
+anova(lmod, ddf="Kenward-Roger")
+```
+
+As we see, there is no difference in this example. In general, Kenward-Roger
+is considered slightly superior although it is more expensive to compute.
+
+Check out where the interaction is coming from. The `emmeans` package
+is useful for this purpose:
+
+```{r}
+library(emmeans)
+emmeans(lmod, "coating", by="heats")
+```
+
+It's the coating4 by heat at 380 combination producing the highest response.
+One might be interested in increasing the temperature further at the coating4
+setting to see if an even better response might be obtained.
+
+## Comparison to linear model
+
+Let's consider what happens if we ignore the split plot structure and
+treat this as a completely randomized design (which would be incorrect!):
+
+```{r}
+smod = lm(resistance ~ heats*coating, steelbars)
+summary(smod)
+```
+
+Let's compare the fixed effect coefficients in the two models:
+
+```{r}
+data.frame(mm=summary(lmod)$coef[,1],lm=coef(smod))
+```
+
+We see they are identical. The fitted values for both models will be the same.
+
+Now compare the standard errors:
+
+```{r}
+data.frame(mm=summary(lmod)$coef[,2],lm=summary(smod)$coef[,2])
+```
+
+We see these are smaller for the split plot factor, coating and the interaction
+term. 
+
+Let's see the analysis of variance of the linear model:
+
+```{r}
+anova(smod)
+```
+
+We see no significance for the interaction term. This is the
+sequential ANOVA, so it's reasonable to now test the coating
+term which is also not significant. Only the heating level
+term remains and shows a significant difference. But this analysis is
+incorrect and it matters - the outcome is quite different from the
+correct split plot analysis.
+
+
+
+
+
