@@ -1,0 +1,226 @@
+---
+title: Multilevel Design
+author: "[Julian Faraway](https://julianfaraway.github.io/)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+format: 
+  gfm:
+    toc: true
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(comment=NA, 
+                      echo = TRUE,
+                      fig.path="figs/",
+                      dev = 'svglite',  
+                      fig.ext = ".svg",
+                      warning=FALSE, 
+                      message=FALSE)
+knitr::opts_knit$set(global.par = TRUE)
+```
+
+```{r graphopts, include=FALSE}
+par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
+ggplot2::theme_set(ggplot2::theme_bw())
+```
+
+See the [introduction](index.md) for an overview. 
+
+See a [mostly Bayesian analysis](jspmultiple.md) analysis of the same
+data. 
+
+
+This example is discussed in more detail in my book
+[Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/)
+
+Required libraries:
+
+```{r}
+library(faraway)
+library(ggplot2)
+```
+
+# Data
+
+[Read](jspmultilevel.md) about our analysis of some data from the Junior
+Schools Project.  In addition to a math test, students also
+took a test in English. Although it would be possible to analyze the
+English test results in the same way that we analyzed the math
+scores, additional information may be obtained from analyzing them
+simultaneously. Hence we view the data as having a bivariate response
+with English and math scores for each student. The student is a
+nested factor within the class which is in turn nested within the
+school. We express the multivariate response for each individual
+by introducing an additional level of nesting at the individual
+level. So we might view this as just another nested model except
+that there is a fixed subject effect associated with this lowest
+level of nesting.
+
+We set up the data in a format with one test score per line
+with an indicator `subject` identifying which type of test was
+taken. We scale the English and math test scores by their
+maximum possible values, 40 and 100, respectively, to aid comparison:
+
+
+```{r}
+data(jsp, package="faraway")
+jspr <- jsp[jsp$year==2,]
+mjspr <- data.frame(rbind(jspr[,1:6],jspr[,1:6]),
+                    subject=factor(rep(c("english","math"),c(953,953))),  
+                    score=c(jspr$english/100,jspr$math/40))
+```
+
+We can plot the data
+
+```{r jspmplot}
+ggplot(mjspr, aes(x=raven, y=score))+geom_jitter(alpha=0.25)+facet_grid(gender ~ subject)
+```
+
+# Mixed Effect Model
+
+We now propose a  model for the data that includes
+all the variables of interest that incorporates some of
+the interactions that we suspect might be present.
+See [Extending the Linear Model with R](https://julianfaraway.github.io/faraway/ELM/),
+
+
+The model has school $i$, class $j$, student $k$ in
+subject $l$ and takes the form:
+```{math}
+\begin{aligned}
+  score_{ijkl} =& subject_l + gender_k + raven_k + social_k +
+  (subject \times gender)_{lk} +  \\ & (raven \times subject)_{lk} +
+  school_i + class_j + student_k + \epsilon_{ijkl}
+\end{aligned}
+```
+where the Raven score has been mean centered and school, class and
+student are random effects with the other terms, apart from $\epsilon$,
+being fixed effects.
+
+# LME4
+
+We center the raven score for ease of later interpretation then
+fit the model. We use the `lmerTest` package to generate the
+inference (which uses the `lme4` fit):
+
+```{r}
+library(lmerTest)
+mjspr$craven <- mjspr$raven-mean(mjspr$raven)
+mmod <- lmer(score ~ subject*gender + craven*subject + social + (1|school) + (1|school:class) + (1|school:class:id),mjspr)
+summary(mmod, cor=FALSE)
+```
+
+See the textbook for more about the interpretation of the effects.
+
+We can test all the fixed effects with:
+
+```{r}
+anova(mmod)
+```
+
+- Both interactions are statistically significant
+- Social has no interaction so its statistical significance is straightforward
+- Subject, gender and craven have interaction terms so the tests on their
+main effects are more difficult to parse. One might view these as tests
+of these effects where the interacting effects are set to their mean values. In
+any case, there is no doubt that these terms have some significance.
+
+A different method for approximating the degrees can be used:
+```{r}
+anova(mmod, ddf="Kenward-Roger")
+```
+which takes slightly longer to compute and gives slightly different
+results in this instance - not that it makes any difference.
+
+We can compute confidence intervals for the parameters:
+
+```{r jspmconfint, cache=TRUE}
+set.seed(123)
+confint(mmod, method="boot", oldNames=FALSE)
+```
+
+The lower end of the class confidence interval is zero while the school random effect
+is clearly larger. There is some variation associated with individuals.
+
+# NLME
+
+See the discussion for the [single random effect example](pulpfreq.md#NLME)
+for some introduction.
+
+The syntax for specifying the nested/heirarchical model is different from `lme4`:
+
+```{r}
+library(nlme)
+nlmod = lme(score ~ subject*gender + craven*subject + social, 
+            mjspr, 
+            ~ 1 | school/class/id)
+summary(nlmod,cor=FALSE)
+```
+
+The results are presented somewhat differently but match those presented
+by `lme4` earlier. We do get p-values for the fixed effects but these
+are not so useful.
+
+We can get tests on the fixed effects with:
+
+```{r}
+anova(nlmod)
+```
+
+This is a (Type I) sequential ANOVA so there are some difference to
+the `lme4` ANOVA output above. It makes no difference to the overall conclusion.
+
+# MMRM
+
+MMRM is not designed to fit this class of models.
+
+# GLMMTMB
+
+See the discussion for the [single random effect example](pulpfreq.md#GLMMTMB)
+for some introduction.
+
+```{r}
+library(glmmTMB)
+```
+
+The default fit uses ML so we set REML for comparison purposes:
+
+```{r}
+gtmod <- glmmTMB(score ~ subject*gender + craven*subject + social + (1|school) + (1|school:class) + (1|school:class:id),mjspr, REML=TRUE)
+summary(gtmod)
+```
+
+
+Another option is to use REML with:
+
+```{r}
+gtmodr = glmmTMB(acuity~power+(1|subject)+(1|subject:eye),data=vision,
+                REML=TRUE)
+summary(gtmodr)
+```
+
+The result is appears identical with the previous REML fits.
+
+The `lmerTest` package is not connected to the `glmmTMB` package so
+we cannot easily do an ANOVA on the model. Of course, more manual
+methods could be used.
+
+
+# Discussion
+
+See the [Discussion of the single random effect model](pulp.md#Discussion) for
+general comments. 
+
+`lme4`, `nlme` and `glmmTMB` were all able to fit this model with
+no important differences between them. `mmrm` was not designed
+for this type of model. 
+
+
+
+# Package version info
+
+```{r}
+sessionInfo()
+```
+
+
+
