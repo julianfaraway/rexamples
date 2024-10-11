@@ -53,3 +53,4 @@ we explore below using the following packages:
 - [Longitudinal Models](mixed/longitfreq.md) - the `psid` data
 - [Repeated Measures](mixed/visionfreq.md) - the `vision` data
 - [Multiple Response Models](mixed/jspmultiplefreq.md) - the `jsp` data
+- [Poisson reponse model](mixed/nitrofreq.md) - the `nitrofen` data
