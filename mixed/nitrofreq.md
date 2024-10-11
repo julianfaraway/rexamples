@@ -107,6 +107,7 @@ package:
 
 ``` r
 library(lme4)
+lnitrofen$brood = factor(lnitrofen$brood)
 glmod <- glmer(live ~ I(conc/300)*brood + (1|id), nAGQ=25, 
              family=poisson, data=lnitrofen)
 summary(glmod, correlation = FALSE)
@@ -118,23 +119,25 @@ summary(glmod, correlation = FALSE)
        Data: lnitrofen
 
          AIC      BIC   logLik deviance df.resid 
-       334.5    349.5   -162.2    324.5      145 
+       313.9    335.0   -150.0    299.9      143 
 
     Scaled residuals: 
        Min     1Q Median     3Q    Max 
-    -2.285 -0.858  0.068  0.706  2.866 
+    -2.208 -0.606 -0.008  0.618  3.565 
 
     Random effects:
      Groups Name        Variance Std.Dev.
-     id     (Intercept) 0.0835   0.289   
+     id     (Intercept) 0.0911   0.302   
     Number of obs: 150, groups:  id, 50
 
     Fixed effects:
-                      Estimate Std. Error z value Pr(>|z|)
-    (Intercept)         1.3451     0.1590    8.46  < 2e-16
-    I(conc/300)         0.3581     0.2801    1.28      0.2
-    brood               0.5815     0.0592    9.83  < 2e-16
-    I(conc/300):brood  -0.7957     0.1158   -6.87  6.3e-12
+                       Estimate Std. Error z value Pr(>|z|)
+    (Intercept)          1.6386     0.1367   11.99  < 2e-16
+    I(conc/300)         -0.0437     0.2193   -0.20     0.84
+    brood2               1.1687     0.1377    8.48  < 2e-16
+    brood3               1.3512     0.1351   10.00  < 2e-16
+    I(conc/300):brood2  -1.6730     0.2487   -6.73  1.7e-11
+    I(conc/300):brood3  -1.8312     0.2451   -7.47  7.9e-14
 
 We scaled the concentration by dividing by 300 (the maximum value is
 310) to avoid scaling problems encountered with `glmer()`. This is
@@ -156,21 +159,9 @@ brood vary. I have chosen not specify a particular individual in the
 random effects with the option `re.form=~0` . We have $u_i = 0$ and so
 this represents the the response for a `typical` individual.
 
-``` r
-predf = data.frame(conc=rep(c(0,80,160,235,310),each=3),brood=rep(1:3,5))
-predf$live = predict(glmod, newdata=predf, re.form=~0, type="response")
-predf$brood = factor(predf$brood)
-ggplot(predf, aes(x=conc,y=live,group=brood,color=brood)) + 
-  geom_line() + xlab("Concentration")
-```
-
-<img src="figs/fig-prednitro-1..svg" id="fig-prednitro"
-alt="Figure 2: Predicted number of live offspring" />
-
-We see that if only the first brood were considered, the herbicide does
-not have a large effect. In the second and third broods, the (negative)
-effect of the herbicide becomes more apparent with fewer live offspring
-being produced as the concentration rises.
+We would need to work harder to test the significance of the effects as
+`lmerTest` is of no help for GLMMs. We do have the z-tests but in this
+example, they do not give us the tests we want.
 
 # NLME
 
@@ -202,21 +193,23 @@ summary(gtmod)
     Data: lnitrofen
 
          AIC      BIC   logLik deviance df.resid 
-       830.5    845.6   -410.3    820.5      145 
+       810.0    831.1   -398.0    796.0      143 
 
     Random effects:
 
     Conditional model:
      Groups Name        Variance Std.Dev.
-     id     (Intercept) 0.0831   0.288   
+     id     (Intercept) 0.0906   0.301   
     Number of obs: 150, groups:  id, 50
 
     Conditional model:
-                      Estimate Std. Error z value Pr(>|z|)
-    (Intercept)         1.3451     0.1589    8.47  < 2e-16
-    I(conc/300)         0.3582     0.2799    1.28      0.2
-    brood               0.5814     0.0591    9.83  < 2e-16
-    I(conc/300):brood  -0.7955     0.1157   -6.87  6.3e-12
+                       Estimate Std. Error z value Pr(>|z|)
+    (Intercept)          1.6386     0.1366   12.00  < 2e-16
+    I(conc/300)         -0.0435     0.2191   -0.20     0.84
+    brood2               1.1685     0.1377    8.48  < 2e-16
+    brood3               1.3510     0.1351   10.00  < 2e-16
+    I(conc/300):brood2  -1.6724     0.2486   -6.73  1.7e-11
+    I(conc/300):brood3  -1.8305     0.2450   -7.47  7.9e-14
 
 Almost the same output as with `lme4` although a different optimizer has
 been used for the fit.

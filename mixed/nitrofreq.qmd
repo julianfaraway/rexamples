@@ -97,7 +97,8 @@ We fit a model using penalized quasi-likelihood
 (PQL) using the `lme4` package:
 ```{r}
 library(lme4)
-glmod <- glmer(live ~ I(conc/300)*fbrood + (1|id), nAGQ=25, 
+lnitrofen$brood = factor(lnitrofen$brood)
+glmod <- glmer(live ~ I(conc/300)*brood + (1|id), nAGQ=25, 
              family=poisson, data=lnitrofen)
 summary(glmod, correlation = FALSE)
 ```
@@ -120,24 +121,9 @@ We can make a plot of the mean predicted response as concentration and
 brood vary. I have chosen not specify a particular individual in the random effects with the option `re.form=~0` . We have $u_i = 0$ and so this represents the
 the response for a `typical` individual.
 
-
-```{r}
-#| label: fig-prednitro
-#| fig-cap: "Predicted number of live offspring"
-predf = data.frame(conc=rep(c(0,80,160,235,310),each=3),brood=rep(1:3,5))
-predf$live = predict(glmod, newdata=predf, re.form=~0, type="response")
-predf$brood = factor(predf$brood)
-ggplot(predf, aes(x=conc,y=live,group=brood,color=brood)) + 
-  geom_line() + xlab("Concentration")
-```
-
-We see that if only the first brood were considered, the herbicide does not
-have a large effect. In the second and third broods, the (negative) effect of the herbicide becomes more apparent with fewer live offspring being produced
-as the concentration rises.
-
 We would need to work harder to test the significance of the effects as
-`lmerTest` is of no help for GLMMs. In this example, we have the
-z-tests which are useful beca
+`lmerTest` is of no help for GLMMs. We do have the z-tests but in this
+example, they do not give us the tests we want.
 
 # NLME
 
@@ -159,7 +145,7 @@ library(glmmTMB)
 We can fit the model with:
 
 ```{r}
-gtmod <- glmmTMB(live ~ I(conc/300)*fbrood + (1|id), 
+gtmod <- glmmTMB(live ~ I(conc/300)*brood + (1|id), 
              family=poisson, data=lnitrofen)
 summary(gtmod)
 ```
