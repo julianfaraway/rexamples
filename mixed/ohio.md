@@ -1,17 +1,15 @@
-Binary response GLMM
-================
+# Binary response GLMM
 [Julian Faraway](https://julianfaraway.github.io/)
-1/6/23
+2024-10-14
 
-- <a href="#data-and-model" id="toc-data-and-model">Data and Model</a>
-- <a href="#lme4" id="toc-lme4">LME4</a>
-- <a href="#inla" id="toc-inla">INLA</a>
-- <a href="#brms" id="toc-brms">BRMS</a>
-- <a href="#mgcv" id="toc-mgcv">MGCV</a>
-- <a href="#ginla" id="toc-ginla">GINLA</a>
-- <a href="#discussion" id="toc-discussion">Discussion</a>
-- <a href="#package-version-info" id="toc-package-version-info">Package
-  version info</a>
+- [Data and Model](#data-and-model)
+- [LME4](#lme4)
+- [INLA](#inla)
+- [BRMS](#brms)
+- [MGCV](#mgcv)
+- [GINLA](#ginla)
+- [Discussion](#discussion)
+- [Package version info](#package-version-info)
 
 See the [introduction](../index.md) for an overview.
 
@@ -28,6 +26,7 @@ library(INLA)
 library(knitr)
 library(brms)
 library(mgcv)
+library(here)
 ```
 
 # Data and Model
@@ -42,10 +41,27 @@ whether the mother of the child is a smoker. Because we have four binary
 responses for each child, we expect these to be correlated and our model
 needs to reflect this.
 
+Read in and examine the first two subjects worth of data:
+
+``` r
+ohio = read.csv(here("data","ohio.csv"),header = TRUE)
+kable(ohio[1:8,])
+```
+
+| resp |  id | age | smoke |
+|-----:|----:|----:|------:|
+|    0 |   0 |  -2 |     0 |
+|    0 |   0 |  -1 |     0 |
+|    0 |   0 |   0 |     0 |
+|    0 |   0 |   1 |     0 |
+|    0 |   1 |  -2 |     0 |
+|    0 |   1 |  -1 |     0 |
+|    0 |   1 |   0 |     0 |
+|    0 |   1 |   1 |     0 |
+
 We sum the number of smoking and non-smoking mothers:
 
 ``` r
-data(ohio, package="brinla")
 table(ohio$smoke)/4
 ```
 
@@ -112,7 +128,7 @@ summary(modagh, correlation = FALSE)
 
     Fixed effects:
                 Estimate Std. Error z value Pr(>|z|)
-    (Intercept)  -3.1015     0.2191  -14.16   <2e-16
+    (Intercept)  -3.1015     0.2190  -14.16   <2e-16
     age          -0.1756     0.0677   -2.60   0.0095
     smoke         0.3986     0.2731    1.46   0.1444
 
@@ -163,9 +179,9 @@ imod$summary.fixed |> kable()
 
 |             |     mean |      sd | 0.025quant | 0.5quant | 0.975quant |     mode | kld |
 |:------------|---------:|--------:|-----------:|---------:|-----------:|---------:|----:|
-| (Intercept) | -2.92023 | 0.19075 |   -3.31025 | -2.91443 |   -2.56275 | -2.90295 |   0 |
-| age         | -0.17157 | 0.06271 |   -0.29482 | -0.17148 |   -0.04883 | -0.17130 |   0 |
-| smoke       |  0.38205 | 0.23645 |   -0.08007 |  0.38126 |    0.84862 |  0.37971 |   0 |
+| (Intercept) | -2.94704 | 0.20002 |   -3.36027 | -2.93971 |   -2.57571 | -2.93953 |   0 |
+| age         | -0.17294 | 0.06297 |   -0.29673 | -0.17283 |   -0.04976 | -0.17283 |   0 |
+| smoke       |  0.38511 | 0.23960 |   -0.08280 |  0.38418 |    0.85835 |  0.38419 |   0 |
 
 The posterior means are similar to the PQL estimates. We can get plots
 of the posteriors of the fixed effects:
@@ -183,12 +199,8 @@ for(i in 2:3){
 par(mfrow=c(1,1))
 ```
 
-<figure>
 <img src="figs/fig-ohiofpd-1..svg" id="fig-ohiofpd"
 alt="Figure 1: Posterior densities of the fixed effects model for the Ohio wheeze data." />
-<figcaption aria-hidden="true">Figure 1: Posterior densities of the
-fixed effects model for the Ohio wheeze data.</figcaption>
-</figure>
 
 We can also see the summary for the random effect SD:
 
@@ -197,13 +209,13 @@ hpd = inla.tmarginal(function(x) 1/sqrt(x), imod$marginals.hyperpar[[1]])
 inla.zmarginal(hpd)
 ```
 
-    Mean            1.90247 
-    Stdev           0.148106 
-    Quantile  0.025 1.62102 
-    Quantile  0.25  1.79994 
-    Quantile  0.5   1.89932 
-    Quantile  0.75  2.00381 
-    Quantile  0.975 2.19165 
+    Mean            1.92585 
+    Stdev           0.161199 
+    Quantile  0.025 1.62603 
+    Quantile  0.25  1.81363 
+    Quantile  0.5   1.91964 
+    Quantile  0.75  2.03111 
+    Quantile  0.975 2.25927 
 
 Again the result is similar to the PQL output although notice that INLA
 provides some assessment of uncertainty in this value in contrast to the
@@ -213,12 +225,8 @@ PQL result. We can also see the posterior density:
 plot(hpd,type="l",xlab="linear predictor",ylab="density")
 ```
 
-<figure>
 <img src="figs/fig-ohiohyppd-1..svg" id="fig-ohiohyppd"
 alt="Figure 2: Posterior density of the SD of id" />
-<figcaption aria-hidden="true">Figure 2: Posterior density of the SD of
-id</figcaption>
-</figure>
 
 # BRMS
 
@@ -250,24 +258,24 @@ We can look at the STAN code that `brms` used with:
 stancode(bmod)
 ```
 
-    // generated with brms 2.18.0
+    // generated with brms 2.21.0
     functions {
     }
     data {
       int<lower=1> N;  // total number of observations
-      int Y[N];  // response variable
+      array[N] int Y;  // response variable
       int<lower=1> K;  // number of population-level effects
       matrix[N, K] X;  // population-level design matrix
+      int<lower=1> Kc;  // number of population-level effects after centering
       // data for group-level effects of ID 1
       int<lower=1> N_1;  // number of grouping levels
       int<lower=1> M_1;  // number of coefficients per level
-      int<lower=1> J_1[N];  // grouping indicator per observation
+      array[N] int<lower=1> J_1;  // grouping indicator per observation
       // group-level predictor values
       vector[N] Z_1_1;
       int prior_only;  // should the likelihood be ignored?
     }
     transformed data {
-      int Kc = K - 1;
       matrix[N, Kc] Xc;  // centered version of X without an intercept
       vector[Kc] means_X;  // column means of X before centering
       for (i in 2:K) {
@@ -276,10 +284,10 @@ stancode(bmod)
       }
     }
     parameters {
-      vector[Kc] b;  // population-level effects
+      vector[Kc] b;  // regression coefficients
       real Intercept;  // temporary intercept for centered predictors
       vector<lower=0>[M_1] sd_1;  // group-level standard deviations
-      vector[N_1] z_1[M_1];  // standardized group-level effects
+      array[M_1] vector[N_1] z_1;  // standardized group-level effects
     }
     transformed parameters {
       vector[N_1] r_1_1;  // actual group-level effects
@@ -326,16 +334,16 @@ summary(bmod)
       Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
              total post-warmup draws = 4000
 
-    Group-Level Effects: 
+    Multilevel Hyperparameters:
     ~id (Number of levels: 537) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     2.20      0.19     1.86     2.60 1.00     1045     1569
+    sd(Intercept)     2.19      0.19     1.85     2.58 1.00      992     1613
 
-    Population-Level Effects: 
+    Regression Coefficients:
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept    -3.12      0.22    -3.57    -2.71 1.00     1606     2073
-    age          -0.18      0.07    -0.31    -0.04 1.00     5301     3086
-    smoke         0.40      0.28    -0.15     0.93 1.00     1580     2515
+    Intercept    -3.11      0.22    -3.55    -2.71 1.00     1473     2209
+    age          -0.18      0.07    -0.31    -0.05 1.00     5081     3181
+    smoke         0.40      0.28    -0.13     0.93 1.00     1346     2408
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -437,12 +445,8 @@ plot(gimod$beta[i,],gimod$density[i,],type="l",
 par(mfrow=c(1,1))
 ```
 
-<figure>
 <img src="figs/fig-ohioginlareff-1..svg" id="fig-ohioginlareff"
 alt="Figure 3: Posteriors of the fixed effects" />
-<figcaption aria-hidden="true">Figure 3: Posteriors of the fixed
-effects</figcaption>
-</figure>
 
 It is not straightforward to obtain the posterior densities of the
 hyperparameters.
@@ -463,43 +467,43 @@ hyperparameters.
 sessionInfo()
 ```
 
-    R version 4.2.1 (2022-06-23)
-    Platform: x86_64-apple-darwin17.0 (64-bit)
-    Running under: macOS Big Sur ... 10.16
+    R version 4.4.1 (2024-06-14)
+    Platform: x86_64-apple-darwin20
+    Running under: macOS Sonoma 14.7
 
     Matrix products: default
-    BLAS:   /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRblas.0.dylib
-    LAPACK: /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRlapack.dylib
+    BLAS:   /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRblas.0.dylib 
+    LAPACK: /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.0
 
     locale:
     [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 
+    time zone: Europe/London
+    tzcode source: internal
+
     attached base packages:
-    [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
+    [1] stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-41   nlme_3.1-161  brms_2.18.0   Rcpp_1.0.9    knitr_1.41    INLA_22.12.16 sp_1.5-1      foreach_1.5.2
-     [9] lme4_1.1-31   Matrix_1.5-3  ggplot2_3.4.0
+     [1] foreach_1.5.2 here_1.0.1    mgcv_1.9-1    nlme_3.1-166  brms_2.21.0   Rcpp_1.0.13   knitr_1.48    INLA_24.06.27
+     [9] sp_2.1-4      lme4_1.1-35.5 Matrix_1.7-0  ggplot2_3.5.1
 
     loaded via a namespace (and not attached):
-      [1] minqa_1.2.5          colorspace_2.0-3     ellipsis_0.3.2       markdown_1.4         base64enc_0.1-3     
-      [6] rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         rstan_2.26.13        MatrixModels_0.5-1  
-     [11] DT_0.26              fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18    
-     [16] splines_4.2.1        shinythemes_1.2.0    bayesplot_1.10.0     jsonlite_1.8.4       nloptr_2.0.3        
-     [21] shiny_1.7.4          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0       
-     [26] cli_3.5.0            later_1.3.0          htmltools_0.5.4      prettyunits_1.1.1    tools_4.2.1         
-     [31] igraph_1.3.5         coda_0.19-4          gtable_0.3.1         glue_1.6.2           reshape2_1.4.4      
-     [36] dplyr_1.0.10         posterior_1.3.1      V8_4.2.2             vctrs_0.5.1          svglite_2.1.0       
-     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.36            stringr_1.5.0       
-     [46] ps_1.7.2             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.3      gtools_3.9.4        
-     [51] MASS_7.3-58.1        zoo_1.8-11           scales_1.2.1         colourpicker_1.2.0   promises_1.2.0.1    
-     [56] Brobdingnag_1.2-9    faraway_1.0.9        inline_0.3.19        shinystan_2.6.0      yaml_2.3.6          
-     [61] curl_4.3.3           gridExtra_2.3        loo_2.5.1            StanHeaders_2.26.13  stringi_1.7.8       
-     [66] highr_0.10           dygraphs_1.1.1.6     checkmate_2.1.0      boot_1.3-28.1        pkgbuild_1.4.0      
-     [71] systemfonts_1.0.4    rlang_1.0.6          pkgconfig_2.0.3      matrixStats_0.63.0   distributional_0.3.1
-     [76] evaluate_0.19        lattice_0.20-45      labeling_0.4.2       rstantools_2.2.0     htmlwidgets_1.6.0   
-     [81] tidyselect_1.2.0     processx_3.8.0       plyr_1.8.8           magrittr_2.0.3       R6_2.5.1            
-     [86] generics_0.1.3       DBI_1.1.3            pillar_1.8.1         withr_2.5.0          xts_0.12.2          
-     [91] abind_1.4-5          tibble_3.1.8         crayon_1.5.2         utf8_1.2.2           rmarkdown_2.19      
-     [96] grid_4.2.1           callr_3.7.3          threejs_0.3.3        digest_0.6.31        xtable_1.8-4        
-    [101] httpuv_1.6.7         RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       
+     [1] tidyselect_1.2.1     farver_2.1.2         dplyr_1.1.4          loo_2.8.0            fastmap_1.2.0       
+     [6] tensorA_0.36.2.1     digest_0.6.37        estimability_1.5.1   lifecycle_1.0.4      Deriv_4.1.3         
+    [11] sf_1.0-16            StanHeaders_2.32.10  processx_3.8.4       magrittr_2.0.3       posterior_1.6.0     
+    [16] compiler_4.4.1       rlang_1.1.4          tools_4.4.1          utf8_1.2.4           yaml_2.3.10         
+    [21] labeling_0.4.3       bridgesampling_1.1-2 pkgbuild_1.4.4       classInt_0.4-10      plyr_1.8.9          
+    [26] abind_1.4-5          KernSmooth_2.23-24   withr_3.0.1          grid_4.4.1           stats4_4.4.1        
+    [31] fansi_1.0.6          xtable_1.8-4         e1071_1.7-14         colorspace_2.1-1     inline_0.3.19       
+    [36] iterators_1.0.14     emmeans_1.10.4       scales_1.3.0         MASS_7.3-61          cli_3.6.3           
+    [41] mvtnorm_1.2-6        rmarkdown_2.28       generics_0.1.3       RcppParallel_5.1.9   rstudioapi_0.16.0   
+    [46] reshape2_1.4.4       minqa_1.2.8          DBI_1.2.3            proxy_0.4-27         rstan_2.32.6        
+    [51] stringr_1.5.1        splines_4.4.1        bayesplot_1.11.1     parallel_4.4.1       matrixStats_1.3.0   
+    [56] vctrs_0.6.5          boot_1.3-31          jsonlite_1.8.8       callr_3.7.6          systemfonts_1.1.0   
+    [61] units_0.8-5          faraway_1.0.8        glue_1.8.0           nloptr_2.1.1         ps_1.7.7            
+    [66] codetools_0.2-20     distributional_0.4.0 stringi_1.8.4        gtable_0.3.5         QuickJSR_1.3.1      
+    [71] munsell_0.5.1        tibble_3.2.1         pillar_1.9.0         htmltools_0.5.8.1    Brobdingnag_1.2-9   
+    [76] R6_2.5.1             fmesher_0.1.7        rprojroot_2.0.4      evaluate_0.24.0      lattice_0.22-6      
+    [81] backports_1.5.0      MatrixModels_0.5-3   rstantools_2.4.0     class_7.3-22         svglite_2.1.3       
+    [86] coda_0.19-4.1        gridExtra_2.3        checkmate_2.3.2      xfun_0.47            pkgconfig_2.0.3     

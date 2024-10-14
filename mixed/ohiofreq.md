@@ -21,8 +21,8 @@ INLA](https://julianfaraway.github.io/brinlabook/chaglmm.html)
 Packages used:
 
 ``` r
-library(ggplot2)
 library(knitr)
+library(here)
 ```
 
 # Data and Model
@@ -37,10 +37,27 @@ whether the mother of the child is a smoker. Because we have four binary
 responses for each child, we expect these to be correlated and our model
 needs to reflect this.
 
+Read in and examine the first two subjects worth of data:
+
+``` r
+ohio = read.csv(here("data","ohio.csv"),header = TRUE)
+kable(ohio[1:8,])
+```
+
+| resp |  id | age | smoke |
+|-----:|----:|----:|------:|
+|    0 |   0 |  -2 |     0 |
+|    0 |   0 |  -1 |     0 |
+|    0 |   0 |   0 |     0 |
+|    0 |   0 |   1 |     0 |
+|    0 |   1 |  -2 |     0 |
+|    0 |   1 |  -1 |     0 |
+|    0 |   1 |   0 |     0 |
+|    0 |   1 |   1 |     0 |
+
 We sum the number of smoking and non-smoking mothers:
 
 ``` r
-data(ohio, package="brinla")
 table(ohio$smoke)/4
 ```
 
@@ -195,38 +212,26 @@ Same as `lme4`.
 # Package version info
 
 ``` r
-sessionInfo()
+xfun::session_info()
 ```
 
     R version 4.4.1 (2024-06-14)
     Platform: x86_64-apple-darwin20
     Running under: macOS Sonoma 14.7
 
-    Matrix products: default
-    BLAS:   /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRblas.0.dylib 
-    LAPACK: /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.0
+    Locale: en_US.UTF-8 / en_US.UTF-8 / en_US.UTF-8 / C / en_US.UTF-8 / en_US.UTF-8
 
-    locale:
-    [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
-
-    time zone: Europe/London
-    tzcode source: internal
-
-    attached base packages:
-    [1] stats     graphics  grDevices utils     datasets  methods   base     
-
-    other attached packages:
-    [1] glmmTMB_1.1.9 lme4_1.1-35.5 Matrix_1.7-0  knitr_1.48    ggplot2_3.5.1
-
-    loaded via a namespace (and not attached):
-     [1] gtable_0.3.5        jsonlite_1.8.8      dplyr_1.1.4         compiler_4.4.1      tidyselect_1.2.1   
-     [6] Rcpp_1.0.13         splines_4.4.1       systemfonts_1.1.0   scales_1.3.0        boot_1.3-31        
-    [11] yaml_2.3.10         fastmap_1.2.0       coda_0.19-4.1       lattice_0.22-6      R6_2.5.1           
-    [16] generics_0.1.3      MASS_7.3-61         tibble_3.2.1        nloptr_2.1.1        munsell_0.5.1      
-    [21] minqa_1.2.8         svglite_2.1.3       TMB_1.9.14          pillar_1.9.0        rlang_1.1.4        
-    [26] utf8_1.2.4          xfun_0.47           estimability_1.5.1  cli_3.6.3           mgcv_1.9-1         
-    [31] withr_3.0.1         magrittr_2.0.3      emmeans_1.10.4      digest_0.6.37       grid_4.4.1         
-    [36] xtable_1.8-4        mvtnorm_1.2-6       faraway_1.0.8       rstudioapi_0.16.0   lifecycle_1.0.4    
-    [41] nlme_3.1-166        vctrs_0.6.5         evaluate_0.24.0     glue_1.8.0          numDeriv_2016.8-1.1
-    [46] fansi_1.0.6         colorspace_2.1-1    rmarkdown_2.28      tools_4.4.1         pkgconfig_2.0.3    
-    [51] htmltools_0.5.8.1  
+    Package version:
+      base64enc_0.1.3     boot_1.3-31         bslib_0.8.0         cachem_1.1.0        cli_3.6.3          
+      coda_0.19-4.1       compiler_4.4.1      cpp11_0.5.0         digest_0.6.37       emmeans_1.10.4     
+      estimability_1.5.1  evaluate_0.24.0     faraway_1.0.8       fastmap_1.2.0       fontawesome_0.5.2  
+      fs_1.6.4            glmmTMB_1.1.10.9000 glue_1.8.0          graphics_4.4.1      grDevices_4.4.1    
+      grid_4.4.1          here_1.0.1          highr_0.11          htmltools_0.5.8.1   jquerylib_0.1.4    
+      jsonlite_1.8.8      knitr_1.48          lattice_0.22-6      lifecycle_1.0.4     lme4_1.1-35.5      
+      MASS_7.3-61         Matrix_1.7-0        memoise_2.0.1       methods_4.4.1       mgcv_1.9-1         
+      mime_0.12           minqa_1.2.8         mvtnorm_1.2-6       nlme_3.1-166        nloptr_2.1.1       
+      numDeriv_2016.8-1.1 parallel_4.4.1      R6_2.5.1            rappdirs_0.3.3      rbibutils_2.3      
+      Rcpp_1.0.13         RcppEigen_0.3.4.0.2 Rdpack_2.6.1        reformulas_0.3.0    rlang_1.1.4        
+      rmarkdown_2.28      rprojroot_2.0.4     rstudioapi_0.16.0   sass_0.4.9          splines_4.4.1      
+      stats_4.4.1         svglite_2.1.3       systemfonts_1.1.0   tinytex_0.52        TMB_1.9.15         
+      tools_4.4.1         utils_4.4.1         xfun_0.47           xtable_1.8-4        yaml_2.3.10        

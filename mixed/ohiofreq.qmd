@@ -18,12 +18,6 @@ knitr::opts_chunk$set(comment=NA,
 knitr::opts_knit$set(global.par = TRUE)
 ```
 
-```{r graphopts, include=FALSE}
-par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
-ggplot2::theme_set(ggplot2::theme_bw())
-```
-
-
 See the [introduction](../index.md) for an overview. 
 
 See a [mostly Bayesian analysis](ohio.md) analysis of the same
@@ -35,8 +29,8 @@ This example is discussed in more detail in the book
 Packages used:
 
 ```{r}
-library(ggplot2)
 library(knitr)
+library(here)
 ```
 
 
@@ -51,10 +45,17 @@ whether the mother of the child is a smoker. Because we have four binary
 responses for each child, we expect these to be correlated and our model
 needs to reflect this.
 
+Read in and examine the first two subjects worth of data:
+
+```{r}
+ohio = read.csv(here("data","ohio.csv"),header = TRUE)
+kable(ohio[1:8,])
+```
+
+
 We sum the number of smoking and non-smoking mothers:
 ```{r}
 #| label: ohiodat
-data(ohio, package="brinla")
 table(ohio$smoke)/4
 ```
 We use this to produce the proportion of wheezing children classified by
@@ -147,6 +148,6 @@ Same as `lme4`.
 
 
 ```{r}
-sessionInfo()
+xfun::session_info()
 ```
 
