@@ -54,3 +54,4 @@ we explore below using the following packages:
 - [Repeated Measures](mixed/visionfreq.md) - the `vision` data
 - [Multiple Response Models](mixed/jspmultiplefreq.md) - the `jsp` data
 - [Poisson reponse model](mixed/nitrofreq.md) - the `nitrofen` data
+- [Binary response model](mixed/ohiofreq.md) - the `ohio` data

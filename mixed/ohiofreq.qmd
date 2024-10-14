@@ -1,0 +1,152 @@
+---
+title: Binary response GLMM using Frequentist Methods
+author: "[Julian Faraway](https://julianfaraway.github.io/)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+format: 
+  gfm:
+    toc: true
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(comment=NA, 
+                      echo = TRUE,
+                      fig.path="figs/",
+                      dev = 'svglite',  
+                      fig.ext = ".svg",
+                      warning=FALSE, 
+                      message=FALSE)
+knitr::opts_knit$set(global.par = TRUE)
+```
+
+```{r graphopts, include=FALSE}
+par(mgp=c(1.5,0.5,0), mar=c(3.1,3.1,0.1,0), pch=20)
+ggplot2::theme_set(ggplot2::theme_bw())
+```
+
+
+See the [introduction](../index.md) for an overview. 
+
+See a [mostly Bayesian analysis](ohio.md) analysis of the same
+data. 
+
+This example is discussed in more detail in the book
+[Bayesian Regression Modeling with INLA](https://julianfaraway.github.io/brinlabook/chaglmm.html)
+
+Packages used:
+
+```{r}
+library(ggplot2)
+library(knitr)
+```
+
+
+# Data and Model
+
+In [Fitzmaurice and Laird, 1993](https://doi.org/10.1093/biomet/80.1.141), data on 537 children aged 7--10 in six
+Ohio cities are reported. The response is binary --- does the child
+suffer from wheezing (indication of a pulmonary problem) where one
+indicates yes and zero no. This status is reported for each of four
+years at ages 7, 8, 9 and 10. There is also an indicator variable for
+whether the mother of the child is a smoker. Because we have four binary
+responses for each child, we expect these to be correlated and our model
+needs to reflect this.
+
+We sum the number of smoking and non-smoking mothers:
+```{r}
+#| label: ohiodat
+data(ohio, package="brinla")
+table(ohio$smoke)/4
+```
+We use this to produce the proportion of wheezing children classified by
+age and maternal smoking status:
+```{r}
+xtabs(resp ~ smoke + age, ohio)/c(350,187)
+```
+
+Age has been adjusted so that nine years old is zero. We see that
+wheezing appears to decline with age and that there may be more wheezing
+in children with mothers who smoke. But the effects are not clear and we
+need modeling to be sure about these conclusions.
+
+A plausible model uses a logit link with a linear predictor of the form:
+```{math}
+\eta_{ij} = \beta_0 + \beta_1 age_j + \beta_2 smoke_i + u_i, \quad i=1, \dots ,537, \quad j=1,2,3,4,
+```
+with 
+```{math}
+P(Y_{ij} = 1) = {\exp(\eta_{ij}) \over 1+\exp(\eta_{ij})}.
+```
+The
+random effect $u_i$ models the propensity of child $i$ to wheeze.
+Children are likely to vary in their health condition and this effect
+enables us to include this unknown variation in the model. Because $u_i$
+is added to all four observations for a child, we induce a positive
+correlation among the four responses as we might naturally expect. The
+response is Bernoulli or, in other words, binomial with trial size one.
+
+
+# LME4
+
+Here is the model fit penalized quasi-likelihood using the `lme4` package:
+
+```{r}
+#| label: ohiolmerfit
+library(lme4)
+modagh <- glmer(resp ~ age + smoke + (1|id), 
+              family=binomial, data=ohio)
+summary(modagh, correlation = FALSE)
+```
+
+We see that there is no significant effect due to maternal smoking.
+
+Suppose you do not take into account the correlated response
+within the individuals and fit a GLM ignoring the ID random effect:
+
+```{r}
+modglm <- glm(resp ~ age + smoke, family=binomial, data=ohio)
+faraway::sumary(modglm)
+```
+
+We see that the effect of maternal smoking is significant (but this
+would be the incorrect conclusion).
+
+# NLME
+
+Cannot fit GLMMs (other than normal response).
+
+# MMRM
+
+Cannot fit GLMMs (other than normal response).
+
+# GLMMTMB
+
+See the discussion for the [single random effect example](pulpfreq.md#GLMMTMB)
+for some introduction.
+
+```{r}
+library(glmmTMB)
+```
+
+We can fit the model with:
+
+```{r}
+gtmod <- glmmTMB(resp ~ age + smoke + (1|id), 
+             family=binomial, data=ohio)
+summary(gtmod)
+```
+
+Same as `lme4`.
+
+
+# Discussion
+
+-  In both cases, we do not find evidence of an effect for maternal smoking.
+
+
+# Package version info
+
+
+```{r}
+sessionInfo()
+```
+
