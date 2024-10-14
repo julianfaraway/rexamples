@@ -1,6 +1,6 @@
 # Poisson GLMM using frequentist methods
 [Julian Faraway](https://julianfaraway.github.io/)
-2024-10-11
+2024-10-14
 
 - [Data](#data)
 - [Model](#model)
@@ -153,11 +153,6 @@ and $-1.8312$ relative to the first brood. The individual SD is
 estimated at $0.302$ which is noticeably smaller than the estimates
 above, indicating that the brood and concentration effects outweigh the
 individual variation.
-
-We can make a plot of the mean predicted response as concentration and
-brood vary. I have chosen not specify a particular individual in the
-random effects with the option `re.form=~0` . We have $u_i = 0$ and so
-this represents the the response for a `typical` individual.
 
 We would need to work harder to test the significance of the effects as
 `lmerTest` is of no help for GLMMs. We do have the z-tests but in this

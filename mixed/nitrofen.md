@@ -1,17 +1,15 @@
-Poisson GLMM
-================
+# Poisson GLMM
 [Julian Faraway](https://julianfaraway.github.io/)
-1/6/23
+2024-10-14
 
-- <a href="#data-and-model" id="toc-data-and-model">Data and Model</a>
-- <a href="#lme4" id="toc-lme4">LME4</a>
-- <a href="#inla" id="toc-inla">INLA</a>
-- <a href="#brms" id="toc-brms">BRMS</a>
-- <a href="#mgcv" id="toc-mgcv">MGCV</a>
-- <a href="#ginla" id="toc-ginla">GINLA</a>
-- <a href="#discussion" id="toc-discussion">Discussion</a>
-- <a href="#package-version-info" id="toc-package-version-info">Package
-  version info</a>
+- [Data and Model](#data-and-model)
+- [LME4](#lme4)
+- [INLA](#inla)
+- [BRMS](#brms)
+- [MGCV](#mgcv)
+- [GINLA](#ginla)
+- [Discussion](#discussion)
+- [Package version info](#package-version-info)
 
 See the [introduction](../index.md) for an overview.
 
@@ -77,19 +75,14 @@ Make a plot of the data:
 
 ``` r
 lnitrofen$jconc <- lnitrofen$conc + rep(c(-10,0,10),50)
-lnitrofen$fbrood = factor(lnitrofen$brood)
-ggplot(lnitrofen, aes(x=jconc,y=live, shape=fbrood, color=fbrood)) + 
+lnitrofen$brood = factor(lnitrofen$brood)
+ggplot(lnitrofen, aes(x=jconc,y=live, shape=brood, color=brood)) + 
        geom_point(position = position_jitter(w = 0, h = 0.5)) + 
        xlab("Concentration") + labs(shape = "Brood")
 ```
 
-<figure>
 <img src="figs/fig-nitrodat-1..svg" id="fig-nitrodat"
 alt="Figure 1: The number of live offspring varies with the concentration of Nitrofen and the brood number." />
-<figcaption aria-hidden="true">Figure 1: The number of live offspring
-varies with the concentration of Nitrofen and the brood
-number.</figcaption>
-</figure>
 
 Since the response is a small count, a Poisson model is a natural
 choice. We expect the rate of the response to vary with the brood and
@@ -97,11 +90,15 @@ concentration level. The plot of the data suggests these two predictors
 may have an interaction. The three observations for a single flea are
 likely to be correlated. We might expect a given flea to tend to produce
 more, or less, offspring over a lifetime. We can model this with an
-additive random effect. The linear predictor is: $$
+additive random effect. The linear predictor is:
+
+``` math
 \eta_i = x_i^T \beta + u_{j(i)}, \quad i=1, \dots, 150. \quad j=1, \dots 50,
-$$ where $x_i$ is a vector from the design matrix encoding the
-information about the $i^{th}$ observation and $u_j$ is the random
-affect associated with the $j^{th}$ flea. The response has distribution
+```
+
+where $x_i$ is a vector from the design matrix encoding the information
+about the $i^{th}$ observation and $u_j$ is the random affect associated
+with the $j^{th}$ flea. The response has distribution
 $Y_i \sim Poisson(\exp(\eta_i))$.
 
 # LME4
@@ -121,23 +118,25 @@ summary(glmod, correlation = FALSE)
        Data: lnitrofen
 
          AIC      BIC   logLik deviance df.resid 
-       334.5    349.5   -162.2    324.5      145 
+       313.9    335.0   -150.0    299.9      143 
 
     Scaled residuals: 
        Min     1Q Median     3Q    Max 
-    -2.285 -0.858  0.068  0.706  2.866 
+    -2.208 -0.606 -0.008  0.618  3.565 
 
     Random effects:
      Groups Name        Variance Std.Dev.
-     id     (Intercept) 0.0835   0.289   
+     id     (Intercept) 0.0911   0.302   
     Number of obs: 150, groups:  id, 50
 
     Fixed effects:
-                      Estimate Std. Error z value Pr(>|z|)
-    (Intercept)         1.3451     0.1590    8.46  < 2e-16
-    I(conc/300)         0.3581     0.2801    1.28      0.2
-    brood               0.5815     0.0592    9.83  < 2e-16
-    I(conc/300):brood  -0.7957     0.1158   -6.87  6.3e-12
+                       Estimate Std. Error z value Pr(>|z|)
+    (Intercept)          1.6386     0.1367   11.99  < 2e-16
+    I(conc/300)         -0.0437     0.2193   -0.20     0.84
+    brood2               1.1687     0.1377    8.48  < 2e-16
+    brood3               1.3512     0.1351   10.00  < 2e-16
+    I(conc/300):brood2  -1.6730     0.2487   -6.73  1.7e-11
+    I(conc/300):brood3  -1.8312     0.2451   -7.47  7.9e-14
 
 We scaled the concentration by dividing by 300 (the maximum value is
 310) to avoid scaling problems encountered with `glmer()`. This is
@@ -160,19 +159,14 @@ random effects with the option `re.form=~0` . We have $u_i = 0$ and so
 this represents the the response for a `typical` individual.
 
 ``` r
-predf = data.frame(conc=rep(c(0,80,160,235,310),each=3),brood=rep(1:3,5))
+predf = data.frame(conc=rep(c(0,80,160,235,310),each=3),brood=factor(rep(1:3,5)))
 predf$live = predict(glmod, newdata=predf, re.form=~0, type="response")
-predf$brood = factor(predf$brood)
 ggplot(predf, aes(x=conc,y=live,group=brood,color=brood)) + 
   geom_line() + xlab("Concentration")
 ```
 
-<figure>
 <img src="figs/fig-prednitro-1..svg" id="fig-prednitro"
 alt="Figure 2: Predicted number of live offspring" />
-<figcaption aria-hidden="true">Figure 2: Predicted number of live
-offspring</figcaption>
-</figure>
 
 We see that if only the first brood were considered, the herbicide does
 not have a large effect. In the second and third broods, the (negative)
@@ -200,12 +194,14 @@ The fixed effects summary is:
 imod$summary.fixed |> kable()
 ```
 
-|                   |     mean |      sd | 0.025quant | 0.5quant | 0.975quant |     mode | kld |
-|:------------------|---------:|--------:|-----------:|---------:|-----------:|---------:|----:|
-| (Intercept)       |  1.34483 | 0.15849 |    1.03312 |  1.34505 |    1.65530 |  1.34550 |   0 |
-| I(conc/300)       |  0.35704 | 0.27889 |   -0.19112 |  0.35732 |    0.90360 |  0.35785 |   0 |
-| brood             |  0.58031 | 0.05912 |    0.46453 |  0.58025 |    0.69642 |  0.58014 |   0 |
-| I(conc/300):brood | -0.79178 | 0.11565 |   -1.01927 | -0.79154 |   -0.56564 | -0.79106 |   0 |
+|                    |     mean |      sd | 0.025quant | 0.5quant | 0.975quant |     mode | kld |
+|:-------------------|---------:|--------:|-----------:|---------:|-----------:|---------:|----:|
+| (Intercept)        |  1.63596 | 0.13642 |    1.36744 |  1.63617 |    1.90334 |  1.63617 |   0 |
+| I(conc/300)        | -0.04216 | 0.21861 |   -0.47449 | -0.04116 |    0.38439 | -0.04118 |   0 |
+| brood2             |  1.16798 | 0.13766 |    0.89852 |  1.16780 |    1.43841 |  1.16780 |   0 |
+| brood3             |  1.35051 | 0.13506 |    1.08620 |  1.35033 |    1.61588 |  1.35033 |   0 |
+| I(conc/300):brood2 | -1.66847 | 0.24851 |   -2.15743 | -1.66789 |   -1.18281 | -1.66788 |   0 |
+| I(conc/300):brood3 | -1.82604 | 0.24499 |   -2.30823 | -1.82541 |   -1.34741 | -1.82541 |   0 |
 
 The posterior means are very similar to the PQL estimates. We can get
 plots of the posteriors of the fixed effects:
@@ -223,12 +219,8 @@ for(i in 1:4){
 par(mfrow=c(1,1))
 ```
 
-<figure>
 <img src="figs/fig-nitrofpd-1..svg" id="fig-nitrofpd"
 alt="Figure 3: Posterior densities of the fixed effects model for the Nitrofen data." />
-<figcaption aria-hidden="true">Figure 3: Posterior densities of the
-fixed effects model for the Nitrofen data.</figcaption>
-</figure>
 
 We can also see the summary for the random effect SD:
 
@@ -237,13 +229,13 @@ hpd = inla.tmarginal(function(x) 1/sqrt(x), imod$marginals.hyperpar[[1]])
 inla.zmarginal(hpd)
 ```
 
-    Mean            0.277971 
-    Stdev           0.0566431 
-    Quantile  0.025 0.173482 
-    Quantile  0.25  0.23878 
-    Quantile  0.5   0.27527 
-    Quantile  0.75  0.3141 
-    Quantile  0.975 0.397345 
+    Mean            0.293403 
+    Stdev           0.0574257 
+    Quantile  0.025 0.188438 
+    Quantile  0.25  0.253485 
+    Quantile  0.5   0.290358 
+    Quantile  0.75  0.329905 
+    Quantile  0.975 0.415035 
 
 Again the result is very similar to the PQL output although notice that
 INLA provides some assessment of uncertainty in this value in contrast
@@ -253,12 +245,8 @@ to the PQL result. We can also see the posterior density:
 plot(hpd,type="l",xlab="linear predictor",ylab="density")
 ```
 
-<figure>
 <img src="figs/fig-nitrohyppd-1..svg" id="fig-nitrohyppd"
 alt="Figure 4: Posterior density of the SD of id" />
-<figcaption aria-hidden="true">Figure 4: Posterior density of the SD of
-id</figcaption>
-</figure>
 
 # BRMS
 
@@ -285,7 +273,9 @@ We can check the MCMC diagnostics and the posterior densities with:
 plot(bmod)
 ```
 
-<img src="figs/fig-nitrobrmsdiag-1..svg" id="fig-nitrobrmsdiag" />
+<img src="figs/fig-nitrobrmsdiag-1..svg" id="fig-nitrobrmsdiag-1" />
+
+<img src="figs/fig-nitrobrmsdiag-2..svg" id="fig-nitrobrmsdiag-2" />
 
 Looks quite similar to the INLA results.
 
@@ -295,24 +285,24 @@ We can look at the STAN code that `brms` used with:
 stancode(bmod)
 ```
 
-    // generated with brms 2.18.0
+    // generated with brms 2.21.0
     functions {
     }
     data {
       int<lower=1> N;  // total number of observations
-      int Y[N];  // response variable
+      array[N] int Y;  // response variable
       int<lower=1> K;  // number of population-level effects
       matrix[N, K] X;  // population-level design matrix
+      int<lower=1> Kc;  // number of population-level effects after centering
       // data for group-level effects of ID 1
       int<lower=1> N_1;  // number of grouping levels
       int<lower=1> M_1;  // number of coefficients per level
-      int<lower=1> J_1[N];  // grouping indicator per observation
+      array[N] int<lower=1> J_1;  // grouping indicator per observation
       // group-level predictor values
       vector[N] Z_1_1;
       int prior_only;  // should the likelihood be ignored?
     }
     transformed data {
-      int Kc = K - 1;
       matrix[N, Kc] Xc;  // centered version of X without an intercept
       vector[Kc] means_X;  // column means of X before centering
       for (i in 2:K) {
@@ -321,10 +311,10 @@ stancode(bmod)
       }
     }
     parameters {
-      vector[Kc] b;  // population-level effects
+      vector[Kc] b;  // regression coefficients
       real Intercept;  // temporary intercept for centered predictors
       vector<lower=0>[M_1] sd_1;  // group-level standard deviations
-      vector[N_1] z_1[M_1];  // standardized group-level effects
+      array[M_1] vector[N_1] z_1;  // standardized group-level effects
     }
     transformed parameters {
       vector[N_1] r_1_1;  // actual group-level effects
@@ -371,17 +361,19 @@ summary(bmod)
       Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
              total post-warmup draws = 4000
 
-    Group-Level Effects: 
+    Multilevel Hyperparameters:
     ~id (Number of levels: 50) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.31      0.06     0.21     0.45 1.00     1200     1758
+    sd(Intercept)     0.33      0.06     0.22     0.45 1.00     1588     2223
 
-    Population-Level Effects: 
-                    Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept           1.34      0.16     1.03     1.66 1.01     1560     2193
-    IconcD300           0.36      0.28    -0.18     0.90 1.01     1609     2495
-    brood               0.58      0.06     0.47     0.70 1.00     2032     2387
-    IconcD300:brood    -0.80      0.11    -1.03    -0.57 1.00     1803     2647
+    Regression Coefficients:
+                     Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+    Intercept            1.64      0.14     1.37     1.91 1.00     1223     2486
+    IconcD300           -0.06      0.23    -0.50     0.39 1.00     1424     2263
+    brood2               1.17      0.14     0.91     1.45 1.00     1395     2598
+    brood3               1.36      0.13     1.11     1.62 1.00     1457     2730
+    IconcD300:brood2    -1.69      0.25    -2.17    -1.18 1.00     1626     2612
+    IconcD300:brood3    -1.85      0.25    -2.32    -1.37 1.00     1466     2681
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -418,18 +410,20 @@ summary(gmod)
     live ~ I(conc/300) * brood + s(fid, bs = "re")
 
     Parametric coefficients:
-                      Estimate Std. Error z value Pr(>|z|)
-    (Intercept)         1.3531     0.1607    8.42   <2e-16
-    I(conc/300)         0.3698     0.2827    1.31     0.19
-    brood               0.5834     0.0589    9.91   <2e-16
-    I(conc/300):brood  -0.8006     0.1147   -6.98    3e-12
+                       Estimate Std. Error z value Pr(>|z|)
+    (Intercept)          1.6470     0.1388   11.86  < 2e-16
+    I(conc/300)         -0.0334     0.2222   -0.15     0.88
+    brood2               1.1737     0.1370    8.57  < 2e-16
+    brood3               1.3565     0.1342   10.11  < 2e-16
+    I(conc/300):brood2  -1.6843     0.2464   -6.84  8.1e-12
+    I(conc/300):brood3  -1.8435     0.2421   -7.61  2.7e-14
 
     Approximate significance of smooth terms:
             edf Ref.df Chi.sq p-value
-    s(fid) 30.9     48   75.9  <2e-16
+    s(fid) 31.7     48   81.1  <2e-16
 
-    R-sq.(adj) =   0.63   Deviance explained =   62%
-    -REML = 416.92  Scale est. = 1         n = 150
+    R-sq.(adj) =  0.711   Deviance explained = 66.5%
+    -REML = 405.68  Scale est. = 1         n = 150
 
 We get the fixed effect estimates. We also get a test on the random
 effect (as described in this
@@ -446,7 +440,7 @@ gam.vcomp(gmod)
     Standard deviations and 0.95 confidence intervals:
 
            std.dev   lower   upper
-    s(fid) 0.30248 0.20977 0.43618
+    s(fid)  0.3163 0.22148 0.45171
 
     Rank: 1/1
 
@@ -458,29 +452,31 @@ The random effect estimates for the fields can be found with:
 coef(gmod)
 ```
 
-          (Intercept)       I(conc/300)             brood I(conc/300):brood          s(fid).1          s(fid).2 
-             1.353117          0.369773          0.583423         -0.800556         -0.313616         -0.197844 
-             s(fid).3          s(fid).4          s(fid).5          s(fid).6          s(fid).7          s(fid).8 
-            -0.154221         -0.175851         -0.112008         -0.154221         -0.175851         -0.242957 
-             s(fid).9         s(fid).10         s(fid).11         s(fid).12         s(fid).13         s(fid).14 
-            -0.388148         -0.220209          0.120466          0.120466          0.166597          0.120466 
-            s(fid).15         s(fid).16         s(fid).17         s(fid).18         s(fid).19         s(fid).20 
-             0.189076         -0.054556         -0.028157          0.072696          0.096792          0.023191 
-            s(fid).21         s(fid).22         s(fid).23         s(fid).24         s(fid).25         s(fid).26 
-             0.284061          0.284061          0.111201          0.228691          0.310960          0.337355 
-            s(fid).27         s(fid).28         s(fid).29         s(fid).30         s(fid).31         s(fid).32 
-             0.310960          0.200188          0.284061          0.284061          0.317362          0.250294 
-            s(fid).33         s(fid).34         s(fid).35         s(fid).36         s(fid).37         s(fid).38 
-            -0.311950         -0.090527          0.443368          0.069377         -0.049190          0.030738 
-            s(fid).39         s(fid).40         s(fid).41         s(fid).42         s(fid).43         s(fid).44 
-             0.250294          0.107166         -0.227473         -0.227473         -0.176545         -0.557945 
-            s(fid).45         s(fid).46         s(fid).47         s(fid).48         s(fid).49         s(fid).50 
-             0.191696         -0.279561         -0.227473         -0.332826         -0.227473         -0.279561 
+           (Intercept)        I(conc/300)             brood2             brood3 I(conc/300):brood2 I(conc/300):brood3 
+              1.647020          -0.033400           1.173657           1.356469          -1.684338          -1.843512 
+              s(fid).1           s(fid).2           s(fid).3           s(fid).4           s(fid).5           s(fid).6 
+             -0.329841          -0.211252          -0.166687          -0.188777          -0.123622          -0.166687 
+              s(fid).7           s(fid).8           s(fid).9          s(fid).10          s(fid).11          s(fid).12 
+             -0.188777          -0.257407          -0.406447          -0.234124           0.125999           0.125999 
+             s(fid).13          s(fid).14          s(fid).15          s(fid).16          s(fid).17          s(fid).18 
+              0.173063           0.125999           0.195973          -0.053239          -0.026132           0.077187 
+             s(fid).19          s(fid).20          s(fid).21          s(fid).22          s(fid).23          s(fid).24 
+              0.101818           0.026517           0.301452           0.301452           0.123974           0.244729 
+             s(fid).25          s(fid).26          s(fid).27          s(fid).28          s(fid).29          s(fid).30 
+              0.328967           0.355942           0.328967           0.215484           0.301452           0.301452 
+             s(fid).31          s(fid).32          s(fid).33          s(fid).34          s(fid).35          s(fid).36 
+              0.334777           0.265780          -0.320622          -0.087909           0.463915           0.078692 
+             s(fid).37          s(fid).38          s(fid).39          s(fid).40          s(fid).41          s(fid).42 
+             -0.044725           0.038544           0.265780           0.117890          -0.243476          -0.243476 
+             s(fid).43          s(fid).44          s(fid).45          s(fid).46          s(fid).47          s(fid).48 
+             -0.189884          -0.594160           0.193946          -0.298415          -0.243476          -0.354727 
+             s(fid).49          s(fid).50 
+             -0.243476          -0.298415 
 
 We make a Q-Q plot of the ID random effects:
 
 ``` r
-qqnorm(coef(gmod)[-(1:4)])
+qqnorm(coef(gmod)[-(1:6)])
 ```
 
 <img src="figs/fig-gamqq-1..svg" id="fig-gamqq" />
@@ -502,20 +498,16 @@ gimod = ginla(gmod)
 We get the posterior densities for the fixed effects as:
 
 ``` r
-par(mfrow=c(2,2))
-for(i in 1:4){
+par(mfrow=c(3,2))
+for(i in 1:6){
 plot(gimod$beta[i,],gimod$density[i,],type="l",
      xlab=gmod$term.names[i],ylab="density")
 }
 par(mfrow=c(1,1))
 ```
 
-<figure>
 <img src="figs/fig-nitroginlareff-1..svg" id="fig-nitroginlareff"
 alt="Figure 5: Posteriors of the fixed effects" />
-<figcaption aria-hidden="true">Figure 5: Posteriors of the fixed
-effects</figcaption>
-</figure>
 
 It is not straightforward to obtain the posterior densities of the
 hyperparameters.
@@ -534,43 +526,42 @@ hyperparameters.
 sessionInfo()
 ```
 
-    R version 4.2.1 (2022-06-23)
-    Platform: x86_64-apple-darwin17.0 (64-bit)
-    Running under: macOS Big Sur ... 10.16
+    R version 4.4.1 (2024-06-14)
+    Platform: x86_64-apple-darwin20
+    Running under: macOS Sonoma 14.7
 
     Matrix products: default
-    BLAS:   /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRblas.0.dylib
-    LAPACK: /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRlapack.dylib
+    BLAS:   /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRblas.0.dylib 
+    LAPACK: /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.0
 
     locale:
     [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 
+    time zone: Europe/London
+    tzcode source: internal
+
     attached base packages:
-    [1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
+    [1] stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] mgcv_1.8-41   nlme_3.1-161  brms_2.18.0   Rcpp_1.0.9    knitr_1.41    INLA_22.12.16 sp_1.5-1      foreach_1.5.2
-     [9] lme4_1.1-31   Matrix_1.5-3  ggplot2_3.4.0
+     [1] mgcv_1.9-1    nlme_3.1-166  brms_2.21.0   Rcpp_1.0.13   knitr_1.48    INLA_24.06.27 sp_2.1-4      lme4_1.1-35.5
+     [9] Matrix_1.7-0  ggplot2_3.5.1
 
     loaded via a namespace (and not attached):
-      [1] minqa_1.2.5          colorspace_2.0-3     ellipsis_0.3.2       markdown_1.4         base64enc_0.1-3     
-      [6] rstudioapi_0.14      Deriv_4.1.3          farver_2.1.1         rstan_2.26.13        MatrixModels_0.5-1  
-     [11] DT_0.26              fansi_1.0.3          mvtnorm_1.1-3        bridgesampling_1.1-2 codetools_0.2-18    
-     [16] splines_4.2.1        shinythemes_1.2.0    bayesplot_1.10.0     jsonlite_1.8.4       nloptr_2.0.3        
-     [21] shiny_1.7.4          compiler_4.2.1       backports_1.4.1      assertthat_0.2.1     fastmap_1.1.0       
-     [26] cli_3.5.0            later_1.3.0          htmltools_0.5.4      prettyunits_1.1.1    tools_4.2.1         
-     [31] igraph_1.3.5         coda_0.19-4          gtable_0.3.1         glue_1.6.2           reshape2_1.4.4      
-     [36] dplyr_1.0.10         posterior_1.3.1      V8_4.2.2             vctrs_0.5.1          svglite_2.1.0       
-     [41] iterators_1.0.14     crosstalk_1.2.0      tensorA_0.36.2       xfun_0.36            stringr_1.5.0       
-     [46] ps_1.7.2             mime_0.12            miniUI_0.1.1.1       lifecycle_1.0.3      gtools_3.9.4        
-     [51] MASS_7.3-58.1        zoo_1.8-11           scales_1.2.1         colourpicker_1.2.0   promises_1.2.0.1    
-     [56] Brobdingnag_1.2-9    inline_0.3.19        shinystan_2.6.0      yaml_2.3.6           curl_4.3.3          
-     [61] gridExtra_2.3        loo_2.5.1            StanHeaders_2.26.13  stringi_1.7.8        highr_0.10          
-     [66] dygraphs_1.1.1.6     checkmate_2.1.0      boot_1.3-28.1        pkgbuild_1.4.0       rlang_1.0.6         
-     [71] pkgconfig_2.0.3      systemfonts_1.0.4    matrixStats_0.63.0   distributional_0.3.1 evaluate_0.19       
-     [76] lattice_0.20-45      rstantools_2.2.0     htmlwidgets_1.6.0    labeling_0.4.2       tidyselect_1.2.0    
-     [81] processx_3.8.0       plyr_1.8.8           magrittr_2.0.3       R6_2.5.1             generics_0.1.3      
-     [86] DBI_1.1.3            pillar_1.8.1         withr_2.5.0          xts_0.12.2           abind_1.4-5         
-     [91] tibble_3.1.8         crayon_1.5.2         utf8_1.2.2           rmarkdown_2.19       grid_4.2.1          
-     [96] callr_3.7.3          threejs_0.3.3        digest_0.6.31        xtable_1.8-4         httpuv_1.6.7        
-    [101] RcppParallel_5.1.5   stats4_4.2.1         munsell_0.5.0        shinyjs_2.1.0       
+     [1] tidyselect_1.2.1     dplyr_1.1.4          farver_2.1.2         loo_2.8.0            fastmap_1.2.0       
+     [6] tensorA_0.36.2.1     digest_0.6.37        estimability_1.5.1   lifecycle_1.0.4      Deriv_4.1.3         
+    [11] sf_1.0-16            StanHeaders_2.32.10  magrittr_2.0.3       posterior_1.6.0      compiler_4.4.1      
+    [16] rlang_1.1.4          tools_4.4.1          utf8_1.2.4           yaml_2.3.10          labeling_0.4.3      
+    [21] bridgesampling_1.1-2 pkgbuild_1.4.4       classInt_0.4-10      plyr_1.8.9           abind_1.4-5         
+    [26] KernSmooth_2.23-24   withr_3.0.1          grid_4.4.1           stats4_4.4.1         fansi_1.0.6         
+    [31] xtable_1.8-4         e1071_1.7-14         colorspace_2.1-1     inline_0.3.19        emmeans_1.10.4      
+    [36] scales_1.3.0         MASS_7.3-61          cli_3.6.3            mvtnorm_1.2-6        rmarkdown_2.28      
+    [41] generics_0.1.3       RcppParallel_5.1.9   rstudioapi_0.16.0    reshape2_1.4.4       minqa_1.2.8         
+    [46] DBI_1.2.3            proxy_0.4-27         rstan_2.32.6         stringr_1.5.1        splines_4.4.1       
+    [51] bayesplot_1.11.1     parallel_4.4.1       matrixStats_1.3.0    vctrs_0.6.5          boot_1.3-31         
+    [56] jsonlite_1.8.8       systemfonts_1.1.0    units_0.8-5          glue_1.7.0           nloptr_2.1.1        
+    [61] codetools_0.2-20     distributional_0.4.0 stringi_1.8.4        gtable_0.3.5         QuickJSR_1.3.1      
+    [66] munsell_0.5.1        tibble_3.2.1         pillar_1.9.0         htmltools_0.5.8.1    Brobdingnag_1.2-9   
+    [71] R6_2.5.1             fmesher_0.1.7        evaluate_0.24.0      lattice_0.22-6       backports_1.5.0     
+    [76] rstantools_2.4.0     class_7.3-22         svglite_2.1.3        coda_0.19-4.1        gridExtra_2.3       
+    [81] checkmate_2.3.2      xfun_0.47            pkgconfig_2.0.3     
