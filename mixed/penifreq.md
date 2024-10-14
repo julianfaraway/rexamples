@@ -1,6 +1,6 @@
 # Randomized Block Design fit using Frequentist Methods
 [Julian Faraway](https://julianfaraway.github.io/)
-2024-08-20
+2024-10-14
 
 - [Data](#data)
 - [Questions](#questions)
@@ -82,9 +82,9 @@ and no clear evidence of interaction. Let’s proceed.
 
 Consider the model:
 
-$$
+``` math
 y_{ijk} = \mu + \tau_i + v_j + \epsilon_{ijk}
-$$
+```
 
 where the $\mu$ and$\tau_i$ are fixed effects and the error
 $\epsilon_{ijk}$ is independent and identically distributed
@@ -93,8 +93,11 @@ identically distributed $N(0,\sigma^2_v)$.
 
 # LME4
 
+We load the `lmerTest` package which provides inferential methods on top
+of `lme4` (which is loaded in addition)
+
 ``` r
-library(lme4)
+library(lmerTest)
 ```
 
 We fit the model using REML:
@@ -104,7 +107,7 @@ mmod <- lmer(yield ~ treat + (1|blend), penicillin)
 summary(mmod, cor = FALSE)
 ```
 
-    Linear mixed model fit by REML ['lmerMod']
+    Linear mixed model fit by REML. t-tests use Satterthwaite's method ['lmerModLmerTest']
     Formula: yield ~ treat + (1 | blend)
        Data: penicillin
 
@@ -121,11 +124,11 @@ summary(mmod, cor = FALSE)
     Number of obs: 20, groups:  blend, 5
 
     Fixed effects:
-                Estimate Std. Error t value
-    (Intercept)    84.00       2.47   33.94
-    treatB          1.00       2.74    0.36
-    treatC          5.00       2.74    1.82
-    treatD          2.00       2.74    0.73
+                Estimate Std. Error    df t value Pr(>|t|)
+    (Intercept)    84.00       2.47 11.07   33.94  1.5e-12
+    treatB          1.00       2.74 12.00    0.36    0.722
+    treatC          5.00       2.74 12.00    1.82    0.094
+    treatD          2.00       2.74 12.00    0.73    0.480
 
 We get fixed effect estimates for the treatments but an estimated blend
 SD. We can get random effect estimates:
@@ -147,38 +150,44 @@ We can test for a difference of the fixed effects with:
 anova(mmod)
 ```
 
-    Analysis of Variance Table
-          npar Sum Sq Mean Sq F value
-    treat    3     70    23.3    1.24
+    Type III Analysis of Variance Table with Satterthwaite's method
+          Sum Sq Mean Sq NumDF DenDF F value Pr(>F)
+    treat     70    23.3     3    12    1.24   0.34
 
-No p-value is supplied because there is some doubt in general over the
-validity of the null F-distribution. In this specific example, with a
-simple balanced design, it can be shown that the null F is correct. (For
-other unbalanced or more complex designs, it would not be correct, hence
-the caution about testing in `lme4`). Even if we use an F-distribution,
-it’s not obvious what degrees of freedom to use for the denominator. The
-usual heuristics about counting parameters do not apply because it’s not
-clear how to account for the random effects. There are various
-adjustment methods for computing the degrees of freedom.
-
-We can use the Kenward-Roger method with:
+We find no significant difference in the treatments. We can use the
+Kenward-Roger method with:
 
 ``` r
-library(pbkrtest)
-amod <- lmer(yield ~ treat + (1|blend), penicillin, REML=FALSE)
-nmod <- lmer(yield ~ 1 + (1|blend), penicillin, REML=FALSE)
-KRmodcomp(amod, nmod)
+anova(mmod, ddf="Kenward-Roger")
 ```
 
-    large : yield ~ treat + (1 | blend)
-    small : yield ~ 1 + (1 | blend)
-           stat   ndf   ddf F.scaling p.value
-    Ftest  1.24  3.00 12.00         1    0.34
+    Type III Analysis of Variance Table with Kenward-Roger's method
+          Sum Sq Mean Sq NumDF DenDF F value Pr(>F)
+    treat     70    23.3     3    12    1.24   0.34
 
-There is no evidence of a difference between the treatments.
+In this example, there is no difference. In fact, in a simple, balanced
+model such as this, there is no need for adjustment or doubt about the
+null F-distribution.
 
-Testing the random effects is more challenging. We can test the
-hypothesis $H_0: \sigma^2_v = 0$ using a parametric bootstrap method:
+Testing the random effects is more challenging. We test the hypothesis
+$H_0: \sigma^2_v = 0$. The `lmerTest` package implements a “random
+effects anova”:
+
+``` r
+ranova(mmod)
+```
+
+    ANOVA-like table for random-effects: Single term deletions
+
+    Model:
+    yield ~ treat + (1 | blend)
+                npar logLik AIC  LRT Df Pr(>Chisq)
+    <none>         6  -51.9 116                   
+    (1 | blend)    5  -53.3 117 2.76  1      0.096
+
+But the null distribution is not $\chi^2_1$ so this is incorrect.
+
+We can use a parametric bootstrap method:
 
 ``` r
 rmod <- lmer(yield ~ treat + (1|blend), penicillin)
@@ -202,7 +211,17 @@ mean(lrstatf > 2.7629)
     [1] 0.039
 
 The result falls just below the 5% level for significance. Because of
-resampling variability, we should repeat with more bootstrap samples.
+resampling variability, we should repeat with more bootstrap samples. We
+get lots of warning messages about a boundary fit. The proportion of
+bootstrapped test statistics that are equal to zero is:
+
+``` r
+mean(lrstatf == 0)
+```
+
+    [1] 0.302
+
+This is quite high so we can see why the inference is problematic.
 
 We can also test for variation in the random effects using the
 [RLRsim](https://github.com/fabian-s/RLRsim) package:
@@ -265,6 +284,50 @@ summary(rem$contrasts,infer=TRUE)
     P value adjustment: tukey method for comparing a family of 4 estimates 
 
 There are no significant pairwise differences.
+
+It is also possible to get the estimated marginal means from `lmerTest`
+with:
+
+``` r
+ls_means(mmod)
+```
+
+    Least Squares Means table:
+
+           Estimate Std. Error   df t value lower upper Pr(>|t|)
+    treatA    84.00       2.47 11.1    33.9 78.56 89.44  1.5e-12
+    treatB    85.00       2.47 11.1    34.4 79.56 90.44  1.3e-12
+    treatC    89.00       2.47 11.1    36.0 83.56 94.44  8.0e-13
+    treatD    86.00       2.47 11.1    34.8 80.56 91.44  1.2e-12
+
+      Confidence level: 95%
+      Degrees of freedom method: Satterthwaite 
+
+In this case, the result is the same as before. A different degrees of
+freedom method has been used but it makes no difference in this example.
+
+Pairwise comparisons are also possible:
+
+``` r
+difflsmeans(mmod)
+```
+
+    Least Squares Means table:
+
+                    Estimate Std. Error df t value  lower  upper Pr(>|t|)
+    treatA - treatB    -1.00       2.75 12   -0.36  -6.98   4.98    0.722
+    treatA - treatC    -5.00       2.75 12   -1.82 -10.98   0.98    0.094
+    treatA - treatD    -2.00       2.75 12   -0.73  -7.98   3.98    0.480
+    treatB - treatC    -4.00       2.75 12   -1.46  -9.98   1.98    0.171
+    treatB - treatD    -1.00       2.75 12   -0.36  -6.98   4.98    0.722
+    treatC - treatD     3.00       2.75 12    1.09  -2.98   8.98    0.296
+
+      Confidence level: 95%
+      Degrees of freedom method: Satterthwaite 
+
+The estimates and standard errors are the same as before but the
+confidence intervals differ because `emmeans` is making a multiple
+comparisons adjustment while `lmerTest` is not.
 
 # NLME
 
@@ -759,7 +822,7 @@ sessionInfo()
 
     R version 4.4.1 (2024-06-14)
     Platform: x86_64-apple-darwin20
-    Running under: macOS Sonoma 14.6.1
+    Running under: macOS Sonoma 14.7
 
     Matrix products: default
     BLAS:   /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRblas.0.dylib 
@@ -775,20 +838,20 @@ sessionInfo()
     [1] stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] glmmTMB_1.1.9  car_3.1-2      carData_3.0-5  mmrm_0.3.12    nlme_3.1-165   emmeans_1.10.3 RLRsim_3.1-8  
-     [8] pbkrtest_0.5.3 lme4_1.1-35.5  Matrix_1.7-0   knitr_1.48     ggplot2_3.5.1  faraway_1.0.8 
+     [1] glmmTMB_1.1.9  car_3.1-2      carData_3.0-5  mmrm_0.3.12    nlme_3.1-166   emmeans_1.10.4 RLRsim_3.1-8  
+     [8] lmerTest_3.1-3 lme4_1.1-35.5  Matrix_1.7-0   knitr_1.48     ggplot2_3.5.1  faraway_1.0.8 
 
     loaded via a namespace (and not attached):
-     [1] utf8_1.2.4          generics_0.1.3      tidyr_1.3.1         stringi_1.8.4       lattice_0.22-6     
-     [6] digest_0.6.36       magrittr_2.0.3      estimability_1.5.1  evaluate_0.24.0     grid_4.4.1         
-    [11] mvtnorm_1.2-5       fastmap_1.2.0       jsonlite_1.8.8      backports_1.5.0     mgcv_1.9-1         
-    [16] purrr_1.0.2         fansi_1.0.6         scales_1.3.0        numDeriv_2016.8-1.1 abind_1.4-5        
-    [21] Rdpack_2.6          cli_3.6.3           rlang_1.1.4         rbibutils_2.2.16    munsell_0.5.1      
-    [26] splines_4.4.1       withr_3.0.1         yaml_2.3.10         tools_4.4.1         parallel_4.4.1     
-    [31] checkmate_2.3.2     coda_0.19-4.1       nloptr_2.1.1        minqa_1.2.7         dplyr_1.1.4        
-    [36] colorspace_2.1-1    boot_1.3-30         broom_1.0.6         vctrs_0.6.5         R6_2.5.1           
-    [41] lifecycle_1.0.4     stringr_1.5.1       MASS_7.3-61         pkgconfig_2.0.3     pillar_1.9.0       
-    [46] gtable_0.3.5        glue_1.7.0          Rcpp_1.0.13         systemfonts_1.1.0   xfun_0.46          
-    [51] tibble_3.2.1        tidyselect_1.2.1    rstudioapi_0.16.0   xtable_1.8-4        farver_2.1.2       
-    [56] htmltools_0.5.8.1   rmarkdown_2.27      svglite_2.1.3       labeling_0.4.3      TMB_1.9.14         
-    [61] compiler_4.4.1     
+     [1] gtable_0.3.5        TMB_1.9.14          xfun_0.47           lattice_0.22-6      numDeriv_2016.8-1.1
+     [6] vctrs_0.6.5         tools_4.4.1         Rdpack_2.6.1        generics_0.1.3      parallel_4.4.1     
+    [11] pbkrtest_0.5.3      tibble_3.2.1        fansi_1.0.6         pkgconfig_2.0.3     checkmate_2.3.2    
+    [16] lifecycle_1.0.4     compiler_4.4.1      farver_2.1.2        stringr_1.5.1       munsell_0.5.1      
+    [21] htmltools_0.5.8.1   yaml_2.3.10         pillar_1.9.0        nloptr_2.1.1        tidyr_1.3.1        
+    [26] MASS_7.3-61         boot_1.3-31         abind_1.4-5         tidyselect_1.2.1    digest_0.6.37      
+    [31] mvtnorm_1.2-6       stringi_1.8.4       dplyr_1.1.4         purrr_1.0.2         labeling_0.4.3     
+    [36] splines_4.4.1       fastmap_1.2.0       grid_4.4.1          colorspace_2.1-1    cli_3.6.3          
+    [41] magrittr_2.0.3      utf8_1.2.4          broom_1.0.6         withr_3.0.1         scales_1.3.0       
+    [46] backports_1.5.0     estimability_1.5.1  rmarkdown_2.28      coda_0.19-4.1       evaluate_0.24.0    
+    [51] rbibutils_2.2.16    mgcv_1.9-1          rlang_1.1.4         Rcpp_1.0.13         xtable_1.8-4       
+    [56] glue_1.8.0          svglite_2.1.3       rstudioapi_0.16.0   minqa_1.2.8         jsonlite_1.8.8     
+    [61] R6_2.5.1            systemfonts_1.1.0  

@@ -74,9 +74,9 @@ no clear evidence of interaction. Let's proceed.
 Consider the model: 
 
 
-$$
+```{math}
 y_{ijk} = \mu + \tau_i + v_j + \epsilon_{ijk}
-$$
+```
 
 where the $\mu$ and$\tau_i$ are fixed effects and the error
 $\epsilon_{ijk}$ is independent and
@@ -86,8 +86,11 @@ identically distributed $N(0,\sigma^2_v)$.
 
 # LME4
 
+We load the `lmerTest` package which provides inferential methods on
+top of `lme4` (which is loaded in addition)
+
 ```{r}
-library(lme4)
+library(lmerTest)
 ```
 
 We fit the model
@@ -105,27 +108,31 @@ We can test for a difference of the fixed effects with:
 ```{r}
 anova(mmod)
 ```
-No p-value is supplied because there is some doubt in general over
-the validity of the null F-distribution. In this specific example, with
-a simple balanced design, it can be shown that the null F is correct. (For
-other unbalanced or more complex designs, it would not be correct, hence
-the caution about testing in `lme4`). Even if we use an F-distribution,
-it's not obvious what degrees of freedom to use for the denominator. The
-usual heuristics about counting parameters do not apply because it's not
-clear how to account for the random effects. There are various adjustment
-methods for computing the degrees of freedom.
 
-We can use the Kenward-Roger method with:
+We find no significant difference in the treatments. We
+can use the Kenward-Roger method with:
+
 ```{r}
-library(pbkrtest)
-amod <- lmer(yield ~ treat + (1|blend), penicillin, REML=FALSE)
-nmod <- lmer(yield ~ 1 + (1|blend), penicillin, REML=FALSE)
-KRmodcomp(amod, nmod)
+anova(mmod, ddf="Kenward-Roger")
 ```
-There is no evidence of a difference between the treatments. 
 
-Testing the random effects is more challenging.
-We can test the hypothesis $H_0: \sigma^2_v = 0$ using a parametric 
+In this example, there is no difference. In fact, in a simple, balanced
+model such as this, there is no need for adjustment or doubt about
+the null F-distribution.
+
+
+Testing the random effects is more challenging. 
+We test the hypothesis $H_0: \sigma^2_v = 0$.
+The `lmerTest` package
+implements a "random effects anova":
+```{r}
+ranova(mmod)
+```
+But the null distribution is not $\chi^2_1$ so this is incorrect.
+
+
+
+We can use a parametric 
 bootstrap method:
 ```{r penifreqbootblend, cache=TRUE}
 rmod <- lmer(yield ~ treat + (1|blend), penicillin)
@@ -142,6 +149,13 @@ mean(lrstatf > 2.7629)
 ```
 The result falls just below the 5\% level for significance. Because
 of resampling variability, we should repeat with more bootstrap samples.
+We get lots of warning messages about a boundary fit. The proportion
+of bootstrapped test statistics that are equal to zero is:
+```{r}
+mean(lrstatf == 0)
+```
+This is quite high so we can see why the inference is problematic.
+
 
 We can also test for variation in the random effects using the
 [RLRsim](https://github.com/fabian-s/RLRsim) package:
@@ -174,6 +188,23 @@ summary(rem$contrasts,infer=TRUE)
 ```
 
 There are no significant pairwise differences.
+
+It is also possible to get the estimated marginal means from `lmerTest` with:
+```{r}
+ls_means(mmod)
+```
+In this case, the result is the same as before. A different degrees of freedom
+method has been used but it makes no difference in this example.
+
+Pairwise comparisons are also possible:
+```{r}
+difflsmeans(mmod)
+```
+The estimates and standard errors are the same as before but the confidence
+intervals differ because `emmeans` is making a multiple comparisons adjustment
+while `lmerTest` is not.
+
+
 
 
 # NLME
