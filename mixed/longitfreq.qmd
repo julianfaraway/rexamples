@@ -69,7 +69,7 @@ We have centered the time variable year. Some plots of just 20 of the subjects:
 
 ```{r}
 #| label: psidplot
-psid20 <- dplyr::filter(psid, person <= 20)
+psid20 = subset(psid, person <= 20)
 ggplot(psid20, aes(x=year, y=income))+geom_line()+facet_wrap(~ person)
 ggplot(psid20, aes(x=year, y=income+100, group=person)) +geom_line()+facet_wrap(~ sex)+scale_y_log10()
 ```

@@ -1,6 +1,6 @@
 # Longitudinal Data Analysis example
 [Julian Faraway](https://julianfaraway.github.io/)
-2024-09-02
+2024-10-17
 
 - [Data](#data)
 - [Mixed Effect Model](#mixed-effect-model)
@@ -82,7 +82,7 @@ We have centered the time variable year. Some plots of just 20 of the
 subjects:
 
 ``` r
-psid20 <- dplyr::filter(psid, person <= 20)
+psid20 = subset(psid, person <= 20)
 ggplot(psid20, aes(x=year, y=income))+geom_line()+facet_wrap(~ person)
 ```
 
@@ -752,7 +752,7 @@ sessionInfo()
 
     R version 4.4.1 (2024-06-14)
     Platform: x86_64-apple-darwin20
-    Running under: macOS Sonoma 14.6.1
+    Running under: macOS Sonoma 14.7
 
     Matrix products: default
     BLAS:   /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRblas.0.dylib 
@@ -784,7 +784,7 @@ sessionInfo()
     [41] generics_0.1.3       RcppParallel_5.1.9   rstudioapi_0.16.0    reshape2_1.4.4       minqa_1.2.8         
     [46] DBI_1.2.3            proxy_0.4-27         stringr_1.5.1        splines_4.4.1        bayesplot_1.11.1    
     [51] parallel_4.4.1       matrixStats_1.3.0    vctrs_0.6.5          boot_1.3-31          jsonlite_1.8.8      
-    [56] systemfonts_1.1.0    tidyr_1.3.1          units_0.8-5          glue_1.7.0           nloptr_2.1.1        
+    [56] systemfonts_1.1.0    tidyr_1.3.1          units_0.8-5          glue_1.8.0           nloptr_2.1.1        
     [61] codetools_0.2-20     distributional_0.4.0 stringi_1.8.4        gtable_0.3.5         QuickJSR_1.3.1      
     [66] munsell_0.5.1        tibble_3.2.1         pillar_1.9.0         htmltools_0.5.8.1    Brobdingnag_1.2-9   
     [71] R6_2.5.1             fmesher_0.1.7        evaluate_0.24.0      lattice_0.22-6       backports_1.5.0     

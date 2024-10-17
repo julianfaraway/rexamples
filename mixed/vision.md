@@ -1,6 +1,6 @@
 # Repeated Measures Data Analysis example
 [Julian Faraway](https://julianfaraway.github.io/)
-2024-09-02
+2024-10-17
 
 - [Data](#data)
 - [Mixed Effect Model](#mixed-effect-model)
@@ -527,7 +527,7 @@ treatment effects:
 ``` r
 ref <- reshape2::melt(rstan::extract(fit, pars="beta"),value.name="acuity",varnames=c("iterations","beta"))
 ref$beta <- colnames(Xmatrix)[ref$beta]
-ref |> dplyr::filter(grepl("power", beta)) |> ggplot(aes(x=acuity, color=beta))+geom_density()
+subset(ref, grepl("power", beta)) |> ggplot(aes(x=acuity, color=beta))+geom_density()
 ```
 
 ![](figs/vispdtrt-1..svg)
@@ -535,7 +535,7 @@ ref |> dplyr::filter(grepl("power", beta)) |> ggplot(aes(x=acuity, color=beta))+
 Now just the intercept parameter:
 
 ``` r
-ref |> dplyr::filter(grepl("Intercept", beta)) |> ggplot(aes(x=acuity))+geom_density()
+subset(ref,grepl("Intercept", beta)) |> ggplot(aes(x=acuity))+geom_density()
 ```
 
 ![](figs/vispdint-1..svg)
@@ -855,7 +855,7 @@ sessionInfo()
 
     R version 4.4.1 (2024-06-14)
     Platform: x86_64-apple-darwin20
-    Running under: macOS Sonoma 14.6.1
+    Running under: macOS Sonoma 14.7
 
     Matrix products: default
     BLAS:   /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRblas.0.dylib 
@@ -878,19 +878,18 @@ sessionInfo()
     loaded via a namespace (and not attached):
      [1] tidyselect_1.2.1     farver_2.1.2         dplyr_1.1.4          loo_2.8.0            fastmap_1.2.0       
      [6] tensorA_0.36.2.1     digest_0.6.37        estimability_1.5.1   lifecycle_1.0.4      Deriv_4.1.3         
-    [11] sf_1.0-16            processx_3.8.4       magrittr_2.0.3       posterior_1.6.0      compiler_4.4.1      
-    [16] rlang_1.1.4          tools_4.4.1          utf8_1.2.4           yaml_2.3.10          labeling_0.4.3      
-    [21] bridgesampling_1.1-2 pkgbuild_1.4.4       classInt_0.4-10      plyr_1.8.9           abind_1.4-5         
-    [26] KernSmooth_2.23-24   withr_3.0.1          purrr_1.0.2          grid_4.4.1           stats4_4.4.1        
-    [31] fansi_1.0.6          xtable_1.8-4         e1071_1.7-14         colorspace_2.1-1     inline_0.3.19       
-    [36] emmeans_1.10.4       scales_1.3.0         MASS_7.3-61          cli_3.6.3            mvtnorm_1.2-6       
-    [41] rmarkdown_2.28       generics_0.1.3       RcppParallel_5.1.9   rstudioapi_0.16.0    reshape2_1.4.4      
-    [46] minqa_1.2.8          DBI_1.2.3            proxy_0.4-27         stringr_1.5.1        splines_4.4.1       
-    [51] bayesplot_1.11.1     parallel_4.4.1       matrixStats_1.3.0    vctrs_0.6.5          boot_1.3-31         
-    [56] jsonlite_1.8.8       callr_3.7.6          systemfonts_1.1.0    tidyr_1.3.1          units_0.8-5         
-    [61] glue_1.7.0           nloptr_2.1.1         ps_1.7.7             codetools_0.2-20     distributional_0.4.0
-    [66] stringi_1.8.4        gtable_0.3.5         QuickJSR_1.3.1       munsell_0.5.1        tibble_3.2.1        
-    [71] pillar_1.9.0         htmltools_0.5.8.1    Brobdingnag_1.2-9    R6_2.5.1             fmesher_0.1.7       
-    [76] evaluate_0.24.0      lattice_0.22-6       backports_1.5.0      broom_1.0.6          MatrixModels_0.5-3  
-    [81] rstantools_2.4.0     class_7.3-22         svglite_2.1.3        coda_0.19-4.1        gridExtra_2.3       
-    [86] checkmate_2.3.2      xfun_0.47            pkgconfig_2.0.3     
+    [11] sf_1.0-16            magrittr_2.0.3       posterior_1.6.0      compiler_4.4.1       rlang_1.1.4         
+    [16] tools_4.4.1          utf8_1.2.4           yaml_2.3.10          labeling_0.4.3       bridgesampling_1.1-2
+    [21] pkgbuild_1.4.4       classInt_0.4-10      plyr_1.8.9           abind_1.4-5          KernSmooth_2.23-24  
+    [26] withr_3.0.1          purrr_1.0.2          grid_4.4.1           stats4_4.4.1         fansi_1.0.6         
+    [31] xtable_1.8-4         e1071_1.7-14         colorspace_2.1-1     inline_0.3.19        emmeans_1.10.4      
+    [36] scales_1.3.0         MASS_7.3-61          cli_3.6.3            mvtnorm_1.2-6        rmarkdown_2.28      
+    [41] generics_0.1.3       RcppParallel_5.1.9   rstudioapi_0.16.0    reshape2_1.4.4       minqa_1.2.8         
+    [46] DBI_1.2.3            proxy_0.4-27         stringr_1.5.1        splines_4.4.1        bayesplot_1.11.1    
+    [51] parallel_4.4.1       matrixStats_1.3.0    vctrs_0.6.5          boot_1.3-31          jsonlite_1.8.8      
+    [56] systemfonts_1.1.0    tidyr_1.3.1          units_0.8-5          glue_1.8.0           nloptr_2.1.1        
+    [61] codetools_0.2-20     distributional_0.4.0 stringi_1.8.4        gtable_0.3.5         QuickJSR_1.3.1      
+    [66] munsell_0.5.1        tibble_3.2.1         pillar_1.9.0         htmltools_0.5.8.1    Brobdingnag_1.2-9   
+    [71] R6_2.5.1             fmesher_0.1.7        evaluate_0.24.0      lattice_0.22-6       backports_1.5.0     
+    [76] broom_1.0.6          MatrixModels_0.5-3   rstantools_2.4.0     class_7.3-22         svglite_2.1.3       
+    [81] coda_0.19-4.1        gridExtra_2.3        checkmate_2.3.2      xfun_0.47            pkgconfig_2.0.3     

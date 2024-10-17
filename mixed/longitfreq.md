@@ -1,6 +1,6 @@
 # Longitudinal analysis using Frequentist methods
 [Julian Faraway](https://julianfaraway.github.io/)
-2024-08-30
+2024-10-17
 
 - [Data](#data)
 - [Mixed Effect Model](#mixed-effect-model)
@@ -73,7 +73,7 @@ We have centered the time variable year. Some plots of just 20 of the
 subjects:
 
 ``` r
-psid20 <- dplyr::filter(psid, person <= 20)
+psid20 = subset(psid, person <= 20)
 ggplot(psid20, aes(x=year, y=income))+geom_line()+facet_wrap(~ person)
 ```
 
@@ -663,11 +663,6 @@ library(glmmTMB)
 
     mmrm() registered as emmeans extension
 
-    Warning in checkDepPackageVersion(dep_pkg = "TMB"): Package version inconsistency detected.
-    glmmTMB was built with TMB version 1.9.11
-    Current TMB version is 1.9.14
-    Please re-install glmmTMB from source or restore original 'TMB' package (see '?reinstalling' for more information)
-
 The default fit uses ML - let’s use REML for the purposes of comparison
 with `lme4`:
 
@@ -681,7 +676,7 @@ summary(gtmod)
     Data: psid
 
          AIC      BIC   logLik deviance df.resid 
-      3839.7   3888.5  -1910.9   3821.7     1658 
+      3839.7   3888.5  -1910.9   3821.7     1652 
 
     Random effects:
 
@@ -721,7 +716,7 @@ summary(gtmoda)
     Data: psid
 
          AIC      BIC   logLik deviance df.resid 
-      3489.8   3538.5  -1735.9   3471.8     1658 
+      3489.8   3538.5  -1735.9   3471.8     1652 
 
     Random effects:
 
@@ -774,7 +769,7 @@ sessionInfo()
 
     R version 4.4.1 (2024-06-14)
     Platform: x86_64-apple-darwin20
-    Running under: macOS Sonoma 14.6.1
+    Running under: macOS Sonoma 14.7
 
     Matrix products: default
     BLAS:   /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRblas.0.dylib 
@@ -790,20 +785,20 @@ sessionInfo()
     [1] stats     graphics  grDevices utils     datasets  methods   base     
 
     other attached packages:
-     [1] glmmTMB_1.1.9  mmrm_0.3.12    car_3.1-2      carData_3.0-5  nlme_3.1-166   pbkrtest_0.5.3 lme4_1.1-35.5 
-     [8] Matrix_1.7-0   ggplot2_3.5.1  faraway_1.0.8 
+     [1] glmmTMB_1.1.10.9000 mmrm_0.3.12         car_3.1-2           carData_3.0-5       nlme_3.1-166       
+     [6] pbkrtest_0.5.3      lme4_1.1-35.5       Matrix_1.7-0        ggplot2_3.5.1       faraway_1.0.8      
 
     loaded via a namespace (and not attached):
      [1] utf8_1.2.4          generics_0.1.3      tidyr_1.3.1         stringi_1.8.4       lattice_0.22-6     
      [6] digest_0.6.37       magrittr_2.0.3      estimability_1.5.1  evaluate_0.24.0     grid_4.4.1         
     [11] mvtnorm_1.2-6       fastmap_1.2.0       jsonlite_1.8.8      backports_1.5.0     mgcv_1.9-1         
-    [16] purrr_1.0.2         fansi_1.0.6         scales_1.3.0        numDeriv_2016.8-1.1 Rdpack_2.6.1       
-    [21] abind_1.4-5         cli_3.6.3           rlang_1.1.4         rbibutils_2.2.16    munsell_0.5.1      
-    [26] splines_4.4.1       withr_3.0.1         yaml_2.3.10         tools_4.4.1         parallel_4.4.1     
-    [31] coda_0.19-4.1       checkmate_2.3.2     nloptr_2.1.1        minqa_1.2.8         dplyr_1.1.4        
-    [36] colorspace_2.1-1    boot_1.3-31         broom_1.0.6         vctrs_0.6.5         R6_2.5.1           
-    [41] emmeans_1.10.4      lifecycle_1.0.4     stringr_1.5.1       MASS_7.3-61         pkgconfig_2.0.3    
-    [46] pillar_1.9.0        gtable_0.3.5        glue_1.7.0          Rcpp_1.0.13         systemfonts_1.1.0  
-    [51] xfun_0.47           tibble_3.2.1        tidyselect_1.2.1    rstudioapi_0.16.0   knitr_1.48         
-    [56] xtable_1.8-4        farver_2.1.2        htmltools_0.5.8.1   rmarkdown_2.28      svglite_2.1.3      
-    [61] labeling_0.4.3      TMB_1.9.14          compiler_4.4.1     
+    [16] purrr_1.0.2         fansi_1.0.6         scales_1.3.0        numDeriv_2016.8-1.1 reformulas_0.3.0   
+    [21] Rdpack_2.6.1        abind_1.4-5         cli_3.6.3           rlang_1.1.4         rbibutils_2.3      
+    [26] munsell_0.5.1       splines_4.4.1       withr_3.0.1         yaml_2.3.10         tools_4.4.1        
+    [31] parallel_4.4.1      coda_0.19-4.1       checkmate_2.3.2     nloptr_2.1.1        minqa_1.2.8        
+    [36] dplyr_1.1.4         colorspace_2.1-1    boot_1.3-31         broom_1.0.6         vctrs_0.6.5        
+    [41] R6_2.5.1            emmeans_1.10.4      lifecycle_1.0.4     stringr_1.5.1       MASS_7.3-61        
+    [46] pkgconfig_2.0.3     pillar_1.9.0        gtable_0.3.5        glue_1.8.0          Rcpp_1.0.13        
+    [51] systemfonts_1.1.0   xfun_0.47           tibble_3.2.1        tidyselect_1.2.1    rstudioapi_0.16.0  
+    [56] knitr_1.48          xtable_1.8-4        farver_2.1.2        htmltools_0.5.8.1   rmarkdown_2.28     
+    [61] svglite_2.1.3       labeling_0.4.3      TMB_1.9.15          compiler_4.4.1     

@@ -331,13 +331,13 @@ still. Now the treatment effects:
 ```{r vispdtrt}
 ref <- reshape2::melt(rstan::extract(fit, pars="beta"),value.name="acuity",varnames=c("iterations","beta"))
 ref$beta <- colnames(Xmatrix)[ref$beta]
-ref |> dplyr::filter(grepl("power", beta)) |> ggplot(aes(x=acuity, color=beta))+geom_density()
+subset(ref, grepl("power", beta)) |> ggplot(aes(x=acuity, color=beta))+geom_density()
 ```
 
 Now just the intercept parameter:
 
 ```{r vispdint}
-ref |> dplyr::filter(grepl("Intercept", beta)) |> ggplot(aes(x=acuity))+geom_density()
+subset(ref,grepl("Intercept", beta)) |> ggplot(aes(x=acuity))+geom_density()
 ```
 
 Now for the subjects:
