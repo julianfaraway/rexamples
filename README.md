@@ -55,3 +55,4 @@ we explore below using the following packages:
 - [Multiple Response Models](mixed/jspmultiplefreq.md) - the `jsp` data
 - [Poisson reponse model](mixed/nitrofreq.md) - the `nitrofen` data
 - [Binary response model](mixed/ohiofreq.md) - the `ohio` data
+- [Overall conclusion](mixed/freqconclusion.md)
